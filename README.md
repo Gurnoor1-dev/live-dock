@@ -1,6 +1,6 @@
 # Virtual Blue Fleet Operations
 
-A Next.js 15 + React 19 fleet operations portal for Virtual Blue, backed by Supabase.
+A Next.js 16 + React 19.3 fleet operations portal for Virtual Blue, backed by Supabase.
 
 ## Included in this first implementation
 
