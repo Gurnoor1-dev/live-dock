@@ -309,8 +309,13 @@ export function InfiniteFlightDashboard(){
 
   async function refresh(){await loadOrganization();}
   async function signOut(){
-    await fetch("/api/auth/if/logout",{method:"POST"});
-    setAuth("signed-out");setOrganization(null);setAircraft([]);setMembers([]);setSchedules([]);
+    setBusy(true);setError("");
+    try{
+      const response=await fetch("/api/auth/if/logout",{method:"POST",credentials:"same-origin",cache:"no-store"});
+      if(!response.ok)throw new Error("Infinite Flight sign out failed. Please try again.");
+      setAuth("signed-out");setOrganization(null);setAircraft([]);setMembers([]);setSchedules([]);setPositions({});setSelectedAircraft(null);setFlightHistory([]);
+    }catch(e){setError(e instanceof Error?e.message:"Could not sign out of Infinite Flight.");}
+    finally{setBusy(false);}
   }
   async function createSchedule(event:FormEvent){
     event.preventDefault();if(!canManage||!aircraftId)return;
@@ -354,7 +359,33 @@ export function InfiniteFlightDashboard(){
   }
 
   if(auth==="checking")return <main className="auth-page"><div className="auth-card"><Image src={vbLogo} alt="Virtual Blue" className="brand-logo" priority/><h1>Preparing your flight deck</h1><p className="muted">Checking your Infinite Flight session…</p></div></main>;
-  if(auth==="signed-out")return <main className="auth-page"><Link href="/" className="brand"><Image src={vbLogo} alt="Virtual Blue" className="brand-logo" priority/><span>VIRTUAL BLUE<small>FLEET OPERATIONS</small></span></Link><section className="auth-card"><p className="eyebrow">INFINITE FLIGHT · SECURE SIGN IN</p><h1>Welcome aboard.</h1><p className="muted">Continue with your Infinite Flight account. Your Virtual Blue membership, fleet and schedules are read directly from Infinite Flight.</p><button className="primary-button full" onClick={()=>window.location.assign("/api/auth/if/login")}>Continue with Infinite Flight <ArrowUpRight size={15}/></button><p className="fine-print">Virtual Blue does not use email/password accounts. Authentication is handled by Infinite Flight OAuth 2.0.</p></section></main>;
+  if(auth==="signed-out")return <main className="landing-page">
+    <div className="landing-glow landing-glow-one"/><div className="landing-glow landing-glow-two"/>
+    <header className="landing-header">
+      <Link href="/" className="landing-brand"><Image src={vbLogo} alt="Virtual Blue" priority/><span><b>VIRTUAL BLUE</b><small>FLEET OPERATIONS</small></span></Link>
+      <div className="landing-header-right"><span className="landing-secure"><i/> INFINITE FLIGHT CONNECT</span><span className="landing-version">LIVE API V3</span></div>
+    </header>
+    <section className="landing-hero">
+      <div className="landing-copy">
+        <div className="landing-kicker"><span/> THE VIRTUAL BLUE FLIGHT DECK <b>·</b> LIVE</div>
+        <h1>Every aircraft.<br/><em>One clear view.</em></h1>
+        <p className="landing-description">Your airline, in motion. Follow the Virtual Blue fleet in real time, explore aircraft details and keep every operation in sync with Infinite Flight.</p>
+        <div className="landing-actions">
+          <button className="landing-signin" onClick={()=>window.location.assign("/api/auth/if/login")}><span className="landing-signin-icon"><ArrowUpRight size={18}/></span>Sign in with Infinite Flight<ArrowUpRight className="landing-signin-arrow" size={17}/></button>
+          <span className="landing-auth-note"><ShieldCheck size={14}/> Secure OAuth 2.0 · No separate password</span>
+        </div>
+        <div className="landing-divider"/>
+        <div className="landing-highlights"><div><span className="landing-highlight-icon"><RadioTower size={16}/></span><span><b>Live fleet tracking</b><small>Aircraft positions and status</small></span></div><div><span className="landing-highlight-icon"><Compass size={16}/></span><span><b>Flight operations</b><small>Schedules, crew and history</small></span></div><div><span className="landing-highlight-icon"><Activity size={16}/></span><span><b>Always in sync</b><small>Powered by Infinite Flight Live</small></span></div></div>
+      </div>
+      <div className="landing-art" aria-hidden="true">
+        <div className="landing-orbit landing-orbit-one"/><div className="landing-orbit landing-orbit-two"/>
+        <img className="landing-globe" src="https://raw.githubusercontent.com/Gurnoor1-dev/live-dock/main/example/fleet-globe.png" alt=""/>
+        <img className="landing-yoke" src="https://raw.githubusercontent.com/Gurnoor1-dev/live-dock/main/example/fleet-yoke.png" alt=""/>
+        <div className="landing-art-caption"><span>VB</span><div><b>VIRTUAL BLUE</b><small>BUILT FOR THE WAY YOU FLY</small></div></div>
+      </div>
+    </section>
+    <footer className="landing-footer"><span>© {new Date().getFullYear()} Virtual Blue</span><span>AN INFINITE FLIGHT VIRTUAL AIRLINE</span><span><i/> SYSTEM READY</span></footer>
+  </main>;
 
   return <div className="app-frame" data-theme={theme}>
     <aside className={`sidebar ${mobileNav?"open":""}`}>
@@ -364,7 +395,7 @@ export function InfiniteFlightDashboard(){
       <nav>{(["Fleet","Schedules","Crew"] as Tab[]).map((item,index)=><button key={item} className={active===item?"nav-item active":"nav-item"} onClick={()=>{setActive(item);setMobileNav(false);}}>{index===0?<Plane size={17}/>:index===1?<CalendarDays size={17}/>:<Users size={17}/>}<span>{item}</span></button>)}</nav>
       <p className="nav-caption secondary">MANAGEMENT</p>
       <nav><button className={active==="Admin"?"nav-item active":"nav-item"} onClick={()=>{setActive("Admin");setMobileNav(false);}}><ShieldCheck size={17}/><span>Admin</span></button></nav>
-      <div className="sidebar-bottom"><div className="help-card"><Command size={17}/><span><b>Live API v3 connected</b><small>Infinite Flight is the source of truth</small></span><Activity size={14}/></div><div className="user-row"><div className="avatar">IF</div><span><b>Infinite Flight pilot</b><small>{organization?roleName(organization.role):"Signed in"}</small></span><button className="icon-button" onClick={signOut} title="Sign out"><LogOut size={16}/></button></div></div>
+      <div className="sidebar-bottom"><div className="help-card"><Command size={17}/><span><b>Live API v3 connected</b><small>Infinite Flight is the source of truth</small></span><Activity size={14}/></div><div className="user-row"><div className="avatar">IF</div><span><b>Infinite Flight pilot</b><small>{organization?roleName(organization.role):"Signed in"}</small></span><button className="signout-button" onClick={signOut} disabled={busy} title="Sign out of Infinite Flight"><LogOut size={15}/><span>Sign out</span></button></div></div>
     </aside>
     {mobileNav&&<button className="mobile-scrim" onClick={()=>setMobileNav(false)} aria-label="Close navigation"/>}
     <main className="main-area">
