@@ -69,3 +69,39 @@ tbody tr:hover{background:#fafcff}
 .auth-card h1{letter-spacing:-1.1px}
 @media(max-width:1050px){.sidebar{width:220px}.main-area{margin-left:220px}.content{padding:30px 24px}.topbar{padding:0 24px}}
 @media(max-width:720px){.sidebar{width:270px}.main-area{margin-left:0}.topbar{height:60px;padding:0 14px}.content{padding:25px 14px}.page-heading h1{font-size:27px}.section-card{padding:16px}.stat-grid{gap:10px}.stat-card{padding:14px}}
+
+
+/* Live aircraft operations */
+.brand-logo{width:42px;height:42px;object-fit:contain;border-radius:10px;display:block}
+.workspace-logo{width:35px;height:35px;object-fit:contain;border-radius:9px;background:#f5f8fc;padding:3px}
+.fleet-layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(280px,.75fr);gap:16px;align-items:start}
+.fleet-map-card{min-width:0}
+.fleet-map{height:520px;width:100%;overflow:hidden;border-radius:11px;border:1px solid var(--line);background:#e9eef4}
+.map-legend{display:flex;gap:15px;flex-wrap:wrap;margin:-4px 0 13px;color:var(--muted);font-size:10px}
+.map-legend span{display:inline-flex;align-items:center;gap:6px}
+.map-legend i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.legend-flight{background:#16a36a}.legend-ground{background:#2475d0}.legend-maintenance{background:#d18a27}.legend-stopped{background:#64748b}.legend-unknown{background:#8a94a6}
+.aircraft-map-marker{width:32px;height:32px;padding:5px;border:2px solid #fff;border-radius:50%;background:var(--marker-color);box-shadow:0 3px 12px rgba(13,35,62,.25);cursor:pointer;display:grid;place-items:center}
+.aircraft-map-marker svg{width:22px;height:22px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.14))}
+.fleet-list-card{min-width:0}
+.fleet-list-card .search-field{margin-bottom:12px}
+.fleet-aircraft-list{max-height:570px;overflow:auto;display:grid;gap:5px}
+.fleet-aircraft-row{width:100%;border:1px solid transparent;border-radius:9px;background:transparent;color:var(--ink);display:flex;align-items:center;gap:10px;padding:10px;text-align:left;cursor:pointer;transition:background .15s,border-color .15s}
+.fleet-aircraft-row:hover,.fleet-aircraft-row.selected{background:var(--blue-soft);border-color:#d9e8fa}
+.fleet-row-icon{width:32px;height:32px;display:grid;place-items:center;border-radius:8px;background:var(--surface-2);color:var(--blue)}
+.fleet-row-copy{display:grid;gap:4px;min-width:0;flex:1}
+.fleet-row-copy b{font-size:11px}.fleet-row-copy small{font-size:9px;color:var(--muted)}
+.fleet-row-number{font-size:10px;color:var(--muted);font-weight:700}
+.aircraft-detail-card{grid-column:1/-1}
+.aircraft-detail-card .section-head h2{font-size:22px;margin:4px 0}
+.aircraft-photo-frame{height:300px;position:relative;overflow:hidden;border-radius:11px;background:var(--surface-2);margin-bottom:17px}
+.aircraft-photo-frame img{width:100%;height:100%;object-fit:cover;animation:photoFade .45s ease}
+.photo-credit{position:absolute;right:13px;bottom:12px;padding:6px 0 0;border-top:1px solid rgba(255,255,255,.75);color:#fff;font-size:9px;text-shadow:0 1px 4px rgba(0,0,0,.75);max-width:75%;text-align:right}
+@keyframes photoFade{from{opacity:.35}to{opacity:1}}
+.aircraft-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.aircraft-facts>div{background:var(--surface);padding:13px;display:grid;gap:6px;min-width:0}
+.aircraft-facts small{font-size:9px;color:var(--muted)}
+.aircraft-facts b{font-size:11px;overflow-wrap:anywhere}
+.aircraft-detail-actions{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap}
+@media(max-width:1050px){.fleet-layout{grid-template-columns:1fr}.fleet-list-card{order:2}.fleet-map-card{order:1}.aircraft-detail-card{order:3}.fleet-map{height:440px}.fleet-aircraft-list{max-height:280px;grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.fleet-map{height:360px}.map-legend{gap:9px}.map-legend span{font-size:9px}.fleet-aircraft-list{grid-template-columns:1fr}.aircraft-photo-frame{height:210px}.aircraft-facts{grid-template-columns:repeat(2,minmax(0,1fr))}.brand-logo{width:37px;height:37px}}
