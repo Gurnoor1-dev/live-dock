@@ -32,7 +32,7 @@ function roleName(role:number){return role===2?"Owner":role===1?"Admin":"Member"
 function statusName(status:number){return ({0:"Unknown",1:"Scheduled",2:"Boarding",3:"Boarded",4:"Taxiing to runway",6:"In flight",7:"Diverted",8:"Delayed",9:"Cancelled",10:"Taxiing to parking",11:"Arrived"} as Record<number,string>)[status]??"Unknown";}
 function visibilityName(value:number){return value===1?"Visible":value===2?"Hangared":"Unknown";}
 function dateTime(value:string,timeless=false){return timeless?"Timeless":value?.startsWith("0001-")?"—":value?new Date(value).toLocaleString():"—";}
-function aircraftCategory(code:string){const value=code.toUpperCase();if(/^(A33|A34|A35|A38|B74|B76|B77|B78|B79|MD1|DC1)/.test(value))return "Wide-body";if(/^(A19|A20|A21|B70|B71|B72|B73|B75|E17|E19|CRJ)/.test(value))return "Narrow-body";if(/^(C17|C13|C30|C5|AN2|AN7|DH8)/.test(value))return "Regional / cargo";return "Unknown";}
+function aircraftCategory(code:string){const value=code.toUpperCase();if(/(A33|A34|A35|A38|B74|B76|B77|B78|B79|777|787|330|340|350|380|747|767|MD1|DC1)/.test(value))return "Wide-body";if(/(A19|A20|A21|B70|B71|B72|B73|B75|737|319|320|321|220|E17|E19|CRJ)/.test(value))return "Narrow-body";if(/(C17|C13|C30|C5|AN2|AN7|DH8)/.test(value))return "Regional / cargo";return "Unknown";}
 function haversineKm(a:{latitude:number;longitude:number},b:{latitude:number;longitude:number}){const rad=(n:number)=>n*Math.PI/180;const dLat=rad(b.latitude-a.latitude),dLon=rad(b.longitude-a.longitude);const value=Math.sin(dLat/2)**2+Math.cos(rad(a.latitude))*Math.cos(rad(b.latitude))*Math.sin(dLon/2)**2;return 6371*2*Math.atan2(Math.sqrt(value),Math.sqrt(1-value));}
 
 export function InfiniteFlightDashboard(){
@@ -62,6 +62,7 @@ export function InfiniteFlightDashboard(){
   const mapRef=useRef<maplibregl.Map|null>(null);
   const markerRefs=useRef<maplibregl.Marker[]>([]);
   const hubMarkerRefs=useRef<maplibregl.Marker[]>([]);
+  const mapHasFitted=useRef(false);
   const [positions,setPositions]=useState<Record<string,Position>>({});
   const [selectedAircraft,setSelectedAircraft]=useState<Aircraft|null>(null);
   const [gallery,setGallery]=useState<GalleryManifest|null>(null);
@@ -151,6 +152,7 @@ export function InfiniteFlightDashboard(){
 
   useEffect(()=>{
     if(active!=="Fleet"||!mapContainer.current||!organization)return;
+    mapHasFitted.current=false;
     const map=new maplibregl.Map({
       container:mapContainer.current,
       style:theme==="dark"?"https://tiles.openfreemap.org/styles/dark":"https://tiles.openfreemap.org/styles/positron",
@@ -200,6 +202,11 @@ export function InfiniteFlightDashboard(){
       element.addEventListener("click",()=>setSelectedAircraft(aircraftItem));
       const marker=new maplibregl.Marker({element,rotationAlignment:"map",pitchAlignment:"map"}).setLngLat([position.longitude,position.latitude]).setRotation(position.heading||0).addTo(map);
       markerRefs.current.push(marker);
+    }
+    if(!mapHasFitted.current){
+      const points=Object.values(positions).filter(p=>Number.isFinite(p.latitude)&&Number.isFinite(p.longitude));
+      if(points.length>1){const bounds=new maplibregl.LngLatBounds();points.forEach(p=>bounds.extend([p.longitude,p.latitude]));map.fitBounds(bounds,{padding:70,maxZoom:6});mapHasFitted.current=true;}
+      else if(points.length===1){map.flyTo({center:[points[0].longitude,points[0].latitude],zoom:5});mapHasFitted.current=true;}
     }
   },[aircraft,positions]);
 
