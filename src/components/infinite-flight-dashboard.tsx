@@ -10,6 +10,7 @@ type Member={userId:string;username:string|null;role:number;joinedAt:string;acti
 type Crew={userId:string;username:string|null;role:number};
 type Schedule={id:string;status:number;callsign:string;organizationId:string;aircraftId:string;flightType:number;originIcao:string;destinationIcao:string;isTimeless:boolean;scheduledDepartureUtc:string;scheduledArrivalUtc:string;briefing:string|null;flightPlan:string|null;crew:Crew[];sequence:number};
 type Tab="Fleet"|"Schedules"|"Crew"|"Admin";
+const ORGANIZATION_ID="d50dcc80-8dac-4608-970c-61d6a4739488";
 
 async function api(path:string,init:RequestInit={}) {
   const response=await fetch(`/api/if${path}`,{
@@ -28,8 +29,7 @@ function dateTime(value:string,timeless=false){return timeless?"Timeless":value?
 
 export function InfiniteFlightDashboard(){
   const [auth,setAuth]=useState<"checking"|"signed-out"|"signed-in">("checking");
-  const [orgs,setOrgs]=useState<Organization[]>([]);
-  const [orgId,setOrgId]=useState("");
+  const [organization,setOrganization]=useState<Organization|null>(null);
   const [aircraft,setAircraft]=useState<Aircraft[]>([]);
   const [members,setMembers]=useState<Member[]>([]);
   const [schedules,setSchedules]=useState<Schedule[]>([]);
@@ -51,72 +51,50 @@ export function InfiniteFlightDashboard(){
   const [crewSelections,setCrewSelections]=useState<Record<string,string>>({});
   const [crewRoles,setCrewRoles]=useState<Record<string,string>>({});
 
-  const organization=orgs.find(item=>item.id===orgId)||orgs[0]||null;
   const canManage=Boolean(organization&&(organization.role===1||organization.role===2));
   const visibleAircraft=useMemo(()=>aircraft.filter(item=>item.registration.toLowerCase().includes(query.toLowerCase())),[aircraft,query]);
   const liveSchedules=schedules.filter(item=>[1,2,3,4,6].includes(item.status));
 
-  async function loadOrganization(id:string){
-    setBusy(true);setError("");
+  async function loadOrganization(){
+    setBusy(true);setError("");setNotice("");
     try{
-      const [aircraftResult,membersResult,scheduleResult]=await Promise.all([
-        api(`/live/organizations/${id}/aircraft`),
-        api(`/live/organizations/${id}/members`),
-        api(`/live/organizations/${id}/schedules?page=1&pageSize=100`)
+      const [organizationResult,aircraftResult,membersResult,scheduleResult]=await Promise.all([
+        api("/live/organizations/"+ORGANIZATION_ID),
+        api("/live/organizations/"+ORGANIZATION_ID+"/aircraft"),
+        api("/live/organizations/"+ORGANIZATION_ID+"/members"),
+        api("/live/organizations/"+ORGANIZATION_ID+"/schedules?page=1&pageSize=100")
       ]);
+      setOrganization(organizationResult as Organization);
       setAircraft(Array.isArray(aircraftResult)?aircraftResult:[]);
       setMembers(Array.isArray(membersResult)?membersResult:[]);
       setSchedules(Array.isArray(scheduleResult)?scheduleResult:(scheduleResult?.items||[]));
-    }catch(e){setError(e instanceof Error?e.message:"Unable to load organization data.");}
-    finally{setBusy(false);}
-  }
-
-  async function loadOrganizations(){
-    setError("");
-    try{
-      const result=await api("/live/organizations");
-      const list=Array.isArray(result)?result:[];
-      setOrgs(list);
-      const nextId=list.some((item:Organization)=>item.id===orgId)?orgId:list[0]?.id||"";
-      setOrgId(nextId);
-      if(nextId) await loadOrganization(nextId);
-      else {setAircraft([]);setMembers([]);setSchedules([]);}
-    }catch(e){setError(e instanceof Error?e.message:"Unable to load your Infinite Flight organizations.");}
+    }catch(e){
+      setOrganization(null);setAircraft([]);setMembers([]);setSchedules([]);
+      setError(e instanceof Error?e.message:"Unable to load the Virtual Blue workspace.");
+    }finally{setBusy(false);}
   }
 
   useEffect(()=>{
     let mounted=true;
-    fetch("/api/auth/if/session",{cache:"no-store"}).then(r=>r.json()).then(async data=>{
-      if(!mounted)return;
-      if(!data.authenticated){setAuth("signed-out");return;}
-      setAuth("signed-in");
+    (async()=>{
       try{
-        const result=await api("/live/organizations");
+        const response=await fetch("/api/auth/if/session",{cache:"no-store"});
+        const data=await response.json();
         if(!mounted)return;
-        const list=Array.isArray(result)?result:[];
-        setOrgs(list);
-        const id=list[0]?.id||"";
-        setOrgId(id);
-        if(id){
-          const [a,m,s]=await Promise.all([
-            api(`/live/organizations/${id}/aircraft`),
-            api(`/live/organizations/${id}/members`),
-            api(`/live/organizations/${id}/schedules?page=1&pageSize=100`)
-          ]);
-          if(!mounted)return;
-          setAircraft(Array.isArray(a)?a:[]);
-          setMembers(Array.isArray(m)?m:[]);
-          setSchedules(Array.isArray(s)?s:(s?.items||[]));
-        }
-      }catch(e){if(mounted)setError(e instanceof Error?e.message:"Unable to load Infinite Flight data.");}
-    }).catch(()=>{if(mounted)setAuth("signed-out");});
+        if(!data.authenticated){setAuth("signed-out");return;}
+        setAuth("signed-in");
+        await loadOrganization();
+      }catch(e){
+        if(mounted){setAuth("signed-in");setError(e instanceof Error?e.message:"Unable to connect to Virtual Blue.");}
+      }
+    })();
     return()=>{mounted=false;};
   },[]);
 
-  async function refresh(){if(organization)await loadOrganization(organization.id);else await loadOrganizations();}
+  async function refresh(){await loadOrganization();}
   async function signOut(){
     await fetch("/api/auth/if/logout",{method:"POST"});
-    setAuth("signed-out");setOrgs([]);setAircraft([]);setMembers([]);setSchedules([]);setOrgId("");
+    setAuth("signed-out");setOrganization(null);setAircraft([]);setMembers([]);setSchedules([]);
   }
   async function createSchedule(event:FormEvent){
     event.preventDefault();if(!canManage||!aircraftId)return;
@@ -160,12 +138,12 @@ export function InfiniteFlightDashboard(){
   }
 
   if(auth==="checking")return <main className="auth-page"><div className="auth-card"><span className="brand-mark">VB</span><h1>Preparing your flight deck</h1><p className="muted">Checking your Infinite Flight session…</p></div></main>;
-  if(auth==="signed-out")return <main className="auth-page"><Link href="/" className="brand"><span className="brand-mark">VB</span><span>VIRTUAL BLUE<small>FLEET OPERATIONS</small></span></Link><section className="auth-card"><p className="eyebrow">INFINITE FLIGHT · SECURE SIGN IN</p><h1>Welcome aboard.</h1><p className="muted">Continue with your Infinite Flight account. Your airline membership, fleet and schedules are read directly from Infinite Flight.</p><button className="primary-button full" onClick={()=>window.location.assign("/api/auth/if/login")}>Continue with Infinite Flight <ArrowUpRight size={15}/></button><p className="fine-print">Virtual Blue does not use email/password accounts. Authentication is handled by Infinite Flight OAuth 2.0.</p></section></main>;
+  if(auth==="signed-out")return <main className="auth-page"><Link href="/" className="brand"><span className="brand-mark">VB</span><span>VIRTUAL BLUE<small>FLEET OPERATIONS</small></span></Link><section className="auth-card"><p className="eyebrow">INFINITE FLIGHT · SECURE SIGN IN</p><h1>Welcome aboard.</h1><p className="muted">Continue with your Infinite Flight account. Your Virtual Blue membership, fleet and schedules are read directly from Infinite Flight.</p><button className="primary-button full" onClick={()=>window.location.assign("/api/auth/if/login")}>Continue with Infinite Flight <ArrowUpRight size={15}/></button><p className="fine-print">Virtual Blue does not use email/password accounts. Authentication is handled by Infinite Flight OAuth 2.0.</p></section></main>;
 
   return <div className="app-frame" data-theme={theme}>
     <aside className={`sidebar ${mobileNav?"open":""}`}>
       <div className="brand"><span className="brand-mark">VB</span><span>VIRTUAL BLUE<small>FLEET OPERATIONS</small></span><button className="icon-button mobile-close" onClick={()=>setMobileNav(false)} aria-label="Close menu"><X size={18}/></button></div>
-      <div className="workspace"><span className="workspace-icon">VB</span><span><b>{organization?.name||"Infinite Flight"}</b><small>{organization?roleName(organization.role):"No airline membership"}</small></span><ChevronDown size={15}/></div>
+      <div className="workspace"><span className="workspace-icon">VB</span><span><b>Virtual Blue</b><small>{organization?roleName(organization.role):"Organisation workspace"}</small></span></div>
       <p className="nav-caption">OPERATIONS</p>
       <nav>{(["Fleet","Schedules","Crew"] as Tab[]).map((item,index)=><button key={item} className={active===item?"nav-item active":"nav-item"} onClick={()=>{setActive(item);setMobileNav(false);}}>{index===0?<Plane size={17}/>:index===1?<CalendarDays size={17}/>:<Users size={17}/>}<span>{item}</span></button>)}</nav>
       <p className="nav-caption secondary">MANAGEMENT</p>
@@ -176,9 +154,9 @@ export function InfiniteFlightDashboard(){
     <main className="main-area">
       <header className="topbar"><div className="topbar-left"><button className="icon-button mobile-menu" onClick={()=>setMobileNav(true)} aria-label="Open menu"><Menu size={19}/></button><span className="breadcrumb">Virtual Blue <b>/</b> {active}</span></div><div className="topbar-actions"><span className="live-indicator"><i/> IF API connected</span><button className="icon-button" onClick={refresh} aria-label="Refresh Infinite Flight data" title="Refresh"><RefreshCw size={16}/></button><button className="icon-button" onClick={()=>setTheme(theme==="light"?"dark":"light")} aria-label="Toggle theme">{theme==="light"?<Moon size={17}/>:<Sun size={17}/>}</button></div></header>
       <div className="content">
-        <div className="page-heading"><div><p className="eyebrow">VIRTUAL BLUE · INFINITE FLIGHT LIVE</p><h1>{active}</h1><p className="muted">{active==="Fleet"?"Your organisation's live aircraft from Infinite Flight.":active==="Schedules"?"Schedules are created and managed directly in Infinite Flight.":active==="Crew"?"Live organisation members and assigned schedule crew.":"Authorised organisation operations."}</p></div><div className="heading-actions">{orgs.length>1&&<select className="org-select" value={orgId} onChange={e=>{setOrgId(e.target.value);void loadOrganization(e.target.value);}}>{orgs.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}</select>}<span className="date-chip"><CalendarDays size={15}/>{new Intl.DateTimeFormat("en",{dateStyle:"medium"}).format(new Date())}</span></div></div>
+        <div className="page-heading"><div><p className="eyebrow">VIRTUAL BLUE · INFINITE FLIGHT LIVE</p><h1>{active}</h1><p className="muted">{active==="Fleet"?"Virtual Blue aircraft, fleet positions and registration records.":active==="Schedules"?"Plan and manage Virtual Blue flights directly through Infinite Flight.":active==="Crew"?"Virtual Blue pilots, roles and assigned schedule crew.":"Virtual Blue schedule publishing and crew administration."}</p></div><div className="heading-actions"><span className="date-chip"><CalendarDays size={15}/>{new Intl.DateTimeFormat("en",{dateStyle:"medium"}).format(new Date())}</span></div></div>
         {error&&<p className="form-error" role="alert">{error}</p>}{notice&&<p className="form-success" role="status">{notice}</p>}
-        {!organization&&<section className="section-card"><div className="empty-state"><span className="empty-icon"><Compass size={20}/></span><b>No Live organisation found</b><p>This Infinite Flight account is authenticated, but the API returned no Live organisation memberships. Join Virtual Blue in Infinite Flight, then refresh this page.</p><button className="outline-button" onClick={loadOrganizations}>Check again</button></div></section>}
+        {!organization&&<section className="section-card"><div className="empty-state"><span className="empty-icon"><Compass size={20}/></span><b>Virtual Blue workspace unavailable</b><p>This Infinite Flight account could not access the configured Virtual Blue organisation. Confirm that your account is a member and has the required API permissions, then try again.</p><button className="outline-button" onClick={()=>void loadOrganization()} disabled={busy}>{busy?"Connecting…":"Retry connection"}</button></div></section>}
         {organization&&<><div className="stat-grid"><Stat label="Fleet aircraft" value={aircraft.length} icon={<Plane/>} note="From Live organisation"/><Stat label="Live schedules" value={schedules.length} icon={<CalendarDays/>} note="Open fleet schedules"/><Stat label="Organisation members" value={members.length} icon={<Users/>} note="Current membership"/><Stat label="Active legs" value={liveSchedules.length} icon={<RadioTower/>} note="Boarding through in-flight"/></div>
         {active==="Fleet"&&<section className="section-card"><div className="section-head"><div><h2>Organisation fleet</h2><p>Aircraft records are fetched directly from Infinite Flight.</p></div><span className="count-pill">{visibleAircraft.length} aircraft</span></div><div className="toolbar"><div className="search-field"><Plane size={15}/><input placeholder="Search aircraft registration" value={query} onChange={e=>setQuery(e.target.value)}/></div></div>{visibleAircraft.length?<div className="table-wrap"><table><thead><tr><th>Registration</th><th>Fleet rank</th><th>Visibility</th><th>Fleet slot</th><th>Record</th></tr></thead><tbody>{visibleAircraft.map(a=><tr key={a.id}><td className="mono"><b>{a.registration}</b></td><td>{a.fleetRank}</td><td>{visibilityName(a.visibility)}</td><td>{a.isFleetActiveSlot?"Active slot":"Storage"}</td><td><span className={a.status===0?"status available":"status stored"}><i/>{a.status===0?"Active":"Deleted"}</span></td></tr>)}</tbody></table></div>:<Empty title="No aircraft found" body="The Infinite Flight API returned no active aircraft for this organisation."/>}</section>}
         {active==="Schedules"&&<section className="section-card"><div className="section-head"><div><h2>Fleet schedules</h2><p>Schedule changes are written directly to Infinite Flight.</p></div><span className="count-pill">{schedules.length} schedules</span></div>{schedules.length?<div className="table-wrap"><table><thead><tr><th>Callsign</th><th>Route</th><th>Departure</th><th>Arrival</th><th>Status</th><th>Crew</th>{canManage&&<th/>}</tr></thead><tbody>{schedules.map(s=><tr key={s.id}><td className="mono"><b>{s.callsign}</b></td><td className="mono">{s.originIcao} → {s.destinationIcao}</td><td>{dateTime(s.scheduledDepartureUtc,s.isTimeless)}</td><td>{dateTime(s.scheduledArrivalUtc,s.isTimeless)}</td><td><span className="status scheduled"><i/>{statusName(s.status)}</span></td><td>{s.crew?.length||0}/3</td>{canManage&&<td><button className="row-action danger" onClick={()=>void deleteSchedule(s.id)} disabled={busy} title="Delete schedule">Delete</button></td>}</tr>)}</tbody></table></div>:<Empty title="No open schedules" body="When Virtual Blue publishes schedules in Infinite Flight, they will appear here."/>}</section>}
