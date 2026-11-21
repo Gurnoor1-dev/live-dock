@@ -233,7 +233,14 @@ for select to authenticated using (
   )
 );
 create policy "pilots create own crew requests" on public.crew_requests
-for insert to authenticated with check (user_id = (select auth.uid()));
+for insert to authenticated with check (
+  user_id = (select auth.uid()) and exists (
+    select 1 from public.flight_legs l
+    where l.id = leg_id
+      and private.is_org_member(l.organization_id)
+      and l.status in ('scheduled','boarding')
+  )
+);
 create policy "admins review crew requests" on public.crew_requests
 for update to authenticated using (
   exists (select 1 from public.flight_legs l where l.id = leg_id and private.is_org_admin(l.organization_id))
@@ -247,11 +254,29 @@ for select to authenticated using (
     select 1 from public.flight_legs l where l.id = leg_id and private.is_org_admin(l.organization_id)
   )
 );
-create policy "pilots create own flight logs" on public.flight_logs
-for insert to authenticated with check (user_id = (select auth.uid()));
-create policy "pilots update own flight logs" on public.flight_logs
-for update to authenticated using (user_id = (select auth.uid()))
-with check (user_id = (select auth.uid()));
+create policy "assigned pilots create flight logs" on public.flight_logs
+for insert to authenticated with check (
+  user_id = (select auth.uid()) and exists (
+    select 1 from public.flight_legs l
+    where l.id = leg_id
+      and private.is_org_member(l.organization_id)
+      and (l.pilot_id = (select auth.uid()) or l.copilot_id = (select auth.uid()))
+  )
+);
+create policy "assigned pilots update own flight logs" on public.flight_logs
+for update to authenticated using (
+  user_id = (select auth.uid()) and exists (
+    select 1 from public.flight_legs l
+    where l.id = leg_id
+      and (l.pilot_id = (select auth.uid()) or l.copilot_id = (select auth.uid()))
+  )
+) with check (
+  user_id = (select auth.uid()) and exists (
+    select 1 from public.flight_legs l
+    where l.id = leg_id
+      and (l.pilot_id = (select auth.uid()) or l.copilot_id = (select auth.uid()))
+  )
+);
 
 create policy "admins view admin activity" on public.admin_activity
 for select to authenticated using (private.is_org_admin(organization_id));
