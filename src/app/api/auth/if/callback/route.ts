@@ -45,12 +45,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=token", url.origin));
   }
 
+  const response = NextResponse.redirect(new URL("/", url.origin));
   await saveIFSession({
     accessToken: token.access_token,
     refreshToken: token.refresh_token,
     expiresAt: Date.now() + Math.max(60, Number(token.expires_in ?? 1800)) * 1000
-  });
-  const response = NextResponse.redirect(new URL("/", url.origin));
+  }, response);
   response.cookies.set(IF_STATE_COOKIE, "", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 0 });
   response.cookies.set(IF_VERIFIER_COOKIE, "", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 0 });
   return response;
