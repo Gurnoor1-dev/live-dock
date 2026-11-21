@@ -178,7 +178,7 @@ async function readGalleryManifest(): Promise<GalleryManifest> {
     });
     return initial;
   }
-  const response = await fetch(manifestBlob.url, { cache: "no-store" });
+  const response = await fetch(manifestBlob.url + "?v=" + Date.now(), { cache: "no-store" });
   if (!response.ok) throw new Error("The aircraft gallery manifest could not be read from Blob.");
   const parsed = await response.json() as GalleryManifest;
   if (!parsed || typeof parsed !== "object" || !parsed.aircraft) throw new Error("The aircraft gallery manifest is invalid. Check aircraft-gallery/manifest.json.");
