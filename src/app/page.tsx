@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { FleetDashboard } from "@/components/fleet-dashboard";
 import type { FlightLeg } from "@/lib/types";
