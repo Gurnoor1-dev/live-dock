@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import Link from "next/link";
 import { Activity, ArrowUpRight, CalendarDays, ChevronDown, Command, Compass, LogOut, Menu, Moon, Plane, RadioTower, RefreshCw, ShieldCheck, Sun, Users, X } from "lucide-react";
 
 type Organization={id:string;name:string;role:number;description?:string|null;worldType:number;operationType:number};
@@ -159,7 +160,7 @@ export function InfiniteFlightDashboard(){
   }
 
   if(auth==="checking")return <main className="auth-page"><div className="auth-card"><span className="brand-mark">VB</span><h1>Preparing your flight deck</h1><p className="muted">Checking your Infinite Flight session…</p></div></main>;
-  if(auth==="signed-out")return <main className="auth-page"><a href="/" className="brand"><span className="brand-mark">VB</span><span>VIRTUAL BLUE<small>FLEET OPERATIONS</small></span></a><section className="auth-card"><p className="eyebrow">INFINITE FLIGHT · SECURE SIGN IN</p><h1>Welcome aboard.</h1><p className="muted">Continue with your Infinite Flight account. Your airline membership, fleet and schedules are read directly from Infinite Flight.</p><a className="primary-button full" href="/api/auth/if/login">Continue with Infinite Flight <ArrowUpRight size={15}/></a><p className="fine-print">Virtual Blue does not use email/password accounts. Authentication is handled by Infinite Flight OAuth 2.0.</p></section></main>;
+  if(auth==="signed-out")return <main className="auth-page"><Link href="/" className="brand"><span className="brand-mark">VB</span><span>VIRTUAL BLUE<small>FLEET OPERATIONS</small></span></Link><section className="auth-card"><p className="eyebrow">INFINITE FLIGHT · SECURE SIGN IN</p><h1>Welcome aboard.</h1><p className="muted">Continue with your Infinite Flight account. Your airline membership, fleet and schedules are read directly from Infinite Flight.</p><button className="primary-button full" onClick={()=>window.location.assign("/api/auth/if/login")}>Continue with Infinite Flight <ArrowUpRight size={15}/></button><p className="fine-print">Virtual Blue does not use email/password accounts. Authentication is handled by Infinite Flight OAuth 2.0.</p></section></main>;
 
   return <div className="app-frame" data-theme={theme}>
     <aside className={`sidebar ${mobileNav?"open":""}`}>
