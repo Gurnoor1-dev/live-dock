@@ -29,11 +29,15 @@ Get the publishable key from Supabase Dashboard → Project Settings → API Key
 
 ## 3. Database setup
 
-The Live Dock project currently has no public tables. Open Supabase Dashboard → SQL Editor → New query, paste `supabase/migrations/202611210001_virtual_blue_fleet.sql`, and run it once.
+The initial schema and its two hardening migrations have already been applied to the Live Dock project. For a fresh Supabase project or a full rebuild, run these SQL files in this exact order from Supabase Dashboard → SQL Editor:
 
-It creates profiles, organizations, membership roles, aircraft, flight legs, crew requests, flight logs, admin activity, indexes, triggers and row-level security policies. Confirm that the tables appear in Table Editor.
+1. `supabase/migrations/202611210001_virtual_blue_fleet.sql` — core tables, roles, triggers and RLS.
+2. `supabase/migrations/202611210002_rls_and_indexes.sql` — tighten policy overlap and add foreign-key indexes.
+3. `supabase/migrations/202611210003_profile_privacy_and_leg_integrity.sql` — restrict pilot profile visibility and validate same-organization aircraft/pilot assignments.
 
-The migration is a first-run migration, not a script to blindly execute repeatedly. If it fails partway, inspect the completed objects before retrying.
+Confirm that all eight public tables appear in Table Editor and that RLS is enabled on each. Do not blindly rerun a migration after a partial failure; inspect the completed objects and migration history first.
+
+The security advisor was checked after setup and returned no findings. Performance advisor currently reports only unused-index notices because the tables are new and do not yet contain production traffic.
 
 ## 4. Supabase Auth
 
