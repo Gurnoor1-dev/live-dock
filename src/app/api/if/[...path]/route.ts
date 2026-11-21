@@ -45,8 +45,8 @@ function allowed(method: string, path: string) {
 }
 
 function ttlFor(method: string, path: string) {
-  if (method === "GET" && (path === "/sessions" || /^\\/sessions\\/[^/]+$/.test(path))) return 10 * 60_000;
-  if (path.startsWith("/sessions/") && (path.endsWith("/flights") || /\\/flights\\/[^/]+$/.test(path) || path.endsWith("/flights/flightplans") || path.endsWith("/atc") || path.endsWith("/route") || path.endsWith("/flightplan") || path.endsWith("/status") || path.endsWith("/atis"))) return 15_000;
+  if (method === "GET" && (path === "/sessions" || (path.startsWith("/sessions/") && path.split("/").length === 3))) return 10 * 60_000;
+  if (path.startsWith("/sessions/") && (path.endsWith("/flights") || path.includes("/flights/") || path.endsWith("/atc") || path.endsWith("/status") || path.endsWith("/atis"))) return 15_000;
   if (path.startsWith("/users/") || path === "/users") return 5 * 60_000;
   if (path === "/aircraft" || path === "/airports" || path === "/aircraft/liveries" || path.startsWith("/aircraft/") || path.startsWith("/airport/")) return 60 * 60_000;
   if (path.startsWith("/live/aircraft/") && path.endsWith("/position")) return 15_000;
