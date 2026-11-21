@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Activity, ArrowDownRight, ArrowUpRight, Bell, CalendarDays, ChevronDown, CircleHelp, Clock3, Command, Compass, FileText, Filter, Gauge, LayoutDashboard, LogOut, Menu, Moon, Plane, RadioTower, Search, Settings2, ShieldCheck, Sun, Users, Wrench, X } from "lucide-react";
+import { Activity, ArrowDownRight, ArrowUpRight, Bell, CalendarDays, ChevronDown, CircleHelp, Clock3, Command, Compass, FileText, Filter, Gauge, LayoutDashboard, LogOut, Menu, Moon, Plane, RadioTower, Search, Settings2, ShieldCheck, Sun, Wrench, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Aircraft, FlightLeg } from "@/lib/types";
 import { statusLabel } from "@/lib/types";
