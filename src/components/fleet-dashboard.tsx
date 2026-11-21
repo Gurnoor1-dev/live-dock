@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Activity, ArrowDownRight, ArrowUpRight, Bell, CalendarDays, ChevronDown, CircleHelp, Clock3, Command, Compass, FileText, Filter, Gauge, LayoutDashboard, LogOut, Menu, Moon, Plane, RadioTower, Search, Settings2, ShieldCheck, Sun, Users, Wrench, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -59,6 +59,6 @@ export function FleetDashboard({ user, organizations, aircraft, legs, setupRequi
     </main>
   </div>;
 }
-function Stat({label,value,note,icon,positive=false}:{label:string;value:number;note:string;icon:React.ReactNode;positive?:boolean}) { return <div className="stat-card"><div className="stat-top"><span>{label}</span><span className="stat-icon">{icon}</span></div><strong>{value.toLocaleString()}</strong><div className="stat-note">{positive ? <ArrowUpRight size={13}/> : <ArrowDownRight size={13}/>} {note}</div></div>; }
+function Stat({label,value,note,icon,positive=false}:{label:string;value:number;note:string;icon:ReactNode;positive?:boolean}) { return <div className="stat-card"><div className="stat-top"><span>{label}</span><span className="stat-icon">{icon}</span></div><strong>{value.toLocaleString()}</strong><div className="stat-note">{positive ? <ArrowUpRight size={13}/> : <ArrowDownRight size={13}/>} {note}</div></div>; }
 function Empty({title,body}:{title:string;body:string}) { return <div className="empty-state"><span className="empty-icon"><Command size={20}/></span><b>{title}</b><p>{body}</p></div>; }
 function LegRow({leg}:{leg:FlightLeg}) { return <div className="leg-row"><span className="leg-icon"><Plane size={16}/></span><span className="leg-route"><b>{leg.departure_airport} <i>→</i> {leg.arrival_airport}</b><small>{leg.flight_number ?? "Flight"} · {leg.aircraft?.registration ?? "Aircraft pending"}</small></span><span className="leg-time">{new Date(leg.scheduled_departure).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}</span><span className={`status ${leg.status}`}><i/>{statusLabel[leg.status]}</span></div>; }
