@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { IF_STATE_COOKIE, IF_VERIFIER_COOKIE, IF_SESSION_COOKIE } from "@/lib/infinite-flight/session";
+import { IF_STATE_COOKIE, IF_VERIFIER_COOKIE } from "@/lib/infinite-flight/session";
 import { saveIFSession } from "@/lib/infinite-flight/session";
 
 const TOKEN_URL = "https://api.infiniteflight.com/auth/v2/connect/token";
