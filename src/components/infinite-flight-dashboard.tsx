@@ -68,7 +68,6 @@ export function InfiniteFlightDashboard(){
   const [positions,setPositions]=useState<Record<string,Position>>({});
   const [selectedAircraft,setSelectedAircraft]=useState<Aircraft|null>(null);
   const [gallery,setGallery]=useState<GalleryManifest|null>(null);
-  const [aircraftDetails,setAircraftDetails]=useState<Record<string,any>>({});
   const [flightHistory,setFlightHistory]=useState<any[]>([]);
   const [photoIndex,setPhotoIndex]=useState(0);
   const [routeProgress,setRouteProgress]=useState<number|null>(null);
@@ -214,14 +213,7 @@ export function InfiniteFlightDashboard(){
     }
   },[aircraft,positions]);
 
-  useEffect(()=>{
-    if(!selectedAircraft)return;
-    setPhotoIndex(0);
-    let alive=true;
-    api("/live/aircraft/"+selectedAircraft.aircraftId).then(value=>{if(alive)setAircraftDetails(previous=>({...previous,[selectedAircraft.aircraftId]:value}));}).catch(()=>{});
-    return()=>{alive=false;};
-  },[selectedAircraft]);
-
+  useEffect(()=>{if(selectedAircraft)setPhotoIndex(0);},[selectedAircraft]);
 
   useEffect(()=>{
     let alive=true;
@@ -246,12 +238,13 @@ export function InfiniteFlightDashboard(){
 
   useEffect(()=>{
     if(!selectedAircraft||!selectedAircraft.aircraftId)return;
+    setFlightHistory([]);
     let alive=true;
     api("/live/aircraft/"+selectedAircraft.aircraftId+"/flights?page=1&pageSize=50").then(value=>{
       if(alive)setFlightHistory(Array.isArray(value)?value:(value?.items||[]));
     }).catch(()=>{if(alive)setFlightHistory([]);});
     return()=>{alive=false;};
-  },[selectedAircraft,active]);
+  },[selectedAircraft]);
 
 
   useEffect(()=>{
@@ -395,7 +388,7 @@ export function InfiniteFlightDashboard(){
           {selectedAircraft&&<section className="section-card aircraft-detail-card">
             <div className="section-head"><div><p className="eyebrow">AIRCRAFT RECORD</p><h2>{selectedAircraft.registration}</h2><p>Fleet number #{selectedAircraft.fleetRank} · {selectedPosition?.state===2?"In flight":selectedPosition?.state===1?"On ground":selectedPosition?.state===5?"Maintenance":selectedPosition?.state===4?"Stopped":"Status unknown"}</p></div><button className="icon-button" onClick={()=>setSelectedAircraft(null)} aria-label="Close aircraft details"><X size={17}/></button></div>
             {selectedPhotos.length>0&&<div className="aircraft-photo-frame"><img key={selectedPhotos[photoIndex]?.id} src={selectedPhotos[photoIndex]?.url} alt={selectedPhotos[photoIndex]?.altText||selectedAircraft.registration}/>{selectedPhotos[photoIndex]?.credit?.displayText&&<span className="photo-credit">{selectedPhotos[photoIndex].credit.displayText}</span>}</div>}
-            <div className="aircraft-route-card"><div><small>{selectedPosition?.state===2?"Current flight":"Next flight"}</small><b>{selectedActiveSchedule?.callsign||selectedNextSchedule?.callsign||"No scheduled flight"}</b></div><strong>{selectedActiveSchedule?selectedActiveSchedule.originIcao+" → "+selectedActiveSchedule.destinationIcao:selectedNextSchedule?selectedNextSchedule.originIcao+" → "+selectedNextSchedule.destinationIcao:"Route not scheduled"}</strong><span>{selectedActiveSchedule?"In progress":selectedNextSchedule?(selectedNextSchedule.crew?.length?"Crew assigned":"Ready to fly"):selectedPosition?.state===1?"Ready to fly":"No upcoming leg"}</span></div><div className="aircraft-facts"><div><small>Aircraft type</small><b>{aircraftTypes.find(type=>type.id===selectedAircraft.aircraftId)?.name||"Unknown"}</b></div><div><small>Aircraft ICAO</small><b>{aircraftDetails[selectedAircraft.aircraftId]?.icao||aircraftDetails[selectedAircraft.aircraftId]?.icaoCode||"Unknown"}</b></div><div><small>Aircraft category</small><b>{aircraftCategory(aircraftTypes.find(type=>type.id===selectedAircraft.aircraftId)?.name||"")}</b></div><div><small>Flight number</small><b>{selectedActiveSchedule?.callsign||"Unknown"}</b></div><div><small>Route progress</small><b>{routeProgress===null?"Unknown":routeProgress+"%"}</b></div><div><small>Departure / ETA</small><b>{selectedActiveSchedule?dateTime(selectedActiveSchedule.scheduledDepartureUtc)+" / "+dateTime(selectedActiveSchedule.scheduledArrivalUtc):selectedNextSchedule?dateTime(selectedNextSchedule.scheduledDepartureUtc):"Unknown"}</b></div><div><small>Heading</small><b>{selectedPosition?Math.round(selectedPosition.heading)+"°":"Unknown"}</b></div><div><small>Last pilot</small><b>{selectedPosition?.lastPilotUsername||"Unknown"}</b></div><div><small>Altitude</small><b>{selectedPosition?Math.round(selectedPosition.altitude).toLocaleString()+" ft":"Unknown"}</b></div><div><small>Ground speed</small><b>{selectedPosition?Math.round(selectedPosition.speed)+" kt":"Unknown"}</b></div><div><small>Vertical speed</small><b>{selectedPosition?Math.round(selectedPosition.verticalSpeed)+" ft/min":"Unknown"}</b></div><div><small>Last update</small><b>{selectedPosition?.updatedAt?dateTime(selectedPosition.updatedAt):"Unknown"}</b></div><div><small>Last flown</small><b>{flightHistory[0]?.actualArrivalUtc?dateTime(flightHistory[0].actualArrivalUtc):flightHistory[0]?.actualDepartureUtc?dateTime(flightHistory[0].actualDepartureUtc):"Unknown"}</b></div><div><small>Parked at</small><b>{selectedPosition?.state===1?parkedAirport:"—"}</b></div><div><small>Last movement</small><b>{selectedPosition?.updatedAt?dateTime(selectedPosition.updatedAt):"Unknown"}</b></div><div><small>Schedules</small><b>{schedules.filter(item=>item.aircraftId===selectedAircraft.aircraftId).length}</b></div></div>
+            <div className="aircraft-route-card"><div><small>{selectedPosition?.state===2?"Current flight":"Next flight"}</small><b>{selectedActiveSchedule?.callsign||selectedNextSchedule?.callsign||"No scheduled flight"}</b></div><strong>{selectedActiveSchedule?selectedActiveSchedule.originIcao+" → "+selectedActiveSchedule.destinationIcao:selectedNextSchedule?selectedNextSchedule.originIcao+" → "+selectedNextSchedule.destinationIcao:"Route not scheduled"}</strong><span>{selectedActiveSchedule?"In progress":selectedNextSchedule?(selectedNextSchedule.crew?.length?"Crew assigned":"Ready to fly"):selectedPosition?.state===1?"Ready to fly":"No upcoming leg"}</span></div><div className="aircraft-facts"><div><small>Aircraft type</small><b>{aircraftTypes.find(type=>type.id===selectedAircraft.aircraftId)?.name||"Unknown"}</b></div><div><small>Aircraft ICAO</small><b>{"Not supplied by Infinite Flight API"}</b></div><div><small>Aircraft category</small><b>{aircraftCategory(aircraftTypes.find(type=>type.id===selectedAircraft.aircraftId)?.name||"")}</b></div><div><small>Flight number</small><b>{selectedActiveSchedule?.callsign||"Unknown"}</b></div><div><small>Route progress</small><b>{routeProgress===null?"Unknown":routeProgress+"%"}</b></div><div><small>Departure / ETA</small><b>{selectedActiveSchedule?dateTime(selectedActiveSchedule.scheduledDepartureUtc)+" / "+dateTime(selectedActiveSchedule.scheduledArrivalUtc):selectedNextSchedule?dateTime(selectedNextSchedule.scheduledDepartureUtc):"Unknown"}</b></div><div><small>Heading</small><b>{selectedPosition?Math.round(selectedPosition.heading)+"°":"Unknown"}</b></div><div><small>Last pilot</small><b>{selectedPosition?.lastPilotUsername||"Unknown"}</b></div><div><small>Altitude</small><b>{selectedPosition?Math.round(selectedPosition.altitude).toLocaleString()+" ft":"Unknown"}</b></div><div><small>Ground speed</small><b>{selectedPosition?Math.round(selectedPosition.speed)+" kt":"Unknown"}</b></div><div><small>Vertical speed</small><b>{selectedPosition?Math.round(selectedPosition.verticalSpeed)+" ft/min":"Unknown"}</b></div><div><small>Last update</small><b>{selectedPosition?.updatedAt?dateTime(selectedPosition.updatedAt):"Unknown"}</b></div><div><small>Last flown</small><b>{flightHistory[0]?.actualArrivalUtc?dateTime(flightHistory[0].actualArrivalUtc):flightHistory[0]?.actualDepartureUtc?dateTime(flightHistory[0].actualDepartureUtc):"Unknown"}</b></div><div><small>Parked at</small><b>{selectedPosition?.state===1?parkedAirport:"—"}</b></div><div><small>Last movement</small><b>{selectedPosition?.updatedAt?dateTime(selectedPosition.updatedAt):"Unknown"}</b></div><div><small>Schedules</small><b>{schedules.filter(item=>item.aircraftId===selectedAircraft.aircraftId).length}</b></div></div>
             <div className="aircraft-detail-actions"><button className="outline-button" onClick={()=>setActive("History")}>View flight history</button><button className="outline-button" onClick={()=>{setActive("Schedules");setQuery(selectedAircraft.registration);}}>View schedules</button></div>
           </section>}
         </div>}
