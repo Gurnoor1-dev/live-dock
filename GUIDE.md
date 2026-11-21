@@ -44,7 +44,7 @@ In Supabase Dashboard → Authentication → URL Configuration:
 
 Enable Email as an auth provider. Configure SMTP before public launch. The app signs pilots in with email magic links and exchanges the PKCE code in the callback route.
 
-The first user can create the Virtual Blue organization through the authenticated organizations API. The database trigger automatically makes the creator its owner. Organization creation UI and admin CRUD screens are not included in this first pass.
+The first signed-in user without an organization sees the workspace setup form. Creating the Virtual Blue organization automatically makes that user its owner. The Admin tab includes initial forms to register aircraft and publish flight legs; editing, deletion and member invitation screens remain follow-on work.
 
 ## 5. Run and validate locally
 
@@ -96,8 +96,8 @@ The reference includes a SimBrief helper and flight dispatch modules. The databa
 
 ## 10. Feature status
 
-**Implemented:** Next.js app shell, Virtual Blue branding, fleet overview, aircraft search/filter, operations board, schedule read view, email magic-link authentication, SSR cookie refresh, initial Supabase schema and RLS.
+**Implemented:** Next.js 16 app shell, Virtual Blue branding, fleet overview, aircraft search/filter, operations board, schedule read view, organization onboarding, initial aircraft and flight-leg creation forms for admins, email magic-link authentication, SSR proxy session refresh, Supabase schema and RLS.
 
-**Still to build:** organization onboarding UI, admin CRUD, IF OAuth linking and token persistence, crew seat request/review workflow, live tracking/polling, interactive route globe, complete flight bag, SimBrief OFP import, dispatch tools, aircraft history and pilot activity analytics.
+**Still to build:** aircraft/leg edit and delete screens, member invitation and role management, IF OAuth linking and token persistence, crew seat request/review workflow, live tracking/polling, interactive route globe, complete flight bag, SimBrief OFP import, dispatch tools, aircraft history and pilot activity analytics.
 
 The source reference remains in `example/` unchanged for continued feature-by-feature porting. This is a functional foundation, not a claim that every legacy backend-dependent feature is already live.
