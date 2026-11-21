@@ -1,112 +1,193 @@
-# Virtual Blue — Setup & Operations Guide
+# Virtual Blue — Infinite Flight API v3 Setup Guide
 
-This guide covers local development, the Live Dock Supabase project and production setup.
+This application uses **Infinite Flight PublicApi v3 as the source of truth** for Virtual Blue's Live organisation, fleet, members, schedules, schedule crew and flight records.
 
-## 1. Prerequisites
+The browser talks only to Next.js `/api/*` routes. Next.js performs OAuth token exchange/refresh and proxies allowlisted requests to Infinite Flight. Supabase email authentication and Supabase-backed fleet records are no longer part of the application flow.
+
+## 1. Requirements
 
 - Node.js 22 or newer and npm
-- Access to Supabase project **Live Dock** (`npsftsvbcqkwsjtlgckj`)
-- GitHub access to `Gurnoor1-dev/live-dock`
-- Vercel account for hosting
-- Infinite Flight OAuth application details before enabling IF account linking
+- GitHub repository: `Gurnoor1-dev/live-dock`
+- Vercel project: `virtual-blue-live`
+- An Infinite Flight OAuth2 **Confidential** client
+- A Virtual Blue Live organisation in Infinite Flight, with the users who should access the portal as members
 
-## 2. Local environment
+## 2. Create the Infinite Flight OAuth client
 
-Copy `.env.example` to `.env.local`:
+1. Open [Infinite Flight API clients](https://infiniteflight.com/account/api-keys).
+2. In the **v3 OAuth2 clients** section, create a **Confidential** client (not a Public PKCE client).
+3. Add these exact redirect URIs:
+   - Local: `http://localhost:3000/api/auth/if/callback`
+   - Production: `https://virtual-blue-live.vercel.app/api/auth/if/callback`
+4. Request these scopes:
+   - `openid`
+   - `profile`
+   - `offline_access`
+   - `live:organizations.read`
+   - `live:members.read`
+   - `live:aircraft.read`
+   - `live:schedules.read`
+   - `live:schedules.write`
+5. Keep the client secret private. The app uses authorization code + PKCE, exchanges the code on the server, and never sends the client secret to the browser.
 
-```bash
-cp .env.example .env.local
-```
+New OAuth clients start in Testing. Testing allows the owner and up to five invited test users. Submit the app for review in Infinite Flight when you need all pilots to sign in.
 
-Set:
+## 3. Configure environment variables
+
+Copy `.env.example` to `.env.local` for local development:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://npsftsvbcqkwsjtlgckj.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+IF_OAUTH_CLIENT_ID=your_confidential_client_id
+IF_OAUTH_CLIENT_SECRET=your_confidential_client_secret
+IF_OAUTH_REDIRECT_URI=http://localhost:3000/api/auth/if/callback
+IF_SESSION_SECRET=base64_encoded_32_byte_secret
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-Get the publishable key from Supabase Dashboard → Project Settings → API Keys. It is safe for browser use when RLS is configured. Never put a Supabase secret/service-role key in a `NEXT_PUBLIC_*` variable or commit it to GitHub.
+Generate the session encryption key with:
 
-## 3. Database setup
+```bash
+openssl rand -base64 32
+```
 
-The initial schema and three hardening/bootstrap migrations have already been applied to the Live Dock project. For a fresh Supabase project or a full rebuild, run these SQL files in this exact order from Supabase Dashboard → SQL Editor:
+Use a different strong secret in each environment. Never commit `.env.local`, publish the client secret, or put server secrets in `NEXT_PUBLIC_*` variables.
 
-1. `supabase/migrations/202611210001_virtual_blue_fleet.sql` — core tables, roles, triggers and RLS.
-2. `supabase/migrations/202611210002_rls_and_indexes.sql` — tighten policy overlap and add foreign-key indexes.
-3. `supabase/migrations/202611210003_profile_privacy_and_leg_integrity.sql` — restrict pilot profile visibility and validate same-organization aircraft/pilot assignments.
-4. `supabase/migrations/202611210004_single_airline_bootstrap.sql` — permit only the first Virtual Blue organization to be created.
+### Vercel production variables
 
-Confirm that all eight public tables appear in Table Editor and that RLS is enabled on each. Do not blindly rerun a migration after a partial failure; inspect the completed objects and migration history first.
+In Vercel → `virtual-blue-live` → Settings → Environment Variables, add the following for **Production** (and Preview if needed):
 
-The security advisor was checked after setup and returned no findings. Performance advisor currently reports only unused-index notices because the tables are new and do not yet contain production traffic.
+| Name | Value |
+| --- | --- |
+| `IF_OAUTH_CLIENT_ID` | Client ID from Infinite Flight |
+| `IF_OAUTH_CLIENT_SECRET` | Client secret from Infinite Flight |
+| `IF_OAUTH_REDIRECT_URI` | `https://virtual-blue-live.vercel.app/api/auth/if/callback` |
+| `IF_SESSION_SECRET` | A unique output from `openssl rand -base64 32` |
+| `NEXT_PUBLIC_APP_URL` | `https://virtual-blue-live.vercel.app` |
 
-## 4. Supabase Auth
+Redeploy after adding or changing environment variables. Do not send the client secret or session secret in chat or commit them to GitHub.
 
-In Supabase Dashboard → Authentication → URL Configuration:
-- Set Site URL to your local origin during development.
-- Add `http://localhost:3000/auth/callback`.
-- Later add your production URL and `https://YOUR-DOMAIN/auth/callback`.
-
-Enable Email as an auth provider. Configure SMTP before public launch. The app signs pilots in with email magic links and exchanges the PKCE code in the callback route.
-
-The first signed-in user without an organization sees the workspace setup form. Creating the Virtual Blue organization automatically makes that user its owner. The database permits only this first organization, so other authenticated accounts cannot create competing Virtual Blue workspaces.
-
-After the owner account is created, invite pilots from Supabase Dashboard → Authentication → Users. Then add each invited user's UUID to `organization_members` with the Virtual Blue `organization_id`, role `pilot` and status `active`. Use role `admin` only for trusted operations staff. Once the owner exists, disable public sign-ups in Supabase Auth settings; invited existing users can still sign in by email link.
-
-The Admin tab includes initial forms to register aircraft and publish flight legs; editing, deletion and in-app member invitation screens remain follow-on work.
-
-## 5. Run and validate locally
+## 4. Local development
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`. Before pushing, run:
+Open `http://localhost:3000`, then choose **Continue with Infinite Flight**. The OAuth callback must match the URI registered in the Infinite Flight client.
+
+Before pushing:
 
 ```bash
+npm run lint
 npm run typecheck
 npm run build
 ```
 
-Commit the generated `package-lock.json` (or your chosen package manager lockfile) to make builds reproducible.
+## 5. How authentication works
 
-## 6. Infinite Flight account linking
+1. The browser navigates to `/api/auth/if/login`.
+2. Next.js generates OAuth state and a PKCE verifier/challenge, then redirects to Infinite Flight.
+3. Infinite Flight authenticates the pilot and returns an authorization code to `/api/auth/if/callback`.
+4. Next.js validates state and exchanges the code at `https://api.infiniteflight.com/auth/v2/connect/token`, including the confidential client secret and PKCE verifier.
+5. Access and refresh tokens are encrypted with AES-256-GCM and stored in an HTTP-only, Secure-in-production cookie.
+6. Next.js refreshes expiring tokens server-side and stores the newest rotated refresh token.
+7. Sign out clears the app session cookie.
 
-The reference `example/fleet.html` confirms the original frontend used Infinite Flight OAuth2 with PKCE, then called a separate INVA API origin. The provided source package contains frontend assets; it does not include the INVA API service, OAuth client credentials, token storage or API implementation.
+There is no Virtual Blue email/password login, no Supabase email login and no anonymous Supabase account creation in the app.
 
-Do not guess OAuth endpoints. Obtain the official authorize URL, token URL, client ID, client secret (if required), redirect URI and scopes from the Infinite Flight OAuth application you control. Keep client secrets server-side. The current app uses Supabase email auth for portal access; Infinite Flight identity linking is a separate integration and must be implemented against the verified provider contract.
+## 6. API routing and data ownership
 
-## 7. SimBrief and dispatch
+All browser API requests go to the Next.js catch-all route:
 
-The reference includes a SimBrief helper and flight dispatch modules. The database has a pilot `simbrief_username` and a leg `simbrief_ofp_id` field, but OFP retrieval, dispatch calculations, crew booking and flight plan submission are not yet wired to production APIs. Add these only after confirming the relevant SimBrief and Infinite Flight API contracts and usage limits.
+`/api/if/*` → `https://api.infiniteflight.com/public/v3/*`
 
-## 8. Vercel deployment
+The route validates the path/method against the supported PublicApi v3 endpoint allowlist, adds the bearer token on the server, forwards the response and rate-limit headers, and returns no-store browser responses.
 
-1. Import `Gurnoor1-dev/live-dock` into Vercel.
-2. Select `feat/virtual-blue-fleet-app` for the preview deployment.
-3. Add the Supabase URL and publishable key in Project Settings → Environment Variables.
-4. Add the Vercel preview URL plus `/auth/callback` to Supabase redirect URLs.
-5. Deploy and test email sign-in, session refresh, RLS and mobile layouts.
-6. When a custom domain is ready, add it in Vercel and update Supabase Site URL and redirect URLs.
+The app currently uses these Live organisation endpoints:
 
-## 9. Go-live checklist
+- `GET /live/organizations`
+- `GET /live/organizations/{organizationId}/aircraft`
+- `GET /live/organizations/{organizationId}/members`
+- `GET /live/organizations/{organizationId}/schedules`
+- `POST /live/aircraft/{aircraftId}/schedules`
+- `PUT /live/schedules/{scheduleId}`
+- `PUT /live/schedules/{scheduleId}/flightplan`
+- `PUT /live/schedules/{scheduleId}/crew/{userId}`
+- `DELETE /live/schedules/{scheduleId}/crew/{userId}`
+- `PUT /live/aircraft/{aircraftId}/schedules/reorder`
+- `DELETE /live/schedules/{scheduleId}`
 
-- [ ] Add the Supabase publishable key locally and in Vercel.
-- [ ] Apply the SQL migration and verify RLS is enabled on every public table.
-- [ ] Configure email delivery and redirect URLs.
-- [ ] Create the first Virtual Blue owner account and organization.
-- [ ] Add pilot memberships and verify a pilot cannot administer the fleet.
-- [ ] Build and test aircraft/schedule admin CRUD.
-- [ ] Configure verified Infinite Flight OAuth and secure token storage.
-- [ ] Connect SimBrief, dispatch, crew requests and live tracking.
-- [ ] Run `npm run typecheck` and `npm run build`.
-- [ ] Test production sign-in, sign-out, permissions and mobile layout.
+The proxy also allowlists the documented public sessions, flights, ATC, user, airport, aircraft-reference and related read endpoints.
 
-## 10. Feature status
+**Permissions:** members can read their organisation's data. Only Infinite Flight organisation owners (role 2) and admins (role 1) can write schedules or manage schedule crew. The API remains the final permission authority.
 
-**Implemented:** Next.js 16 app shell, Virtual Blue branding, fleet overview, aircraft search/filter, operations board, schedule read view, organization onboarding, initial aircraft and flight-leg creation forms for admins, email magic-link authentication, SSR proxy session refresh, Supabase schema and RLS.
+**Aircraft limitation:** PublicApi v3 documents aircraft read/position/flight-log endpoints, but no endpoint to add or delete organisation aircraft. Aircraft records must be managed in Infinite Flight's own Live organisation portal.
 
-**Still to build:** aircraft/leg edit and delete screens, member invitation and role management, IF OAuth linking and token persistence, crew seat request/review workflow, live tracking/polling, interactive route globe, complete flight bag, SimBrief OFP import, dispatch tools, aircraft history and pilot activity analytics.
+## 7. Infinite Flight data rules — mandatory
 
-The source reference remains in `example/` unchanged for continued feature-by-feature porting. This is a functional foundation, not a claim that every legacy backend-dependent feature is already live.
+The Infinite Flight API owns its returned data. This app must follow the official [API usage and data rules](https://infiniteflight.com/guide/developer-reference/api-rules/usage-and-data-rules):
+
+- Do not write API responses or derived API data to Supabase/Postgres, files, logs, exports or analytics storage.
+- Do not accumulate historical responses, tracks, replays, flight logs, statistics, scores or leaderboards.
+- A cache may keep only the latest response per request. Replace it on refresh.
+- Cache at least the documented minimum polling interval and discard live/user data no later than one hour after fetching.
+- Stop polling after 15 minutes without user activity.
+- Do not share user-specific Live data between users or devices.
+- Do not use API data to train, fine-tune, evaluate or improve AI/ML models.
+- Use API data only for simulated-flight features, not real-world aviation.
+
+The Next.js proxy uses process-memory TTL caching only. Cache keys are scoped by a one-way hash of the signed-in access token plus a random HTTP-only device identifier, so cached Live data is not shared across a user's devices. They are not written to a database or logs, and are invalidated after schedule mutations. The current dashboard refreshes on user action and does not run a background polling loop.
+
+The app keeps only OAuth tokens in an encrypted, HTTP-only cookie. It does not persist Infinite Flight API responses in backend tables. User-entered preferences can be added later, provided they are not copies or derived records of API data.
+
+## 8. Rate limits and refresh behaviour
+
+- User token: 5 requests/minute; 20/minute for a user with Infinite Flight Pro.
+- `GET /sessions`: no more often than every 10 minutes.
+- Session flight lists, ATC and airport status: no more often than every 15 seconds.
+- User/profile-style endpoints: 5 minutes.
+- Aircraft/airport reference data: 60 minutes.
+- On HTTP 429, respect the upstream `Retry-After` header before retrying.
+- Do not poll while the portal is idle or hidden. The current implementation is manual-refresh only.
+
+## 9. Supabase status
+
+Supabase is no longer used by the running app for sign-in, organisation data, aircraft, schedules, crew or API response storage. The old Supabase schema/migrations may still exist in the previously connected Supabase project, but the new app does not query or write to them.
+
+Do not manually delete those old tables unless you have confirmed nothing else uses that Supabase project and you explicitly want the database objects removed.
+
+## 10. Deployment
+
+The intended production URL is:
+
+`https://virtual-blue-live.vercel.app`
+
+After the Vercel project is connected to GitHub and the production environment variables are set:
+
+1. Deploy the reviewed branch/commit.
+2. Verify the project domain is assigned to `virtual-blue-live.vercel.app`.
+3. Confirm the exact production redirect URI is registered in the Infinite Flight OAuth client.
+4. Sign in with an invited test user.
+5. Verify the user's Virtual Blue organisation appears, then check fleet, members and schedules.
+6. Test schedule creation and crew assignment with an organisation owner/admin account.
+7. Test that a normal member cannot write schedules.
+8. Submit the OAuth client for Infinite Flight review before inviting the wider pilot group.
+
+## 11. Troubleshooting
+
+- **`configuration` on login:** add the four server environment variables to Vercel and redeploy.
+- **OAuth redirect mismatch:** the redirect URI must exactly match the URI registered in Infinite Flight, including scheme, host and path.
+- **403 from `/live/*`:** confirm the OAuth client has the requested `live:*` scope, the app is enabled, the user is a member of the organisation, and the user has the required owner/admin role for writes.
+- **No organisation returned:** the signed-in Infinite Flight account is not a member of an active Live organisation.
+- **429:** wait for `Retry-After`; do not retry early.
+- **Session expires:** confirm `offline_access` was granted and the newest refresh token is being stored.
+
+## 12. Implementation status
+
+**Implemented:** Infinite Flight OAuth2 confidential-client login with PKCE, encrypted cookie session, refresh-token rotation, sign-out, Next.js-only API proxy, method/path allowlist, in-memory TTL cache, organisation list, fleet read view, member list, schedule read view, schedule creation/deletion and crew assignment UI.
+
+**Available through the API proxy but not yet surfaced in the UI:** public live sessions/flight tracker views, individual aircraft position/flight logs, schedule editing, flight-plan updates, crew reordering and schedule reordering.
+
+**Not provided by PublicApi v3:** organisation aircraft creation/deletion. Manage those in Infinite Flight.
+
+The original Fleet Mode assets and `example/fleet.html` remain under `example/` as a visual/behaviour reference.

@@ -1,30 +1,16 @@
-# Virtual Blue Fleet Operations
+# Virtual Blue — Fleet Operations
 
-A Next.js 16 + React 19.3 fleet operations portal for Virtual Blue, backed by Supabase.
+A Next.js 16 + React 19 application using Infinite Flight PublicApi v3 as the source of truth for Virtual Blue Live organisation data.
 
-## Included in this first implementation
+- Infinite Flight OAuth2 sign-in (Confidential client + PKCE)
+- Encrypted HTTP-only session cookies and refresh-token rotation
+- All browser API calls routed through Next.js `/api/*`
+- Organisation, aircraft, members and schedule views
+- Schedule creation/deletion and crew assignment for Infinite Flight admins
+- Process-memory TTL caching only; no permanent API response storage
 
-- Responsive Virtual Blue operations shell and branding
-- Fleet overview with aircraft search, filters, status counts and empty states
-- Operations board and published schedules
-- Navigation for Flight bag, Airline, My activity, Aircraft history and Admin
-- Supabase Auth email magic-link sign-in using SSR cookies
-- Supabase Postgres schema with organization membership roles and row-level security
-- Server-side fleet API route and a practical setup guide
+See [GUIDE.md](./GUIDE.md) for OAuth client setup, Vercel environment variables, data rules, local development and deployment.
 
-The original ZIP assets and the newly supplied HTML reference remain preserved in [example/](./example/). The Next.js app is a clean React implementation; it does not load the legacy global-script page directly.
+**Production target:** https://virtual-blue-live.vercel.app
 
-## Quick start
-
-1. Install Node.js 22 or newer.
-2. Copy `.env.example` to `.env.local`.
-3. Add the Supabase publishable key from the Live Dock project.
-4. Apply all four SQL migrations in `supabase/migrations/` in filename order (see `GUIDE.md`).
-5. Run `npm install`, then `npm run dev`.
-6. Open http://localhost:3000.
-
-Read [GUIDE.md](./GUIDE.md) before enabling production access.
-
-## Important integration boundary
-
-The reference HTML uses Infinite Flight OAuth2/PKCE and a separate INVA API service. The supplied frontend files do not include that backend service or its credentials. This project replaces the fleet database layer with Supabase. Infinite Flight OAuth, SimBrief, dispatch, live tracking, crew booking and admin CRUD require verified provider details and the follow-on implementation described in GUIDE.md. No credentials are hard-coded.
+Infinite Flight API data is subject to its [official usage and data rules](https://infiniteflight.com/guide/developer-reference/api-rules/usage-and-data-rules).
