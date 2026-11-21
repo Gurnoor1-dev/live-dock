@@ -131,7 +131,7 @@ export function InfiniteFlightDashboard(){
     const refreshPositions=async()=>{
       const entries=await Promise.all(aircraft.map(async item=>{
         try{
-          const position=await api("/live/aircraft/"+item.aircraftId+"/position");
+          const position=await api("/live/aircraft/"+item.id+"/position");
           return [item.aircraftId,position] as const;
         }catch{return null;}
       }));
@@ -240,7 +240,7 @@ export function InfiniteFlightDashboard(){
     if(!selectedAircraft||!selectedAircraft.aircraftId)return;
     setFlightHistory([]);
     let alive=true;
-    api("/live/aircraft/"+selectedAircraft.aircraftId+"/flights?page=1&pageSize=50").then(value=>{
+    api("/live/aircraft/"+selectedAircraft.id+"/flights?page=1&pageSize=50").then(value=>{
       if(alive)setFlightHistory(Array.isArray(value)?value:(value?.items||[]));
     }).catch(()=>{if(alive)setFlightHistory([]);});
     return()=>{alive=false;};
