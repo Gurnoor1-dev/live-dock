@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
+import maplibregl from "maplibre-gl";
 import { Activity, ArrowUpRight, CalendarDays, Command, Compass, LogOut, Menu, Moon, Plane, RadioTower, RefreshCw, ShieldCheck, Sun, Users, X } from "lucide-react";
 
 type Organization={id:string;name:string;role:number;description?:string|null;worldType:number;operationType:number};
@@ -9,7 +10,10 @@ type Aircraft={id:string;aircraftId:string;organizationId:string;registration:st
 type Member={userId:string;username:string|null;role:number;joinedAt:string;activeLifts:number};
 type Crew={userId:string;username:string|null;role:number};
 type Schedule={id:string;status:number;callsign:string;organizationId:string;aircraftId:string;flightType:number;originIcao:string;destinationIcao:string;isTimeless:boolean;scheduledDepartureUtc:string;scheduledArrivalUtc:string;briefing:string|null;flightPlan:string|null;crew:Crew[];sequence:number};
-type Tab="Fleet"|"Schedules"|"Crew"|"Admin";
+type Tab="Fleet"|"Schedules"|"Crew"|"Admin"|"History";
+type Position={id:string;state:number;isOnGround:boolean;latitude:number;longitude:number;altitude:number;heading:number;speed:number;verticalSpeed:number;lastPilotId?:string;lastPilotUsername?:string;updatedAt:string};
+type GalleryPhoto={id:string;url:string;altText:string;caption:string;credit:{name:string;url:string;displayText:string};displayOrder:number;isVisible:boolean};
+type GalleryManifest={settings:{maxPhotosPerAircraft:number;slideshowIntervalMs:number};aircraft:Record<string,{photos:GalleryPhoto[]}>};
 const ORGANIZATION_ID="d50dcc80-8dac-4608-970c-61d6a4739488";
 
 async function api(path:string,init:RequestInit={}) {
@@ -50,10 +54,22 @@ export function InfiniteFlightDashboard(){
   const [briefing,setBriefing]=useState("");
   const [crewSelections,setCrewSelections]=useState<Record<string,string>>({});
   const [crewRoles,setCrewRoles]=useState<Record<string,string>>({});
+  const mapContainer=useRef<HTMLDivElement|null>(null);
+  const mapRef=useRef<maplibregl.Map|null>(null);
+  const markerRefs=useRef<maplibregl.Marker[]>([]);
+  const [positions,setPositions]=useState<Record<string,Position>>({});
+  const [selectedAircraft,setSelectedAircraft]=useState<Aircraft|null>(null);
+  const [gallery,setGallery]=useState<GalleryManifest|null>(null);
+  const [aircraftDetails,setAircraftDetails]=useState<Record<string,any>>({});
+  const [flightHistory,setFlightHistory]=useState<any[]>([]);
+  const [photoIndex,setPhotoIndex]=useState(0);
+  const [galleryLoading,setGalleryLoading]=useState(false);
 
   const canManage=Boolean(organization&&(organization.role===1||organization.role===2));
   const visibleAircraft=useMemo(()=>aircraft.filter(item=>item.registration.toLowerCase().includes(query.toLowerCase())),[aircraft,query]);
   const liveSchedules=schedules.filter(item=>[1,2,3,4,6].includes(item.status));
+  const selectedPosition=selectedAircraft?positions[selectedAircraft.aircraftId]:undefined;
+  const selectedPhotos=selectedAircraft?(gallery?.aircraft?.[selectedAircraft.registration]?.photos||[]).filter(photo=>photo.isVisible).sort((a,b)=>a.displayOrder-b.displayOrder):[];
 
   const loadOrganization=useCallback(async()=>{
     setBusy(true);setError("");setNotice("");
@@ -90,6 +106,96 @@ export function InfiniteFlightDashboard(){
     })();
     return()=>{mounted=false;};
   },[loadOrganization]);
+
+
+  useEffect(()=>{
+    if(auth!=="signed-in"||!aircraft.length)return;
+    let alive=true;
+    const refreshPositions=async()=>{
+      const entries=await Promise.all(aircraft.map(async item=>{
+        try{
+          const position=await api("/live/aircraft/"+item.aircraftId+"/position");
+          return [item.aircraftId,position] as const;
+        }catch{return null;}
+      }));
+      if(!alive)return;
+      setPositions(previous=>{
+        const next={...previous};
+        for(const entry of entries)if(entry&&entry[1]&&Number.isFinite(entry[1].latitude)&&Number.isFinite(entry[1].longitude))next[entry[0]]=entry[1] as Position;
+        return next;
+      });
+    };
+    void refreshPositions();
+    const timer=window.setInterval(refreshPositions,15000);
+    return()=>{alive=false;window.clearInterval(timer);};
+  },[auth,aircraft]);
+
+  useEffect(()=>{
+    if(auth!=="signed-in")return;
+    fetch("/api/if/gallery",{cache:"no-store"}).then(response=>response.ok?response.json():null).then(data=>{if(data?.aircraft)setGallery(data);}).catch(()=>{});
+  },[auth]);
+
+  useEffect(()=>{
+    if(active!=="Fleet"||!mapContainer.current||!organization)return;
+    const map=new maplibregl.Map({
+      container:mapContainer.current,
+      style:theme==="dark"?"https://tiles.openfreemap.org/styles/dark":"https://tiles.openfreemap.org/styles/positron",
+      center:[75,25],zoom:3,attributionControl:true
+    });
+    map.addControl(new maplibregl.NavigationControl({showCompass:true}),"top-right");
+    mapRef.current=map;
+    map.on("load",()=>{
+      const points=Object.values(positions).filter(p=>Number.isFinite(p.latitude)&&Number.isFinite(p.longitude));
+      if(points.length>1){
+        const bounds=new maplibregl.LngLatBounds();
+        points.forEach(p=>bounds.extend([p.longitude,p.latitude]));
+        map.fitBounds(bounds,{padding:70,maxZoom:6});
+      }else if(points.length===1)map.flyTo({center:[points[0].longitude,points[0].latitude],zoom:5});
+    });
+    return()=>{markerRefs.current.forEach(marker=>marker.remove());markerRefs.current=[];map.remove();mapRef.current=null;};
+  },[active,theme,organization]);
+
+  useEffect(()=>{
+    const map=mapRef.current;
+    if(!map)return;
+    markerRefs.current.forEach(marker=>marker.remove());
+    markerRefs.current=[];
+    for(const aircraftItem of aircraft){
+      const position=positions[aircraftItem.aircraftId];
+      if(!position||!Number.isFinite(position.latitude)||!Number.isFinite(position.longitude))continue;
+      const color=position.state===2?"#16a36a":position.state===1?"#2475d0":position.state===5?"#d18a27":position.state===4?"#64748b":position.state===3?"#d14c4c":"#8a94a6";
+      const element=document.createElement("button");
+      element.type="button";element.className="aircraft-map-marker";element.title=aircraftItem.registration;
+      element.style.setProperty("--marker-color",color);
+      element.innerHTML='<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M15 1.8c-.8 0-1.4.7-1.4 1.5v9.2L3.2 18v2.2l10.4-3.1v8l-3.1 2.2v1.8l4.5-1.3 4.5 1.3v-1.8l-3.1-2.2v-8L26.8 20V18l-10.4-5.5V3.3c0-.8-.6-1.5-1.4-1.5Z" fill="'+color+'"/></svg>';
+      element.addEventListener("click",()=>setSelectedAircraft(aircraftItem));
+      const marker=new maplibregl.Marker({element,rotationAlignment:"map",pitchAlignment:"map"}).setLngLat([position.longitude,position.latitude]).setRotation(position.heading||0).addTo(map);
+      markerRefs.current.push(marker);
+    }
+  },[aircraft,positions]);
+
+  useEffect(()=>{
+    if(!selectedAircraft)return;
+    setPhotoIndex(0);
+    let alive=true;
+    api("/live/aircraft/"+selectedAircraft.aircraftId).then(value=>{if(alive)setAircraftDetails(previous=>({...previous,[selectedAircraft.aircraftId]:value}));}).catch(()=>{});
+    return()=>{alive=false;};
+  },[selectedAircraft]);
+
+  useEffect(()=>{
+    if(!selectedAircraft||!selectedAircraft.aircraftId)return;
+    let alive=true;
+    api("/live/aircraft/"+selectedAircraft.aircraftId+"/flights?page=1&pageSize=50").then(value=>{
+      if(alive)setFlightHistory(Array.isArray(value)?value:(value?.items||[]));
+    }).catch(()=>{if(alive)setFlightHistory([]);});
+    return()=>{alive=false;};
+  },[selectedAircraft,active]);
+
+  useEffect(()=>{
+    if(selectedPhotos.length<2)return;
+    const timer=window.setInterval(()=>setPhotoIndex(index=>(index+1)%selectedPhotos.length),gallery?.settings?.slideshowIntervalMs||2000);
+    return()=>window.clearInterval(timer);
+  },[selectedAircraft,selectedPhotos.length,gallery]);
 
   async function refresh(){await loadOrganization();}
   async function signOut(){
@@ -158,10 +264,28 @@ export function InfiniteFlightDashboard(){
         {error&&<p className="form-error" role="alert">{error}</p>}{notice&&<p className="form-success" role="status">{notice}</p>}
         {!organization&&<section className="section-card"><div className="empty-state"><span className="empty-icon"><Compass size={20}/></span><b>Virtual Blue workspace unavailable</b><p>This Infinite Flight account could not access the configured Virtual Blue organisation. Confirm that your account is a member and has the required API permissions, then try again.</p><button className="outline-button" onClick={()=>void loadOrganization()} disabled={busy}>{busy?"Connecting…":"Retry connection"}</button></div></section>}
         {organization&&<><div className="stat-grid"><Stat label="Fleet aircraft" value={aircraft.length} icon={<Plane/>} note="From Live organisation"/><Stat label="Live schedules" value={schedules.length} icon={<CalendarDays/>} note="Open fleet schedules"/><Stat label="Organisation members" value={members.length} icon={<Users/>} note="Current membership"/><Stat label="Active legs" value={liveSchedules.length} icon={<RadioTower/>} note="Boarding through in-flight"/></div>
-        {active==="Fleet"&&<section className="section-card"><div className="section-head"><div><h2>Organisation fleet</h2><p>Aircraft records are fetched directly from Infinite Flight.</p></div><span className="count-pill">{visibleAircraft.length} aircraft</span></div><div className="toolbar"><div className="search-field"><Plane size={15}/><input placeholder="Search aircraft registration" value={query} onChange={e=>setQuery(e.target.value)}/></div></div>{visibleAircraft.length?<div className="table-wrap"><table><thead><tr><th>Registration</th><th>Fleet rank</th><th>Visibility</th><th>Fleet slot</th><th>Record</th></tr></thead><tbody>{visibleAircraft.map(a=><tr key={a.id}><td className="mono"><b>{a.registration}</b></td><td>{a.fleetRank}</td><td>{visibilityName(a.visibility)}</td><td>{a.isFleetActiveSlot?"Active slot":"Storage"}</td><td><span className={a.status===0?"status available":"status stored"}><i/>{a.status===0?"Active":"Deleted"}</span></td></tr>)}</tbody></table></div>:<Empty title="No aircraft found" body="The Infinite Flight API returned no active aircraft for this organisation."/>}</section>}
-        {active==="Schedules"&&<section className="section-card"><div className="section-head"><div><h2>Fleet schedules</h2><p>Schedule changes are written directly to Infinite Flight.</p></div><span className="count-pill">{schedules.length} schedules</span></div>{schedules.length?<div className="table-wrap"><table><thead><tr><th>Callsign</th><th>Route</th><th>Departure</th><th>Arrival</th><th>Status</th><th>Crew</th>{canManage&&<th/>}</tr></thead><tbody>{schedules.map(s=><tr key={s.id}><td className="mono"><b>{s.callsign}</b></td><td className="mono">{s.originIcao} → {s.destinationIcao}</td><td>{dateTime(s.scheduledDepartureUtc,s.isTimeless)}</td><td>{dateTime(s.scheduledArrivalUtc,s.isTimeless)}</td><td><span className="status scheduled"><i/>{statusName(s.status)}</span></td><td>{s.crew?.length||0}/3</td>{canManage&&<td><button className="row-action danger" onClick={()=>void deleteSchedule(s.id)} disabled={busy} title="Delete schedule">Delete</button></td>}</tr>)}</tbody></table></div>:<Empty title="No open schedules" body="When Virtual Blue publishes schedules in Infinite Flight, they will appear here."/>}</section>}
-        {active==="Crew"&&<div className="lower-grid"><section className="section-card"><div className="section-head"><div><h2>Organisation members</h2><p>Live membership and roles from Infinite Flight.</p></div></div>{members.length?members.map(m=><div className="condition-row" key={m.userId}><span><b>{m.username||"Unknown pilot"}</b><small className="member-sub">{roleName(m.role)} · {m.activeLifts} active lifts</small></span><small>{new Date(m.joinedAt).toLocaleDateString()}</small></div>):<Empty title="No members returned" body="The organisation currently has no visible member records."/>}</section><section className="section-card"><div className="section-head"><div><h2>Schedule crew</h2><p>Assigned crew comes from each Live schedule.</p></div></div>{schedules.filter(s=>s.crew?.length).map(s=><div className="crew-schedule" key={s.id}><b>{s.callsign} · {s.originIcao} → {s.destinationIcao}</b>{s.crew.map(c=><div className="condition-row" key={c.userId}><span>{c.username||c.userId}</span><span>{c.role===0?"Captain":"First Officer"} {canManage&&<button className="row-action danger" onClick={()=>void removeCrew(s.id,c.userId)} disabled={busy}>Remove</button>}</span></div>)}</div>)}{!schedules.some(s=>s.crew?.length)&&<Empty title="No crew assigned" body="Assigned pilots will appear alongside their schedules." />}</section></div>}
-        {active==="Admin"&&(canManage?<div className="admin-grid"><section className="section-card"><div className="section-head"><div><h2>Publish a schedule</h2><p>Creates the schedule on Infinite Flight, not in a local database.</p></div><CalendarDays size={17}/></div><form className="admin-form" onSubmit={createSchedule}><label>Callsign<input required maxLength={32} value={callsign} onChange={e=>setCallsign(e.target.value.toUpperCase())} placeholder="VB 101"/></label><label>Aircraft<select required value={aircraftId} onChange={e=>setAircraftId(e.target.value)}><option value="">Select aircraft</option>{aircraft.map(a=><option key={a.id} value={a.id}>{a.registration} · Fleet rank {a.fleetRank}</option>)}</select></label><div className="form-two"><label>Origin ICAO<input required maxLength={8} value={origin} onChange={e=>setOrigin(e.target.value.toUpperCase())} placeholder="VIDP"/></label><label>Destination ICAO<input required maxLength={8} value={destination} onChange={e=>setDestination(e.target.value.toUpperCase())} placeholder="VABB"/></label></div><label className="check-line"><input type="checkbox" checked={timeless} onChange={e=>setTimeless(e.target.checked)}/> Timeless schedule</label>{!timeless&&<div className="form-two"><label>Departure (local time)<input required type="datetime-local" value={departure} onChange={e=>setDeparture(e.target.value)}/></label><label>Arrival (local time)<input required type="datetime-local" value={arrival} onChange={e=>setArrival(e.target.value)}/></label></div>}<label>Briefing<input maxLength={4000} value={briefing} onChange={e=>setBriefing(e.target.value)} placeholder="Flight briefing (optional)"/></label><button className="primary-button" disabled={busy||!aircraft.length}>{busy?"Publishing…":"Publish to Infinite Flight"} <ArrowUpRight size={14}/></button></form></section><section className="section-card"><div className="section-head"><div><h2>Manage schedule crew</h2><p>Assign an organisation member to a schedule.</p></div><Users size={17}/></div>{schedules.length?schedules.map(s=><div className="crew-editor" key={s.id}><b>{s.callsign} · {s.originIcao} → {s.destinationIcao}</b><div className="form-two"><select value={crewSelections[s.id]||""} onChange={e=>setCrewSelections(v=>({...v,[s.id]:e.target.value}))}><option value="">Select member</option>{members.map(m=><option key={m.userId} value={m.userId}>{m.username||m.userId}</option>)}</select><select value={crewRoles[s.id]||"0"} onChange={e=>setCrewRoles(v=>({...v,[s.id]:e.target.value}))}><option value="0">Captain</option><option value="1">First Officer</option></select></div><button className="outline-button" disabled={busy||!crewSelections[s.id]} onClick={()=>void assignCrew(s)}>Assign crew member</button></div>):<Empty title="No schedules to manage" body="Publish a schedule first, then assign up to three crew members." />}</section></div>:<section className="section-card"><Empty title="Administrator access required" body="Only Infinite Flight organisation owners and admins can publish schedules or manage schedule crew."/></section>)}
+        {active==="Fleet"&&<div className="fleet-layout">
+          <section className="section-card fleet-map-card">
+            <div className="section-head"><div><h2>Live fleet map</h2><p>Aircraft positions refresh every 15 seconds. Heading follows the Infinite Flight true-heading value.</p></div><span className="count-pill">{Object.keys(positions).length} live positions</span></div>
+            <div className="map-legend"><span><i className="legend-flight"/>In flight</span><span><i className="legend-ground"/>On ground</span><span><i className="legend-maintenance"/>Maintenance</span><span><i className="legend-stopped"/>Stopped</span><span><i className="legend-unknown"/>Unknown</span></div>
+            <div ref={mapContainer} className="fleet-map" aria-label="Virtual Blue live aircraft map"/>
+          </section>
+          <section className="section-card fleet-list-card">
+            <div className="section-head"><div><h2>Fleet aircraft</h2><p>Select an aircraft to inspect its live details.</p></div><span className="count-pill">{visibleAircraft.length}</span></div>
+            <div className="search-field"><Plane size={15}/><input placeholder="Search registration" value={query} onChange={e=>setQuery(e.target.value)}/></div>
+            <div className="fleet-aircraft-list">{visibleAircraft.map(item=>{const pos=positions[item.aircraftId];return <button key={item.id} className={"fleet-aircraft-row "+(selectedAircraft?.id===item.id?"selected":"")} onClick={()=>setSelectedAircraft(item)}><span className="fleet-row-icon"><Plane size={16}/></span><span className="fleet-row-copy"><b>{item.registration}</b><small>{pos?.state===2?"In flight":pos?.state===1?"On ground":pos?.state===5?"Maintenance":pos?.state===4?"Stopped":"Position unavailable"}</small></span><span className="fleet-row-number">#{item.fleetRank}</span></button>;})}</div>
+          </section>
+          {selectedAircraft&&<section className="section-card aircraft-detail-card">
+            <div className="section-head"><div><p className="eyebrow">AIRCRAFT RECORD</p><h2>{selectedAircraft.registration}</h2><p>Fleet number #{selectedAircraft.fleetRank} · {selectedPosition?.state===2?"In flight":selectedPosition?.state===1?"On ground":selectedPosition?.state===5?"Maintenance":selectedPosition?.state===4?"Stopped":"Status unknown"}</p></div><button className="icon-button" onClick={()=>setSelectedAircraft(null)} aria-label="Close aircraft details"><X size={17}/></button></div>
+            {selectedPhotos.length>0&&<div className="aircraft-photo-frame"><img key={selectedPhotos[photoIndex]?.id} src={selectedPhotos[photoIndex]?.url} alt={selectedPhotos[photoIndex]?.altText||selectedAircraft.registration}/>{selectedPhotos[photoIndex]?.credit?.displayText&&<span className="photo-credit">{selectedPhotos[photoIndex].credit.displayText}</span>}</div>}
+            <div className="aircraft-facts"><div><small>Aircraft type</small><b>{aircraftDetails[selectedAircraft.aircraftId]?.name||aircraftDetails[selectedAircraft.aircraftId]?.aircraftName||"Unknown"}</b></div><div><small>Aircraft ICAO</small><b>{aircraftDetails[selectedAircraft.aircraftId]?.icao||aircraftDetails[selectedAircraft.aircraftId]?.icaoCode||"Unknown"}</b></div><div><small>Heading</small><b>{selectedPosition?Math.round(selectedPosition.heading)+"°":"Unknown"}</b></div><div><small>Last pilot</small><b>{selectedPosition?.lastPilotUsername||"Unknown"}</b></div><div><small>Altitude</small><b>{selectedPosition?Math.round(selectedPosition.altitude).toLocaleString()+" ft":"Unknown"}</b></div><div><small>Ground speed</small><b>{selectedPosition?Math.round(selectedPosition.speed)+" kt":"Unknown"}</b></div><div><small>Vertical speed</small><b>{selectedPosition?Math.round(selectedPosition.verticalSpeed)+" ft/min":"Unknown"}</b></div><div><small>Last update</small><b>{selectedPosition?.updatedAt?dateTime(selectedPosition.updatedAt):"Unknown"}</b></div></div>
+            <div className="aircraft-detail-actions"><button className="outline-button" onClick={()=>setActive("History")}>View flight history</button><button className="outline-button" onClick={()=>{setActive("Schedules");setQuery(selectedAircraft.registration);}}>View schedules</button></div>
+          </section>}
+        </div>}
+        {active==="Schedules"&&<section className="section-card"><div className="section-head"><div><h2>Fleet schedules</h2><p>Schedule changes are written directly to Infinite Flight.</p></div><span className="count-pill">{schedules.length} schedules</span></div>{schedules.length?<div className="table-wrap"><table><thead><tr><th>Flight number</th><th>Route</th><th>Departure</th><th>Arrival</th><th>Status</th><th>Crew</th>{canManage&&<th/>}</tr></thead><tbody>{schedules.map(s=><tr key={s.id}><td className="mono"><b>{s.callsign}</b></td><td className="mono">{s.originIcao} → {s.destinationIcao}</td><td>{dateTime(s.scheduledDepartureUtc,s.isTimeless)}</td><td>{dateTime(s.scheduledArrivalUtc,s.isTimeless)}</td><td><span className="status scheduled"><i/>{statusName(s.status)}</span></td><td>{s.crew?.length||0}/3</td>{canManage&&<td><button className="row-action danger" onClick={()=>void deleteSchedule(s.id)} disabled={busy} title="Delete schedule">Delete</button></td>}</tr>)}</tbody></table></div>:<Empty title="No open schedules" body="When Virtual Blue publishes schedules in Infinite Flight, they will appear here."/>}</section>}
+        {active==="History"&&<section className="section-card"><div className="section-head"><div><p className="eyebrow">AIRCRAFT HISTORY</p><h2>{selectedAircraft?selectedAircraft.registration:"Select an aircraft"}</h2><p>Flight records are requested from Infinite Flight when this page is opened.</p></div></div>{selectedAircraft?(flightHistory.length?<div className="table-wrap"><table><thead><tr><th>Flight</th><th>Route</th><th>Departure</th><th>Arrival</th></tr></thead><tbody>{flightHistory.map((flight,index)=><tr key={flight.id||index}><td>{flight.callsign||flight.flightNumber||"—"}</td><td>{flight.originIcao||flight.origin||"—"} → {flight.destinationIcao||flight.destination||"—"}</td><td>{dateTime(flight.departureTime||flight.startedAt)}</td><td>{dateTime(flight.arrivalTime||flight.endedAt)}</td></tr>)}</tbody></table></div>:<Empty title="No flight history returned" body="Infinite Flight did not return any flight records for this aircraft."/>) : <Empty title="Choose an aircraft first" body="Return to Fleet and select an aircraft to inspect its flight history."/>}</section>}
+{active==="Crew"&&<div className="lower-grid"><section className="section-card"><div className="section-head"><div><h2>Organisation members</h2><p>Live membership and roles from Infinite Flight.</p></div></div>{members.length?members.map(m=><div className="condition-row" key={m.userId}><span><b>{m.username||"Unknown pilot"}</b><small className="member-sub">{roleName(m.role)} · {m.activeLifts} active lifts</small></span><small>{new Date(m.joinedAt).toLocaleDateString()}</small></div>):<Empty title="No members returned" body="The organisation currently has no visible member records."/>}</section><section className="section-card"><div className="section-head"><div><h2>Schedule crew</h2><p>Assigned crew comes from each Live schedule.</p></div></div>{schedules.filter(s=>s.crew?.length).map(s=><div className="crew-schedule" key={s.id}><b>{s.callsign} · {s.originIcao} → {s.destinationIcao}</b>{s.crew.map(c=><div className="condition-row" key={c.userId}><span>{c.username||c.userId}</span><span>{c.role===0?"Captain":"First Officer"} {canManage&&<button className="row-action danger" onClick={()=>void removeCrew(s.id,c.userId)} disabled={busy}>Remove</button>}</span></div>)}</div>)}{!schedules.some(s=>s.crew?.length)&&<Empty title="No crew assigned" body="Assigned pilots will appear alongside their schedules." />}</section></div>}
+        {active==="Admin"&&(canManage?<div className="admin-grid"><section className="section-card"><div className="section-head"><div><h2>Publish a schedule</h2><p>Creates the schedule on Infinite Flight, not in a local database.</p></div><CalendarDays size={17}/></div><form className="admin-form" onSubmit={createSchedule}><label>Flight number<input required maxLength={32} value={callsign} onChange={e=>setCallsign(e.target.value.toUpperCase())} placeholder="VB 101"/></label><label>Aircraft<select required value={aircraftId} onChange={e=>setAircraftId(e.target.value)}><option value="">Select aircraft</option>{aircraft.map(a=><option key={a.id} value={a.id}>{a.registration} · Fleet rank {a.fleetRank}</option>)}</select></label><div className="form-two"><label>Origin ICAO<input required maxLength={8} value={origin} onChange={e=>setOrigin(e.target.value.toUpperCase())} placeholder="VIDP"/></label><label>Destination ICAO<input required maxLength={8} value={destination} onChange={e=>setDestination(e.target.value.toUpperCase())} placeholder="VABB"/></label></div><label className="check-line"><input type="checkbox" checked={timeless} onChange={e=>setTimeless(e.target.checked)}/> Timeless schedule</label>{!timeless&&<div className="form-two"><label>Departure (local time)<input required type="datetime-local" value={departure} onChange={e=>setDeparture(e.target.value)}/></label><label>Arrival (local time)<input required type="datetime-local" value={arrival} onChange={e=>setArrival(e.target.value)}/></label></div>}<label>Briefing<input maxLength={4000} value={briefing} onChange={e=>setBriefing(e.target.value)} placeholder="Flight briefing (optional)"/></label><button className="primary-button" disabled={busy||!aircraft.length}>{busy?"Publishing…":"Publish to Infinite Flight"} <ArrowUpRight size={14}/></button></form></section><section className="section-card"><div className="section-head"><div><h2>Manage schedule crew</h2><p>Assign an organisation member to a schedule.</p></div><Users size={17}/></div>{schedules.length?schedules.map(s=><div className="crew-editor" key={s.id}><b>{s.callsign} · {s.originIcao} → {s.destinationIcao}</b><div className="form-two"><select value={crewSelections[s.id]||""} onChange={e=>setCrewSelections(v=>({...v,[s.id]:e.target.value}))}><option value="">Select member</option>{members.map(m=><option key={m.userId} value={m.userId}>{m.username||m.userId}</option>)}</select><select value={crewRoles[s.id]||"0"} onChange={e=>setCrewRoles(v=>({...v,[s.id]:e.target.value}))}><option value="0">Captain</option><option value="1">First Officer</option></select></div><button className="outline-button" disabled={busy||!crewSelections[s.id]} onClick={()=>void assignCrew(s)}>Assign crew member</button></div>):<Empty title="No schedules to manage" body="Publish a schedule first, then assign up to three crew members." />}</section></div>:<section className="section-card"><Empty title="Administrator access required" body="Only Infinite Flight organisation owners and admins can publish schedules or manage schedule crew."/></section>)}
         </>}
         <footer className="footer"><span>© {new Date().getFullYear()} Virtual Blue</span><span>Powered by Infinite Flight PublicApi v3</span><span>Live data · No permanent API data storage</span></footer>
       </div>
