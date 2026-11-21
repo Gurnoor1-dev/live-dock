@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { del, list, put } from "@vercel/blob";
+import { BlobPreconditionFailedError, del, head, list, put } from "@vercel/blob";
 import { randomUUID } from "node:crypto";
 import { getIFDeviceId, getIFSession } from "@/lib/infinite-flight/session";
 
@@ -185,13 +185,33 @@ async function readGalleryManifest(): Promise<GalleryManifest> {
   return parsed;
 }
 
-async function saveGalleryManifest(manifest: GalleryManifest) {
-  manifest.manifestVersion = (Number(manifest.manifestVersion) || 0) + 1;
-  manifest.lastUpdatedAt = new Date().toISOString();
-  await put(GALLERY_MANIFEST_PATH, JSON.stringify(manifest, null, 2) + "\n", {
-    access: "public", addRandomSuffix: false, allowOverwrite: true,
-    contentType: "application/json", cacheControlMaxAge: 60
-  });
+async function mutateGalleryManifest(update: (manifest: GalleryManifest) => void): Promise<GalleryManifest> {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    await readGalleryManifest();
+    const metadata = await head(GALLERY_MANIFEST_PATH);
+    const { blobs } = await list({ prefix: GALLERY_MANIFEST_PATH, limit: 1 });
+    const manifestBlob = blobs.find(blob => blob.pathname === GALLERY_MANIFEST_PATH);
+    if (!manifestBlob) continue;
+    const freshUrl = manifestBlob.url + "?etag=" + encodeURIComponent(metadata.etag);
+    const response = await fetch(freshUrl, { cache: "no-store" });
+    if (!response.ok) throw new Error("The aircraft gallery manifest could not be read from Blob.");
+    const manifest = await response.json() as GalleryManifest;
+    if (!manifest || typeof manifest !== "object" || !manifest.aircraft) throw new Error("The aircraft gallery manifest is invalid.");
+    update(manifest);
+    manifest.manifestVersion = (Number(manifest.manifestVersion) || 0) + 1;
+    manifest.lastUpdatedAt = new Date().toISOString();
+    try {
+      await put(GALLERY_MANIFEST_PATH, JSON.stringify(manifest, null, 2) + "\n", {
+        access: "public", addRandomSuffix: false, allowOverwrite: true,
+        ifMatch: metadata.etag, contentType: "application/json", cacheControlMaxAge: 60
+      });
+      return manifest;
+    } catch (error) {
+      if (error instanceof BlobPreconditionFailedError && attempt < 3) continue;
+      throw error;
+    }
+  }
+  throw new Error("The gallery manifest changed repeatedly. Please retry the operation.");
 }
 
 async function requireGalleryAdmin() {
@@ -224,9 +244,6 @@ async function galleryRoute(request: NextRequest, parts: string[]) {
       if (!(file instanceof File) || !["image/jpeg", "image/png", "image/webp"].includes(file.type)) return NextResponse.json({ error: "Choose a JPEG, PNG or WebP image." }, { status: 400 });
       if (file.size > 4 * 1024 * 1024) return NextResponse.json({ error: "Images must be 4 MB or smaller." }, { status: 413 });
       if (creditUrl && !/^https?:\/\//i.test(creditUrl)) return NextResponse.json({ error: "Credit URL must start with https:// or http://." }, { status: 400 });
-      const manifest = await readGalleryManifest();
-      const entry = manifest.aircraft[registration] || { registration, photos: [] };
-      if (entry.photos.length >= 4) return NextResponse.json({ error: "This aircraft already has four photos. Delete one before adding another." }, { status: 409 });
       const extension = file.type === "image/jpeg" ? "jpg" : file.type === "image/png" ? "png" : "webp";
       const pathname = "aircraft-gallery/images/" + registration.toLowerCase() + "-" + randomUUID() + "." + extension;
       const blob = await put(pathname, file, { access: "public", addRandomSuffix: false, contentType: file.type, cacheControlMaxAge: 31536000 });
@@ -234,12 +251,22 @@ async function galleryRoute(request: NextRequest, parts: string[]) {
         id: randomUUID(), fileName: file.name, blobPath: blob.pathname, url: blob.url,
         altText: registration + " aircraft photograph", caption,
         credit: { name: creditName, url: creditUrl, displayText: creditName ? "Photo: " + creditName : "" },
-        displayOrder: entry.photos.length, isVisible: true, uploadedAt: new Date().toISOString()
+        displayOrder: 0, isVisible: true, uploadedAt: new Date().toISOString()
       };
-      entry.photos.push(photo);
-      manifest.aircraft[registration] = entry;
-      await saveGalleryManifest(manifest);
-      return NextResponse.json({ photo, manifestVersion: manifest.manifestVersion }, { status: 201 });
+      try {
+        const manifest = await mutateGalleryManifest(current => {
+          const entry = current.aircraft[registration] || { registration, photos: [] };
+          if (entry.photos.length >= 4) throw new Error("This aircraft already has four photos. Delete one before adding another.");
+          photo.displayOrder = entry.photos.length;
+          entry.photos.push(photo);
+          current.aircraft[registration] = entry;
+        });
+        return NextResponse.json({ photo, manifestVersion: manifest.manifestVersion }, { status: 201 });
+      } catch (error) {
+        await del(blob.url).catch(() => undefined);
+        if (error instanceof Error && error.message.includes("already has four photos")) return NextResponse.json({ error: error.message }, { status: 409 });
+        throw error;
+      }
     }
     if (parts[1] === "photo" && (request.method === "PATCH" || request.method === "DELETE")) {
       const auth = await requireGalleryAdmin();
@@ -247,28 +274,31 @@ async function galleryRoute(request: NextRequest, parts: string[]) {
       const payload = await request.json().catch(() => ({}));
       const registration = String(payload.registration || "").trim().toUpperCase();
       const photoId = String(payload.photoId || "");
-      const manifest = await readGalleryManifest();
-      const entry = manifest.aircraft[registration];
-      const index = entry ? entry.photos.findIndex(photo => photo.id === photoId) : -1;
-      if (!entry || index < 0) return NextResponse.json({ error: "Photo not found in the gallery manifest." }, { status: 404 });
-      if (request.method === "PATCH") {
-        const photo = entry.photos[index];
-        if (typeof payload.creditName === "string") photo.credit.name = payload.creditName.trim();
-        if (typeof payload.creditUrl === "string") photo.credit.url = payload.creditUrl.trim();
-        if (typeof payload.caption === "string") photo.caption = payload.caption.trim();
-        if (typeof payload.isVisible === "boolean") photo.isVisible = payload.isVisible;
-        photo.credit.displayText = photo.credit.name ? "Photo: " + photo.credit.name : "";
-      } else {
-        const removed = entry.photos.splice(index, 1)[0];
-        await del(removed.url);
-        entry.photos.forEach((photo, order) => { photo.displayOrder = order; });
-      }
-      await saveGalleryManifest(manifest);
+      let removedUrl = "";
+      const manifest = await mutateGalleryManifest(current => {
+        const entry = current.aircraft[registration];
+        const index = entry ? entry.photos.findIndex(photo => photo.id === photoId) : -1;
+        if (!entry || index < 0) throw new Error("Photo not found in the gallery manifest.");
+        if (request.method === "PATCH") {
+          const photo = entry.photos[index];
+          if (typeof payload.creditName === "string") photo.credit.name = payload.creditName.trim();
+          if (typeof payload.creditUrl === "string") photo.credit.url = payload.creditUrl.trim();
+          if (typeof payload.caption === "string") photo.caption = payload.caption.trim();
+          if (typeof payload.isVisible === "boolean") photo.isVisible = payload.isVisible;
+          photo.credit.displayText = photo.credit.name ? "Photo: " + photo.credit.name : "";
+        } else {
+          const removed = entry.photos.splice(index, 1)[0];
+          removedUrl = removed.url;
+          entry.photos.forEach((photo, order) => { photo.displayOrder = order; });
+        }
+      });
+      if (request.method === "DELETE" && removedUrl) await del(removedUrl);
       return NextResponse.json({ success: true, manifestVersion: manifest.manifestVersion });
     }
     return NextResponse.json({ error: "Unknown aircraft gallery operation." }, { status: 404 });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Aircraft gallery operation failed." }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Aircraft gallery operation failed.";
+    return NextResponse.json({ error: message }, { status: message.includes("Photo not found") ? 404 : 500 });
   }
 }
 
