@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { getIFSession } from "@/lib/infinite-flight/session";
+import { getIFDeviceId, getIFSession } from "@/lib/infinite-flight/session";
 
 export const runtime = "nodejs";
 const API_BASE = "https://api.infiniteflight.com/public/v3";
@@ -71,7 +71,7 @@ async function proxy(request: NextRequest, context: RouteContext) {
   if (!session) return NextResponse.json({ error: "Sign in with Infinite Flight to continue." }, { status: 401, headers: { "Cache-Control": "no-store" } });
 
   const { path: parts } = await context.params;
-  if (!parts?.length || parts.some(part => !/^[A-Za-z0-9._-]+$/.test(part))) return NextResponse.json({ error: "Invalid API path." }, { status: 400 });
+  if (!parts?.length || parts.some(part => part === "." || part === ".." || !/^[A-Za-z0-9._-]+$/.test(part))) return NextResponse.json({ error: "Invalid API path." }, { status: 400 });
   const path = "/" + parts.join("/");
   if (!allowed(request.method, path)) return NextResponse.json({ error: "This Infinite Flight API operation is not enabled in this app." }, { status: 405 });
 
@@ -79,8 +79,9 @@ async function proxy(request: NextRequest, context: RouteContext) {
   target.search = request.nextUrl.search;
   const body = ["GET", "HEAD"].includes(request.method) ? undefined : await request.text();
   const tokenKey = createHash("sha256").update(session.accessToken).digest("hex");
+  const deviceId = await getIFDeviceId();
   const bodyKey = body ? createHash("sha256").update(body).digest("hex") : "";
-  const cacheKey = `${tokenKey}:${request.method}:${target.toString()}:${bodyKey}`;
+  const cacheKey = `${tokenKey}:${deviceId}:${request.method}:${target.toString()}:${bodyKey}`;
   const ttl = ttlFor(request.method, path);
   const canCache = ttl > 0 && (request.method === "GET" || (request.method === "POST" && (path === "/users" || path.endsWith("/flights/flightplans"))));
 
