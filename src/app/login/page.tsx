@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
 const messages:Record<string,string>={
@@ -10,5 +11,5 @@ const messages:Record<string,string>={
 export default async function LoginPage({searchParams}:{searchParams:Promise<{error?:string}>}){
   const params=await searchParams;
   const error=params.error||"";
-  return <main className="auth-page"><a href="/" className="brand"><span className="brand-mark">VB</span><span>VIRTUAL BLUE<small>FLEET OPERATIONS</small></span></a><section className="auth-card"><p className="eyebrow">INFINITE FLIGHT · OAUTH 2.0</p><h1>Welcome aboard.</h1><p className="muted">Sign in securely with your Infinite Flight account. Your Live organisation membership controls what you can access.</p>{error&&<p className="form-error" role="alert">{messages[error]||"Sign-in could not be completed."}</p>}<a className="primary-button full" href="/api/auth/if/login">Continue with Infinite Flight <ArrowUpRight size={15}/></a><p className="fine-print">No Virtual Blue email or password is required. Infinite Flight handles your authentication and consent.</p></section></main>;
+  return <main className="auth-page"><Link href="/" className="brand"><span className="brand-mark">VB</span><span>VIRTUAL BLUE<small>FLEET OPERATIONS</small></span></Link><section className="auth-card"><p className="eyebrow">INFINITE FLIGHT · OAUTH 2.0</p><h1>Welcome aboard.</h1><p className="muted">Sign in securely with your Infinite Flight account. Your Live organisation membership controls what you can access.</p>{error&&<p className="form-error" role="alert">{messages[error]||"Sign-in could not be completed."}</p>}<a className="primary-button full" href="/api/auth/if/login">Continue with Infinite Flight <ArrowUpRight size={15}/></a><p className="fine-print">No Virtual Blue email or password is required. Infinite Flight handles your authentication and consent.</p></section></main>;
 }
