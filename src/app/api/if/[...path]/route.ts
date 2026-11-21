@@ -7,6 +7,7 @@ const API_BASE = "https://api.infiniteflight.com/public/v3";
 type RouteContext = { params: Promise<{ path: string[] }> };
 type CacheEntry = { body: string; status: number; headers: Record<string, string>; storedAt: number; expiresAt: number };
 const cache = new Map<string, CacheEntry>();
+const rateLimitUntil = new Map<string, number>();
 const UUID = "[0-9a-fA-F-]{36}";
 const SEG = "[A-Za-z0-9._-]+";
 
@@ -65,6 +66,7 @@ function response(body: string, status: number, headers: Record<string, string> 
 async function proxy(request: NextRequest, context: RouteContext) {
   const now = Date.now();
   for (const [key, entry] of cache) if (now >= entry.expiresAt) cache.delete(key);
+  for (const [key, until] of rateLimitUntil) if (now >= until) rateLimitUntil.delete(key);
   const session = await getIFSession();
   if (!session) return NextResponse.json({ error: "Sign in with Infinite Flight to continue." }, { status: 401, headers: { "Cache-Control": "no-store" } });
 
@@ -90,6 +92,12 @@ async function proxy(request: NextRequest, context: RouteContext) {
     if (cached) cache.delete(cacheKey);
   }
 
+  const blockedUntil = rateLimitUntil.get(tokenKey);
+  if (blockedUntil && now < blockedUntil) {
+    const waitSeconds = Math.max(1, Math.ceil((blockedUntil - now) / 1000));
+    return NextResponse.json({ error: "Infinite Flight rate limit reached. Wait before retrying." }, { status: 429, headers: { "Retry-After": String(waitSeconds), "Cache-Control": "no-store" } });
+  }
+
   const upstream = await fetch(target, {
     method: request.method,
     headers: {
@@ -100,6 +108,12 @@ async function proxy(request: NextRequest, context: RouteContext) {
     cache: "no-store"
   });
   const text = await upstream.text();
+  if (upstream.status === 429) {
+    const retryAfter = upstream.headers.get("retry-after");
+    const seconds = retryAfter ? Number(retryAfter) : Number.NaN;
+    const retryAt = retryAfter && Number.isFinite(seconds) ? now + Math.max(1, seconds) * 1000 : retryAfter ? Date.parse(retryAfter) : Number.NaN;
+    rateLimitUntil.set(tokenKey, Number.isFinite(retryAt) && retryAt > now ? retryAt : now + 60_000);
+  }
   const headers: Record<string, string> = {};
   for (const name of ["content-type", "retry-after", "x-rate-limit-remaining", "x-rate-limit-reset", "x-user-pro"]) {
     const value = upstream.headers.get(name);
