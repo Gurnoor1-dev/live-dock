@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState, useRef, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import vbLogo from "@/assets/vb.png";
 import maplibregl from "maplibre-gl";
 import { Activity, ArrowUpRight, CalendarDays, Command, Compass, LogOut, Menu, Moon, Plane, RadioTower, RefreshCw, ShieldCheck, Sun, Users, X } from "lucide-react";
 
@@ -243,13 +245,13 @@ export function InfiniteFlightDashboard(){
     finally{setBusy(false);}
   }
 
-  if(auth==="checking")return <main className="auth-page"><div className="auth-card"><span className="brand-mark">VB</span><h1>Preparing your flight deck</h1><p className="muted">Checking your Infinite Flight session…</p></div></main>;
-  if(auth==="signed-out")return <main className="auth-page"><Link href="/" className="brand"><span className="brand-mark">VB</span><span>VIRTUAL BLUE<small>FLEET OPERATIONS</small></span></Link><section className="auth-card"><p className="eyebrow">INFINITE FLIGHT · SECURE SIGN IN</p><h1>Welcome aboard.</h1><p className="muted">Continue with your Infinite Flight account. Your Virtual Blue membership, fleet and schedules are read directly from Infinite Flight.</p><button className="primary-button full" onClick={()=>window.location.assign("/api/auth/if/login")}>Continue with Infinite Flight <ArrowUpRight size={15}/></button><p className="fine-print">Virtual Blue does not use email/password accounts. Authentication is handled by Infinite Flight OAuth 2.0.</p></section></main>;
+  if(auth==="checking")return <main className="auth-page"><div className="auth-card"><Image src={vbLogo} alt="Virtual Blue" className="brand-logo" priority/><h1>Preparing your flight deck</h1><p className="muted">Checking your Infinite Flight session…</p></div></main>;
+  if(auth==="signed-out")return <main className="auth-page"><Link href="/" className="brand"><Image src={vbLogo} alt="Virtual Blue" className="brand-logo" priority/><span>VIRTUAL BLUE<small>FLEET OPERATIONS</small></span></Link><section className="auth-card"><p className="eyebrow">INFINITE FLIGHT · SECURE SIGN IN</p><h1>Welcome aboard.</h1><p className="muted">Continue with your Infinite Flight account. Your Virtual Blue membership, fleet and schedules are read directly from Infinite Flight.</p><button className="primary-button full" onClick={()=>window.location.assign("/api/auth/if/login")}>Continue with Infinite Flight <ArrowUpRight size={15}/></button><p className="fine-print">Virtual Blue does not use email/password accounts. Authentication is handled by Infinite Flight OAuth 2.0.</p></section></main>;
 
   return <div className="app-frame" data-theme={theme}>
     <aside className={`sidebar ${mobileNav?"open":""}`}>
-      <div className="brand"><span className="brand-mark">VB</span><span>VIRTUAL BLUE<small>FLEET OPERATIONS</small></span><button className="icon-button mobile-close" onClick={()=>setMobileNav(false)} aria-label="Close menu"><X size={18}/></button></div>
-      <div className="workspace"><span className="workspace-icon">VB</span><span><b>Virtual Blue</b><small>{organization?roleName(organization.role):"Organisation workspace"}</small></span></div>
+      <div className="brand"><Image src={vbLogo} alt="Virtual Blue" className="brand-logo" priority/><span>VIRTUAL BLUE<small>FLEET OPERATIONS</small></span><button className="icon-button mobile-close" onClick={()=>setMobileNav(false)} aria-label="Close menu"><X size={18}/></button></div>
+      <div className="workspace"><Image src={vbLogo} alt="" className="workspace-logo"/><span><b>Virtual Blue</b><small>{organization?roleName(organization.role):"Organisation workspace"}</small></span></div>
       <p className="nav-caption">OPERATIONS</p>
       <nav>{(["Fleet","Schedules","Crew"] as Tab[]).map((item,index)=><button key={item} className={active===item?"nav-item active":"nav-item"} onClick={()=>{setActive(item);setMobileNav(false);}}>{index===0?<Plane size={17}/>:index===1?<CalendarDays size={17}/>:<Users size={17}/>}<span>{item}</span></button>)}</nav>
       <p className="nav-caption secondary">MANAGEMENT</p>
