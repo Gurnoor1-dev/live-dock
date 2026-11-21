@@ -19,7 +19,7 @@ The original ZIP assets and the newly supplied HTML reference remain preserved i
 1. Install Node.js 22 or newer.
 2. Copy `.env.example` to `.env.local`.
 3. Add the Supabase publishable key from the Live Dock project.
-4. Apply `supabase/migrations/202611210001_virtual_blue_fleet.sql` in Supabase SQL Editor.
+4. Apply all four SQL migrations in `supabase/migrations/` in filename order (see `GUIDE.md`).
 5. Run `npm install`, then `npm run dev`.
 6. Open http://localhost:3000.
 
