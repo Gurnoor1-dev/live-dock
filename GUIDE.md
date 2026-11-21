@@ -34,6 +34,7 @@ The initial schema and its two hardening migrations have already been applied to
 1. `supabase/migrations/202611210001_virtual_blue_fleet.sql` — core tables, roles, triggers and RLS.
 2. `supabase/migrations/202611210002_rls_and_indexes.sql` — tighten policy overlap and add foreign-key indexes.
 3. `supabase/migrations/202611210003_profile_privacy_and_leg_integrity.sql` — restrict pilot profile visibility and validate same-organization aircraft/pilot assignments.
+4. `supabase/migrations/202611210004_single_airline_bootstrap.sql` — permit only the first Virtual Blue organization to be created.
 
 Confirm that all eight public tables appear in Table Editor and that RLS is enabled on each. Do not blindly rerun a migration after a partial failure; inspect the completed objects and migration history first.
 
@@ -48,7 +49,11 @@ In Supabase Dashboard → Authentication → URL Configuration:
 
 Enable Email as an auth provider. Configure SMTP before public launch. The app signs pilots in with email magic links and exchanges the PKCE code in the callback route.
 
-The first signed-in user without an organization sees the workspace setup form. Creating the Virtual Blue organization automatically makes that user its owner. The Admin tab includes initial forms to register aircraft and publish flight legs; editing, deletion and member invitation screens remain follow-on work.
+The first signed-in user without an organization sees the workspace setup form. Creating the Virtual Blue organization automatically makes that user its owner. The database permits only this first organization, so other authenticated accounts cannot create competing Virtual Blue workspaces.
+
+After the owner account is created, invite pilots from Supabase Dashboard → Authentication → Users. Then add each invited user's UUID to `organization_members` with the Virtual Blue `organization_id`, role `pilot` and status `active`. Use role `admin` only for trusted operations staff. Once the owner exists, disable public sign-ups in Supabase Auth settings; invited existing users can still sign in by email link.
+
+The Admin tab includes initial forms to register aircraft and publish flight legs; editing, deletion and in-app member invitation screens remain follow-on work.
 
 ## 5. Run and validate locally
 
