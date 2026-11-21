@@ -29,7 +29,7 @@ Get the publishable key from Supabase Dashboard → Project Settings → API Key
 
 ## 3. Database setup
 
-The initial schema and its two hardening migrations have already been applied to the Live Dock project. For a fresh Supabase project or a full rebuild, run these SQL files in this exact order from Supabase Dashboard → SQL Editor:
+The initial schema and three hardening/bootstrap migrations have already been applied to the Live Dock project. For a fresh Supabase project or a full rebuild, run these SQL files in this exact order from Supabase Dashboard → SQL Editor:
 
 1. `supabase/migrations/202611210001_virtual_blue_fleet.sql` — core tables, roles, triggers and RLS.
 2. `supabase/migrations/202611210002_rls_and_indexes.sql` — tighten policy overlap and add foreign-key indexes.
