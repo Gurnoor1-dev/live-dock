@@ -5,7 +5,7 @@ import { getIFSession } from "@/lib/infinite-flight/session";
 export const runtime = "nodejs";
 const API_BASE = "https://api.infiniteflight.com/public/v3";
 type RouteContext = { params: Promise<{ path: string[] }> };
-type CacheEntry = { body: string; status: number; headers: Record<string, string>; storedAt: number };
+type CacheEntry = { body: string; status: number; headers: Record<string, string>; storedAt: number; expiresAt: number };
 const cache = new Map<string, CacheEntry>();
 const UUID = "[0-9a-fA-F-]{36}";
 const SEG = "[A-Za-z0-9._-]+";
@@ -63,6 +63,8 @@ function response(body: string, status: number, headers: Record<string, string> 
 }
 
 async function proxy(request: NextRequest, context: RouteContext) {
+  const now = Date.now();
+  for (const [key, entry] of cache) if (now >= entry.expiresAt) cache.delete(key);
   const session = await getIFSession();
   if (!session) return NextResponse.json({ error: "Sign in with Infinite Flight to continue." }, { status: 401, headers: { "Cache-Control": "no-store" } });
 
@@ -82,7 +84,7 @@ async function proxy(request: NextRequest, context: RouteContext) {
 
   if (canCache) {
     const cached = cache.get(cacheKey);
-    if (cached && Date.now() - cached.storedAt < ttl) {
+    if (cached && now < cached.expiresAt) {
       return response(cached.body, cached.status, cached.headers);
     }
     if (cached) cache.delete(cacheKey);
@@ -105,7 +107,7 @@ async function proxy(request: NextRequest, context: RouteContext) {
   }
 
   if (canCache && upstream.ok) {
-    cache.set(cacheKey, { body: text, status: upstream.status, headers, storedAt: Date.now() });
+    cache.set(cacheKey, { body: text, status: upstream.status, headers, storedAt: now, expiresAt: now + ttl });
     if (cache.size > 500) {
       const oldest = cache.keys().next().value;
       if (oldest) cache.delete(oldest);
