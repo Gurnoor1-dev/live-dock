@@ -136,7 +136,7 @@ The Infinite Flight API owns its returned data. This app must follow the officia
 - Do not use API data to train, fine-tune, evaluate or improve AI/ML models.
 - Use API data only for simulated-flight features, not real-world aviation.
 
-The Next.js proxy uses process-memory TTL caching only. Cache keys are scoped by a one-way hash of the signed-in access token, are not written to a database or logs, and are invalidated after schedule mutations. The current dashboard refreshes on user action and does not run a background polling loop.
+The Next.js proxy uses process-memory TTL caching only. Cache keys are scoped by a one-way hash of the signed-in access token plus a random HTTP-only device identifier, so cached Live data is not shared across a user's devices. They are not written to a database or logs, and are invalidated after schedule mutations. The current dashboard refreshes on user action and does not run a background polling loop.
 
 The app keeps only OAuth tokens in an encrypted, HTTP-only cookie. It does not persist Infinite Flight API responses in backend tables. User-entered preferences can be added later, provided they are not copies or derived records of API data.
 
