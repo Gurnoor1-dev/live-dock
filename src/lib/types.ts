@@ -10,6 +10,7 @@ export type Aircraft = {
   current_airport: string | null;
   home_airport: string | null;
   image_url: string | null;
+  organization_id?: string;
 };
 
 export type FlightLeg = {
