@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { Activity, ArrowUpRight, CalendarDays, Command, Compass, LogOut, Menu, Moon, Plane, RadioTower, RefreshCw, ShieldCheck, Sun, Users, X } from "lucide-react";
 
@@ -55,7 +55,7 @@ export function InfiniteFlightDashboard(){
   const visibleAircraft=useMemo(()=>aircraft.filter(item=>item.registration.toLowerCase().includes(query.toLowerCase())),[aircraft,query]);
   const liveSchedules=schedules.filter(item=>[1,2,3,4,6].includes(item.status));
 
-  async function loadOrganization(){
+  const loadOrganization=useCallback(async()=>{
     setBusy(true);setError("");setNotice("");
     try{
       const [organizationResult,aircraftResult,membersResult,scheduleResult]=await Promise.all([
@@ -72,7 +72,7 @@ export function InfiniteFlightDashboard(){
       setOrganization(null);setAircraft([]);setMembers([]);setSchedules([]);
       setError(e instanceof Error?e.message:"Unable to load the Virtual Blue workspace.");
     }finally{setBusy(false);}
-  }
+  },[]);
 
   useEffect(()=>{
     let mounted=true;
@@ -89,7 +89,7 @@ export function InfiniteFlightDashboard(){
       }
     })();
     return()=>{mounted=false;};
-  },[]);
+  },[loadOrganization]);
 
   async function refresh(){await loadOrganization();}
   async function signOut(){
