@@ -1,0 +1,3859 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="preconnect" href="https://inva-api-638583919743.us-central1.run.app" crossorigin>
+  <script>(function invaPageBoot(w, H, API) {
+  var VIA_SITE = 'inva_api_via_site';
+  function stamp(p) {
+    if (typeof p !== 'string' || p.indexOf('?') !== -1 || p.indexOf('#') !== -1) return p;
+    var key = p.charAt(0) === '/' ? p.slice(1) : p;
+    var h = Object.prototype.hasOwnProperty.call(H, key) ? H[key] : null;
+    return h ? p + '?h=' + h : p;
+  }
+  function viaSite() {
+    try { return w.sessionStorage.getItem(VIA_SITE) === '1'; } catch (e) { return false; }
+  }
+  w.INVA_ASSET = stamp;
+  w.INVA_API_ORIGIN = API || '';
+  var nativeFetch = w.fetch;
+  if (typeof nativeFetch !== 'function') return;
+  w.fetch = function (input, init) {
+    var isUrl = typeof w.URL === 'function' && input instanceof w.URL;
+    if (typeof input !== 'string' && !isUrl) return nativeFetch.apply(w, arguments);
+    var s = String(input);
+    var origin = w.location && w.location.origin;
+    var path = null;
+    if (s.charAt(0) === '/' && s.charAt(1) !== '/') path = s;
+    else if (origin && s.indexOf(origin + '/') === 0) path = s.slice(origin.length);
+    if (path !== null && API && path.indexOf('/api/') === 0
+        && path.indexOf('/api/discord-interactions') !== 0 && !viaSite()) {
+      var method = String((init && init.method) || 'GET').toUpperCase();
+      return nativeFetch.call(w, API + path, init).catch(function (err) {
+        if (err && (err.name === 'AbortError' || err.name === 'TimeoutError')) throw err;
+        try { w.sessionStorage.setItem(VIA_SITE, '1'); } catch (e) { /* private mode */ }
+        if (method === 'GET' || method === 'HEAD') return nativeFetch.call(w, path, init);
+        throw err;
+      });
+    }
+    if (path === null && /^[A-Za-z][A-Za-z0-9+.-]*:/.test(s)) return nativeFetch.apply(w, arguments);
+    return nativeFetch.call(w, stamp(path !== null ? path : s), init);
+  };
+})(window,{"aircraft_registry.json":"b2632c306d","airlineEconomy.js":"2df2c4594c","airports-if-meta.js":"2089202329","airports-if-meta.json":"f6c80567c5","airports.json":"d74bff35fa","assets/css/admin.css":"0a89c672a2","assets/css/components.css":"0c947b378a","assets/css/contracts.css":"769ca68442","assets/css/dashboard.css":"7b13b6adfa","assets/css/dispatch-line.css":"cf802e2191","assets/css/financials.css":"4b541bb615","assets/css/fleet-activity.css":"62e69bc3fd","assets/css/fleet-admin-metrics.css":"bb894f8ffc","assets/css/fleet-bag.css":"cde506c891","assets/css/fleet-line.css":"9d697b198a","assets/css/fleet-preview.css":"80fc542c85","assets/css/pirep-line.css":"b1cbfcc388","assets/css/premium-fx.css":"8dc72e2570","assets/css/review-line.css":"1bc0a1078a","assets/css/seatmap.css":"8575259cc5","assets/css/shared.css":"fd5912314d","assets/css/shop-line.css":"55c22ae132","assets/css/tokens.css":"fd7b72793f","assets/css/ui.css":"6c8132627b","assets/js/admin-active-sectors.js":"b41441577b","assets/js/admin-auth.js":"c9d908a3f0","assets/js/admin-contracts.js":"bf558efefd","assets/js/admin-economy.js":"f30324ee66","assets/js/admin-fleet-contracts.js":"b5bc19da12","assets/js/admin-fleet.js":"3b9e97d2ab","assets/js/admin-maintenance.js":"288b04665b","assets/js/admin-navigation.js":"8c0f75cfd2","assets/js/admin-overview.js":"3466846b19","assets/js/admin-payroll.js":"7d6bc9d8b0","assets/js/admin-pilots.js":"5f1d7785ce","assets/js/admin-pireps.js":"a4421621ee","assets/js/admin-ratings.js":"83ca186bc1","assets/js/admin-route-sync.js":"54d5a19916","assets/js/admin-sector-management.js":"a103fc8c9c","assets/js/admin-sector-requests.js":"5bc288f527","assets/js/admin-shell.js":"00b5002999","assets/js/admin-special-events.js":"f178097ca5","assets/js/admin-va-manager-irl.js":"2945f547cb","assets/js/admin-va-manager.js":"15898fe264","assets/js/admin.js":"33c09b8f0d","assets/js/aircraft-photo.js":"8831f79a37","assets/js/api-auth.js":"4bb4beb133","assets/js/dashboard-auth.js":"6b362b8731","assets/js/dashboard-calendar.js":"83b5d83429","assets/js/dashboard-company.js":"734c93c6ef","assets/js/dashboard-contracts-guide.js":"c08ed3e9d6","assets/js/dashboard-contracts.js":"ff454f6342","assets/js/dashboard-debrief.js":"13f57e5865","assets/js/dashboard-discord-link.js":"24b1c61c50","assets/js/dashboard-dispatch.js":"b53eb2ba81","assets/js/dashboard-fleet-contracts.js":"36b3625894","assets/js/dashboard-fleet.js":"476da9cca7","assets/js/dashboard-flight-history.js":"f76311a619","assets/js/dashboard-flightplans.js":"8cb7669266","assets/js/dashboard-leaderboards.js":"317fbb0757","assets/js/dashboard-navigation.js":"1212703498","assets/js/dashboard-newsroom.js":"889a122448","assets/js/dashboard-ofp.js":"aa7d9639d7","assets/js/dashboard-overview.js":"1db7d6a06e","assets/js/dashboard-pilot-sector-builder.js":"516ef5be11","assets/js/dashboard-pirep.js":"2b6b8c4e33","assets/js/dashboard-preload.js":"c0809326d4","assets/js/dashboard-privacy.js":"42b60d0175","assets/js/dashboard-salary.js":"a59a0f26c3","assets/js/dashboard-sector-builder.js":"4b5979d681","assets/js/dashboard-shell.js":"9a52410eea","assets/js/dashboard-shop.js":"217b0befdd","assets/js/dashboard.js":"29d050f32c","assets/js/diwali-decor.js":"be0f4d8d3c","assets/js/fleet-activity.js":"d795ab0b15","assets/js/fleet-admin-metrics.js":"3a2bfea03b","assets/js/fleet-admin.js":"490cc01015","assets/js/fleet-dispatch.js":"1c92a7290e","assets/js/fleet-flight-bag.js":"aa4d48aac7","assets/js/fleet-globe.js":"e68029c1fd","assets/js/fleet-guide.js":"a53663eeb0","assets/js/fleet-mode-home.js":"fbdc5d826a","assets/js/fleet-mode.js":"998dd5e199","assets/js/fleet-preview-discord-data.js":"6896eb9240","assets/js/fleet-preview-fixtures.js":"d74f28d047","assets/js/fleet-preview-loader.js":"f201b314e1","assets/js/fleet-preview-ofp-data.js":"2c7719e578","assets/js/fleet-preview-ofp-shim.js":"48852d50aa","assets/js/fleet-preview-shim.js":"1a02733328","assets/js/fleet-preview.js":"0425c1b9a1","assets/js/fleet-rules.js":"6afec96f7f","assets/js/group-career-config.js":"7167e8d43c","assets/js/html-escape.js":"c2311cc3a7","assets/js/ifc-avatar.js":"a4c75a8171","assets/js/landing-visuals.js":"8100a7072e","assets/js/premium-themes.js":"ee63272741","assets/js/shell-runtime.js":"534908fa69","assets/js/theme-menu.js":"e1e351187f","assets/js/ui-shell.js":"62b2937701","assets/vendor/chart.umd.min.js":"d2af8974e9","assets/vendor/firebase/firebase-app-compat.js":"2d038b9f99","assets/vendor/firebase/firebase-auth-compat.js":"1451e1285d","assets/vendor/firebase/firebase-firestore-compat.js":"2334a57f78","assets/vendor/firebase/firebase-storage-compat.js":"a5a898a926","assets/vendor/jspdf.plugin.autotable.min.js":"0216761340","assets/vendor/jspdf.umd.min.js":"98ccf17aa1","assets/vendor/leaflet-1.4.0/leaflet.css":"605394f1cf","assets/vendor/leaflet-1.4.0/leaflet.js":"e816514843","assets/vendor/leaflet-1.9.4/leaflet.css":"337bfca5ca","assets/vendor/leaflet-1.9.4/leaflet.js":"db49d009c8","assets/vendor/maplibre/maplibre-gl.css":"576b085fdd","assets/vendor/maplibre/maplibre-gl.js":"be9633c4d8","assets/vendor/three/OrbitControls.js":"a98b5ce2bf","assets/vendor/three/three-global.js":"4ba73a676a","assets/vendor/three/three.min.js":"8a5f724990","assets/vendor/world-atlas-countries-110m.json":"2516c91586","baseChangePolicy.js":"f0621e2f5e","charts.json":"2d3d2c4c75","economyModifiers.js":"ba71dbd112","firebase-config.js":"dfd2cc21c0","fleet-exclusive-config.js":"42ead2dc11","fleet.json":"6f39805d07","fmc-guide.js":"c46eb5cc2f","invaCalc.js":"7574db247c","landingQuality.js":"8ac06cfb8c","logbook-generator.js":"db95fa6b0e","maintenance-helper.js":"7e00c2cea9","messages.json":"c4f96c0699","newsroomNarrator.js":"b37239b0ca","oceanic-tracks.js":"6190f10821","ofp-data.js":"36592b9c07","payslip-generator.js":"1dcdbba405","perf-aircraft.json":"bd5bb5e615","perf-runways.json":"d304758691","perf.js":"c30952d08f","profanityFilter.js":"94529ebfd8","qualification-config.js":"9b5c00c9e8","rank-utils.js":"a8cb2292e4","routes.json":"ae112de417","salary-helper.js":"85290e4845","seasonalCalendar.js":"2435296482","seatmap.js":"367af845e8","simbrief-helper.js":"31ceedac6a","weather-v2.css":"efcd0cb07e","weather-v2.js":"b77d39549a","webhooks-config.js":"ba7d811412"},"https://inva-api-638583919743.us-central1.run.app");</script>
+  <script>if (location.pathname.replace(/\/+$/, '') === '/preview/app') document.write('<script src="/assets/js/fleet-preview-shim.js?h=1a02733328"><\/script><script>if (!(window.INVA_PREVIEW_OK && window.INVA_PREVIEW_FIXTURES)) document.write(\'<p style="font:16px system-ui;padding:24px">The preview could not start. Refresh to try again.<\/p><plaintext hidden>\');<\/script>');</script>
+  <script src="/assets/js/html-escape.js?h=c2311cc3a7"></script>
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)">
+  <title>INVA | Fleet Mode</title>
+  <link rel="icon" href="/icon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/apple-icon.png">
+  <!--
+    Fleet Mode (pilot) — ISOLATED page, reachable at /fleet and /live.
+    Sign-in is Infinite Flight OAuth2 (PKCE). Backend: /api/fleetPilot*.
+    Design language: INVA Line (DESIGN.md at the repo root, applied
+    2026-10-08) — see the note at the top of <style>. Mobile first: base
+    rules are the 390px phone; 640, 760, 900 and 1140px layer up.
+  -->
+  <!-- Theme, before first paint. System (the default) follows the OS; light
+       and dark are explicit. Fleet Mode keeps its OWN key: the career portal
+       stores older theme names under `inva-theme` and resets anything it does
+       not recognise, so writing "light" there would fight it. -->
+  <script>
+    (function () {
+      var KEY = 'invaFleetTheme';
+      var root = document.documentElement;
+      var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+      var mode = 'system';
+      try { mode = localStorage.getItem(KEY) || 'system'; } catch (e) { /* private mode */ }
+
+      function effective() {
+        if (mode === 'light' || mode === 'dark') return mode;
+        return mq && mq.matches ? 'dark' : 'light';
+      }
+      function paint() {
+        if (mode === 'light' || mode === 'dark') root.setAttribute('data-theme', mode);
+        else { mode = 'system'; root.removeAttribute('data-theme'); }
+        // The browser chrome takes the header's colour in whichever theme shows.
+        var metas = document.querySelectorAll('meta[name="theme-color"]');
+        for (var i = 0; i < metas.length; i++) {
+          var dark = mode === 'system' ? metas[i].media.indexOf('dark') > -1 : effective() === 'dark';
+          metas[i].setAttribute('content', dark ? '#0a0a0a' : '#ffffff');
+        }
+      }
+      function changed() {
+        document.dispatchEvent(new CustomEvent('fh:theme', { detail: effective() }));
+      }
+      paint();
+      if (mq) {
+        var onOs = function () { if (mode === 'system') { paint(); changed(); } };
+        if (mq.addEventListener) mq.addEventListener('change', onOs);
+        else if (mq.addListener) mq.addListener(onOs);
+      }
+      window.INVAFleetTheme = {
+        get: function () { return mode; },
+        effective: effective,
+        set: function (next) {
+          mode = next === 'light' || next === 'dark' ? next : 'system';
+          try { localStorage.setItem(KEY, mode); } catch (e) { /* private mode */ }
+          paint();
+          changed();
+        },
+      };
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Geist + Geist Mono for the app (DESIGN.md §2.3). Manrope, Inter and IBM
+       Plex Mono are for the sign-in screen only, which keeps its own look. -->
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ════════════════════════════════════════════════════════════════════
+       FLEET MODE · INVA LINE — design-system note
+       ────────────────────────────────────────────────────────────────────
+       The crew-centre design system (DESIGN.md, repo root) applied to this
+       standalone page. Read DESIGN.md before changing anything here; this
+       note only records how it maps onto Fleet Mode.
+
+       Principles (DESIGN.md §1)
+         1. Monochrome surfaces. Colour only carries meaning: status, live.
+         2. Hairlines and whitespace, not boxes. Cards are one level deep.
+         3. One family: Geist, with Geist Mono for codes, registrations,
+            callsigns, flight numbers and clock times. Counts stay in Geist.
+         4. Sentence case everywhere. No uppercase labels, no glow, no blur.
+         5. Every status is a dot or pill WITH a word, never colour alone.
+
+       Themes: system (default) · light · dark, under the Fleet-only key
+       `invaFleetTheme` (boot script in <head>). The portal's accent themes
+       live in the career dashboard; this page offers none.
+
+       Tokens keep their --fh-* names so the Admin screen — not redesigned
+       yet — re-skins with everything else.
+         --fh-bg      surface-0  page ground
+         --fh-s1      surface-1  cards, header, tab rail, sheets
+         --fh-s2      surface-2  insets, hover fills, tracks, skeletons
+         --fh-s3      surface-3  menus and popovers (with --fh-shadow-2)
+         --fh-line    border-1   default hairline
+         --fh-line-2  border-2   hover border, emphasis, dashed empty states
+         --fh-ink / --fh-ink-2 / --fh-mute   ink-1 / ink-2 / ink-3
+         --fh-gold    PRIMARY FILL (historical name) = the accent: ink in
+                      light, near-white in dark. Text on it is --fh-bg.
+
+       Status (meanings FIXED; the metas in fleet-mode-home.js point at these)
+         air    In flight · Boarding · Taxiing            live, green, pulses
+         gnd    On ground (parked, available)             blue
+         warn   Maintenance · Delayed · Diverted · Needs bidding   caution
+         sched  Scheduled · Stored · Stale · Unknown      neutral grey
+         bad    Cancelled — the ONLY red on the page      negative
+         done   Landed · open                             blue (on ground), hollow dot
+         stop   Stopped en route — Fleet-only meaning, magenta, never red
+       Each meaning has a dot colour (--fh-air), a text ink that passes
+       contrast (--fh-air-ink) and a soft fill (--fh-air-soft).
+
+       One non-status colour, by owner decision (2026-10-07):
+         --fh-pilot  a pilot NAME seated on or asking for a leg (.fh-pilot) —
+                     the INVA.Live cyan, darkened in light mode for contrast.
+
+       Radius: --fh-r1 4 (tags) · --fh-r2 6 (buttons, inputs) · --fh-r-md 8
+       (insets, notes) · --fh-r3 12 (cards, sheets, dialogs).
+       Layout: --fh-col 1200px content column; the header (--fh-head) scrolls
+       away and the tab rail (--fh-tabs) sticks — --fh-top is what anything
+       sticky has to clear.
+       ════════════════════════════════════════════════════════════════════ */
+    :root {
+      color-scheme: light;
+      --fh-bg: #fafafa;
+      --fh-s1: #ffffff;
+      --fh-s2: #f5f5f5;
+      --fh-s3: #ffffff;
+      --fh-line: #ebebeb;
+      --fh-line-2: #d9d9d9;
+      --fh-ink: #171717;
+      --fh-ink-2: #5e5e5e;
+      --fh-mute: #767676;
+      --fh-gold: #171717;
+      --fh-gold-hi: #3a3a3a;
+      --fh-soft: rgba(0, 0, 0, 0.05);
+      --fh-focus: #0070f3;
+      --fh-scrim: rgba(0, 0, 0, 0.22);
+      --fh-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.035);
+      --fh-shadow-2: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 4px 8px -4px rgba(0, 0, 0, 0.06), 0 18px 36px -10px rgba(0, 0, 0, 0.14);
+      --fh-shadow-3: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 24px 56px -12px rgba(0, 0, 0, 0.22);
+
+      --fh-air: #3f9e53;  --fh-air-ink: #1f7a36;  --fh-air-soft: #e8f6ec;
+      --fh-gnd: #0070f3;  --fh-gnd-ink: #005fcc;  --fh-gnd-soft: #eaf3ff;
+      --fh-warn: #f5a623; --fh-warn-ink: #975700; --fh-warn-soft: #fff3dd;
+      --fh-ready-a: #f08c1a; --fh-ready-b: #e0b01c; --fh-ready-ink: #8a5300;
+      --fh-bad: #e5484d;  --fh-bad-ink: #c1262c;  --fh-bad-soft: #ffeded;
+      --fh-stop: #ab4aba; --fh-stop-ink: #953ea3; --fh-stop-soft: #fbeefb;
+      --fh-done: #0070f3; --fh-done-ink: #005fcc; --fh-done-soft: #eaf3ff;
+      --fh-sched: #8f8f8f;
+      --fh-pilot: #0072ad;
+
+      --fh-blurple: #5865f2;
+      --fh-blurple-ink: #4752c4;
+      --fh-blurple-wash: rgba(88, 101, 242, 0.15);
+
+      /* the map: base colour under the tiles, the hub mark, control icons */
+      --fh-map-bg: #f2f2f2;
+      /* the My activity route globe (the lazy route-globe module reads these) */
+      --fh-globe-sphere: #ececef; --fh-globe-land: #8a8a94; --fh-globe-glow: #9aa0b4;
+      --fh-globe-arc-0: #b5530f; --fh-globe-arc-1: #cf8f4a; --fh-globe-arc-2: #dfc09a;
+      --fh-globe-dot: #4a4a4a; --fh-globe-dot-hi: #171717; --fh-globe-head: #8a3a05; --fh-globe-label: #171717;
+      --fh-logo-filter: grayscale(1) brightness(0.2);
+      --fh-ctl-invert: 0;
+      --fg-scrim: rgba(0, 0, 0, 0.5);
+    }
+
+    /* Dark: follows the OS when no theme is chosen … */
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        color-scheme: dark;
+        --fh-bg: #000000;
+        --fh-s1: #0a0a0a;
+        --fh-s2: #141414;
+        --fh-s3: #1a1a1a;
+        --fh-line: #232323;
+        --fh-line-2: #363636;
+        --fh-ink: #ededed;
+        --fh-ink-2: #a1a1a1;
+        --fh-mute: #8a8a8a;
+        --fh-gold: #ededed;
+        --fh-gold-hi: #cccccc;
+        --fh-soft: rgba(255, 255, 255, 0.06);
+        --fh-focus: #3291ff;
+        --fh-scrim: rgba(0, 0, 0, 0.62);
+        --fh-shadow-1: 0 0 0 0 transparent;
+        --fh-shadow-2: 0 0 0 1px #2c2c2c, 0 18px 40px -8px rgba(0, 0, 0, 0.75);
+        --fh-shadow-3: 0 0 0 1px #2c2c2c, 0 28px 64px -12px rgba(0, 0, 0, 0.8);
+        --fh-air: #46a758;  --fh-air-ink: #5dd27c;  --fh-air-soft: rgba(70, 167, 88, 0.17);
+        --fh-gnd: #1a7cf5;  --fh-gnd-ink: #58a6ff;  --fh-gnd-soft: rgba(0, 112, 243, 0.2);
+        --fh-warn: #f5a623; --fh-warn-ink: #f5b84a; --fh-warn-soft: rgba(245, 166, 35, 0.15);
+        --fh-ready-a: #f59e2a; --fh-ready-b: #f5d04a; --fh-ready-ink: #f7c768;
+        --fh-bad: #e5484d;  --fh-bad-ink: #ff7378;  --fh-bad-soft: rgba(229, 72, 77, 0.17);
+        --fh-stop: #c564d4; --fh-stop-ink: #e796f3; --fh-stop-soft: rgba(197, 100, 212, 0.18);
+        --fh-done: #1a7cf5; --fh-done-ink: #58a6ff; --fh-done-soft: rgba(0, 112, 243, 0.2);
+        --fh-sched: #7a7a7a;
+        --fh-pilot: #01b6ff;
+        --fh-blurple-ink: #c9cdfb;
+        --fh-blurple-wash: rgba(88, 101, 242, 0.3);
+        --fh-map-bg: #0a0a0a;
+        --fh-globe-sphere: #080808; --fh-globe-land: #6f6f6f; --fh-globe-glow: #f5c773;
+        --fh-globe-arc-0: #f5b84a; --fh-globe-arc-1: #9a7430; --fh-globe-arc-2: #54401c;
+        --fh-globe-dot: #d9d9d9; --fh-globe-dot-hi: #ffffff; --fh-globe-head: #fff1cf; --fh-globe-label: #ededed;
+        --fh-logo-filter: grayscale(1) brightness(1.6);
+        --fh-ctl-invert: 1;
+        --fg-scrim: rgba(0, 0, 0, 0.72);
+      }
+    }
+
+    /* … and when chosen explicitly. Same values; keep the two blocks in step. */
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --fh-bg: #000000;
+      --fh-s1: #0a0a0a;
+      --fh-s2: #141414;
+      --fh-s3: #1a1a1a;
+      --fh-line: #232323;
+      --fh-line-2: #363636;
+      --fh-ink: #ededed;
+      --fh-ink-2: #a1a1a1;
+      --fh-mute: #8a8a8a;
+      --fh-gold: #ededed;
+      --fh-gold-hi: #cccccc;
+      --fh-soft: rgba(255, 255, 255, 0.06);
+      --fh-focus: #3291ff;
+      --fh-scrim: rgba(0, 0, 0, 0.62);
+      --fh-shadow-1: 0 0 0 0 transparent;
+      --fh-shadow-2: 0 0 0 1px #2c2c2c, 0 18px 40px -8px rgba(0, 0, 0, 0.75);
+      --fh-shadow-3: 0 0 0 1px #2c2c2c, 0 28px 64px -12px rgba(0, 0, 0, 0.8);
+      --fh-air: #46a758;  --fh-air-ink: #5dd27c;  --fh-air-soft: rgba(70, 167, 88, 0.17);
+      --fh-gnd: #1a7cf5;  --fh-gnd-ink: #58a6ff;  --fh-gnd-soft: rgba(0, 112, 243, 0.2);
+      --fh-warn: #f5a623; --fh-warn-ink: #f5b84a; --fh-warn-soft: rgba(245, 166, 35, 0.15);
+      --fh-ready-a: #f59e2a; --fh-ready-b: #f5d04a; --fh-ready-ink: #f7c768;
+      --fh-bad: #e5484d;  --fh-bad-ink: #ff7378;  --fh-bad-soft: rgba(229, 72, 77, 0.17);
+      --fh-stop: #c564d4; --fh-stop-ink: #e796f3; --fh-stop-soft: rgba(197, 100, 212, 0.18);
+      --fh-done: #1a7cf5; --fh-done-ink: #58a6ff; --fh-done-soft: rgba(0, 112, 243, 0.2);
+      --fh-sched: #7a7a7a;
+      --fh-pilot: #01b6ff;
+      --fh-blurple-ink: #c9cdfb;
+      --fh-blurple-wash: rgba(88, 101, 242, 0.3);
+      --fh-map-bg: #0a0a0a;
+      --fh-globe-sphere: #080808; --fh-globe-land: #6f6f6f; --fh-globe-glow: #f5c773;
+      --fh-globe-arc-0: #f5b84a; --fh-globe-arc-1: #9a7430; --fh-globe-arc-2: #54401c;
+      --fh-globe-dot: #d9d9d9; --fh-globe-dot-hi: #ffffff; --fh-globe-head: #fff1cf; --fh-globe-label: #ededed;
+      --fh-logo-filter: grayscale(1) brightness(1.6);
+      --fh-ctl-invert: 1;
+      --fg-scrim: rgba(0, 0, 0, 0.72);
+    }
+
+    /* Foundations — every theme. */
+    :root {
+      --fh-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      --fh-mono: 'Geist Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+      --fh-r1: 4px;
+      --fh-r2: 6px;
+      --fh-r-md: 8px;
+      --fh-r3: 12px;
+      --fh-col: 1200px;
+      --fh-head: 56px;
+      --fh-tabs: 46px;
+      --fh-top: 46px;
+      --fh-gut: 16px;
+      --fh-rail: 356px;
+      --fh-ease: cubic-bezier(.2, .8, .2, 1);
+      /* Line icons used as masks, so they take any colour (DESIGN.md App. C). */
+      --fh-i-alert: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 8v4M12 16h.01'/%3E%3C/svg%3E");
+      --fh-i-info: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 16v-4M12 8h.01'/%3E%3C/svg%3E");
+    }
+    @media (min-width: 640px) {
+      :root { --fh-head: 64px; --fh-gut: 24px; }
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; -webkit-text-size-adjust: 100%; }
+    body {
+      min-height: 100%;
+      background: var(--fh-bg);
+      color: var(--fh-ink);
+      font-family: var(--fh-sans);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: clip;
+    }
+    /* The sign-in screen is dark in every theme; so is the page under it. */
+    body:has(> #signinView:not([hidden])) { background: #050609; color-scheme: dark; }
+    button, input, select { font: inherit; }
+    button { border: 0; background: none; cursor: pointer; }
+    [hidden] { display: none !important; }
+    img { max-width: 100%; }
+    a { color: var(--fh-ink); }
+    a:hover { color: var(--fh-ink); }
+    ::selection { background: color-mix(in srgb, var(--fh-focus) 22%, transparent); }
+
+
+    /* ── sign in — the ORIGINAL "Fly the fleet" screen, kept by owner decision
+       (2026-09-30) outside the Quiet Instrument language. Its tokens are scoped
+       to #signinView so nothing leaks into #homeView. ─────────────────────── */
+    #signinView {
+      --bg: #050609;
+      --card: #07090d;
+      --panel: #0d1016;
+      --inner: #13171f;
+      --gold: #e6b157;
+      --gold-hi: #f5cd86;
+      --gold-border: rgba(230, 177, 87, 0.14);
+      --gold-border-soft: rgba(230, 177, 87, 0.08);
+      --gold-border-strong: rgba(230, 177, 87, 0.45);
+      --text: #eef0f4;
+      --text-mid: #a9afba;
+      --text-dim: #646c79;
+      --green: #6fc28b;
+      --amber: #e7c163;
+      --red: #e07b6e;
+      --blue: #7fa9dd;
+      --cyan: #01b6ff;
+      --cyan-deep: #018fd0;
+      --cyan-ink: #04202e;
+      --mono: 'IBM Plex Mono', monospace;
+      --disp: 'Manrope', sans-serif;
+      --body: 'Inter', -apple-system, sans-serif;
+      font-family: var(--body);
+      background: var(--bg);
+      color: var(--text);
+    }
+    :where(#signinView) * { box-sizing: border-box; margin: 0; padding: 0; }
+    :where(#signinView) button { font-family: inherit; border: none; background: none; color: inherit; cursor: pointer; }
+
+    .pill-fleet {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gold);
+      background: rgba(230, 177, 87, 0.12);
+      border: 1px solid rgba(230, 177, 87, 0.28);
+      border-radius: 999px;
+      padding: 3px 10px;
+    }
+
+    .badge-beta {
+      font-family: var(--disp);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #0a0602;
+      background: linear-gradient(100deg, #f5cd86 0%, #e6b157 45%, #01b6ff 130%);
+      border-radius: 999px;
+      padding: 4px 11px;
+      box-shadow: 0 0 18px rgba(230, 177, 87, 0.35), 0 0 30px rgba(1, 182, 255, 0.12);
+    }
+
+    .btn-cyan {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--cyan);
+      border: 1px solid var(--cyan-deep);
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--cyan-ink);
+      transition: filter .15s ease, transform .05s ease;
+      white-space: nowrap;
+    }
+
+    .btn-cyan:hover {
+      filter: brightness(1.08);
+    }
+
+    .btn-cyan:active {
+      transform: translateY(1px);
+    }
+
+    .btn-cyan:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    /* ── sign-in ──────────────────────────────────────────────────────── */
+    .si {
+      /* overflow-x: CLIP (not hidden) clips the yoke's horizontal overflow
+         WITHOUT turning .si into a vertical scroll container — that hidden-x
+         side effect was the second scrollbar. Only the document scrolls now. */
+      position: relative;
+      overflow-x: clip;
+      display: flex;
+      flex-direction: column;
+      background:
+        radial-gradient(1100px 560px at 75% -10%, rgba(230, 177, 87, 0.07), transparent 60%),
+        radial-gradient(900px 520px at 12% 118%, rgba(1, 182, 255, 0.10), transparent 55%),
+        var(--bg);
+    }
+
+    /* The sign-in content, centered on a full-height first screen. */
+    .si-stage {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px 0;
+    }
+
+    /* fleet-globe.png — the WHOLE image (never cropped), full-bleed, flowing
+       BELOW the first screen. Its faded top tucks just under the sign-in card;
+       the page scrolls to reveal the rest. Responsive: width:100% + height:auto.
+
+       The tuck is `max(-33vh, -22%)`, i.e. "pull up 33vh, but never more than
+       22% of the image's width". The image's HEIGHT scales with the viewport's
+       WIDTH (height:auto), while vh scales with its HEIGHT — so a bare -33vh
+       that tucks ~26% of a ~1150px-tall desktop globe would swallow ~90% of the
+       ~310px-tall phone one. A % margin resolves against the container's width,
+       so the -22% arm keeps the tuck at a constant ~27% of the globe on narrow
+       screens, while wide screens still get exactly the tuned -33vh. */
+    .si-globe {
+      display: block;
+      width: 100%;
+      height: auto;
+      margin-top: max(-33vh, -22%);
+      margin-bottom: -1px;
+      position: relative;
+      z-index: 0;
+      opacity: 0.95;
+      pointer-events: none;
+      user-select: none;
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 22%, #000 100%);
+      mask-image: linear-gradient(to bottom, transparent 0%, #000 22%, #000 100%);
+    }
+
+    .si-wrap {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 22px;
+    }
+
+    .si-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .si-brand .name {
+      font-family: var(--disp);
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+
+    /* The hero sits above the globe backdrop and the sub text. The yoke is
+       anchored to the END of the "fleet" wordmark — left:100% of .fleet-wrap, so
+       it tracks the word at any font size / viewport — and paints ON TOP of the
+       text (z 2 over the glyphs). "Fade" = plain transparency at the bottom edge. */
+    .si-hero {
+      position: relative;
+      z-index: 3;
+      align-self: stretch;
+    }
+
+    .si-display {
+      position: relative;
+    }
+
+    .fleet-wrap {
+      position: relative;
+      display: inline-block;
+    }
+
+    .si-yoke {
+      position: absolute;
+      z-index: 2;
+      left: 100%;
+      bottom: -0.3em;
+      margin-left: -0.55em;
+      width: clamp(128px, 20vw, 188px);
+      height: auto;
+      -webkit-mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
+      mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
+    }
+
+    .si-sub {
+      position: relative;
+      z-index: 1;
+    }
+
+    .si-display {
+      font-family: var(--disp);
+      font-weight: 800;
+      line-height: 0.96;
+      font-size: clamp(56px, 14vw, 96px);
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      background: linear-gradient(160deg, #eef0f4 15%, #f5cd86 55%, #e6b157 78%, #8a6a33 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .si-display em {
+      font-style: normal;
+      background: linear-gradient(120deg, #01b6ff 0%, #7fd6ff 55%, #f5cd86 120%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .si-sub {
+      font-size: 15px;
+      color: var(--text-mid);
+      line-height: 23px;
+      max-width: 42ch;
+    }
+
+    .si-card {
+      width: 100%;
+      background: rgba(9, 12, 18, 0.5);
+      border: 1px solid rgba(230, 177, 87, 0.18);
+      border-radius: 20px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      backdrop-filter: blur(16px) saturate(120%);
+      -webkit-backdrop-filter: blur(16px) saturate(120%);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45), 0 32px 80px rgba(0, 0, 0, 0.4);
+    }
+
+    .si-card-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .btn-xl {
+      padding: 15px 20px;
+      font-size: 15px;
+      border-radius: 12px;
+      width: 100%;
+    }
+
+    .si-error {
+      font-size: 13px;
+      color: var(--red);
+      line-height: 19px;
+    }
+
+
+    /* ── app shell ────────────────────────────────────────────────────── */
+    #homeView {
+      background: var(--fh-bg);
+      color: var(--fh-ink);
+      font-family: var(--fh-sans);
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding-bottom: calc(56px + env(safe-area-inset-bottom));
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Zero-specificity box reset — every .fh-* rule outranks it. */
+    :where(#homeView) button {
+      font: inherit;
+      background: none;
+      border: 0;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    /* The colour reset stays its own rule (see the liveness test). */
+    :where(#homeView) button, :where(#homeView) a { color: var(--fh-ink); text-decoration: none; }
+
+    :where(#homeView) a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+    :where(#homeView) :focus-visible {
+      outline: 2px solid var(--fh-focus);
+      outline-offset: 2px;
+      border-radius: var(--fh-r1);
+    }
+
+    #homeView, #homeView * { scrollbar-width: thin; scrollbar-color: var(--fh-line-2) transparent; }
+    #homeView svg { flex: none; }
+
+    /* ── type atoms ───────────────────────────────────────────────────── */
+    /* Mono is for codes and clocks: ICAO/IATA, registrations, callsigns,
+       flight numbers, type designators, times. Counts and words stay Geist. */
+    .fh-mono, .fh-num, .fh-cs, .fh-icao, .fh-reg, .fh-eta-t, .fh-mono-dim {
+      font-family: var(--fh-mono);
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: 'tnum' 1, 'zero' 1;
+    }
+    .fh-k { font-size: 13px; font-weight: 400; line-height: 1.4; color: var(--fh-ink-2); }
+    .fh-sub { font-size: 13px; color: var(--fh-ink-2); min-width: 0; }
+    .fh-dim { color: var(--fh-mute); }
+    .fh-strong, .fh-strong-sm { color: var(--fh-ink); font-weight: 500; }
+    .fh-mono-dim { font-size: 12px; color: var(--fh-mute); }
+    .fh-grow { flex: 1; }
+    .fh-r { text-align: right; justify-content: flex-end; }
+    .fh-arr { font-family: var(--fh-mono); color: var(--fh-mute); padding: 0 2px; }
+    .fh-hr { height: 1px; background: var(--fh-line); }
+    .fh-tz { font-size: 14px; color: var(--fh-ink-2); }
+    .fh-day { font-size: 14px; font-weight: 500; color: var(--fh-ink); white-space: nowrap; }
+    .fh-empty {
+      max-width: 56ch;
+      margin: 0 auto;
+      padding: 32px 16px;
+      text-align: center;
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--fh-ink-2);
+      text-wrap: pretty;
+    }
+    /* An error replaces nothing: it says what failed, above what still works. */
+    .fh-error {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px;
+      border-radius: var(--fh-r-md);
+      background: var(--fh-bad-soft);
+      color: var(--fh-ink);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .fh-error::before {
+      content: '';
+      width: 16px;
+      height: 16px;
+      flex: none;
+      margin-top: 1px;
+      background: var(--fh-bad-ink);
+      -webkit-mask: var(--fh-i-alert) center / 16px no-repeat;
+      mask: var(--fh-i-alert) center / 16px no-repeat;
+    }
+
+    /* loading skeletons (static shell; the first render replaces them) */
+    .fh-skel {
+      display: block;
+      height: 12px;
+      border-radius: var(--fh-r1);
+      background: linear-gradient(90deg, var(--fh-s2) 0%, var(--fh-line) 50%, var(--fh-s2) 100%);
+      background-size: 200% 100%;
+      animation: fh-shimmer 1.4s linear infinite;
+    }
+    .fh-skel-row { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-top: 1px solid var(--fh-line); }
+    .fh-skel-row:first-child { border-top: 0; }
+    .fh-skel-v { height: 24px; width: 56px; }
+    @keyframes fh-shimmer { to { background-position: -200% 0; } }
+
+    /* ── header (scrolls away) ────────────────────────────────────────── */
+    .fh-wrap {
+      width: 100%;
+      max-width: calc(var(--fh-col) + 2 * var(--fh-gut));
+      margin-inline: auto;
+      padding-inline: var(--fh-gut);
+    }
+    .fh-top { background: var(--fh-s1); }
+    .fh-top-in { display: flex; align-items: center; gap: 10px; height: var(--fh-head); }
+    /* The pilot, flush left: avatar + IF name + a "Fleet Mode" pill. A plain
+       label — the menu is on the server icon at the right. On a phone the
+       name gives way (ellipsis) before the pill or the icon do. */
+    .fh-who { display: flex; align-items: center; gap: 8px; min-width: 0; margin-right: auto; }
+    .fh-who .fh-avatar { width: 28px; height: 28px; font-size: 11px; flex: none; }
+    .fh-who-name {
+      min-width: 0;
+      font-size: 14px; font-weight: 500; color: var(--fh-ink);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .fh-mode-pill {
+      flex: none;
+      height: 22px; padding: 0 8px;
+      border-radius: 999px;
+      font-size: 12px; font-weight: 500; line-height: 22px; white-space: nowrap;
+      color: var(--fh-ink-2);
+      background: var(--fh-s2);
+      box-shadow: inset 0 0 0 1px var(--fh-line);
+    }
+    .fh-clock {
+      font-family: var(--fh-mono);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--fh-ink-2);
+      white-space: nowrap;
+      padding: 0 6px;
+    }
+    .fh-clock:empty { display: none; }
+
+    /* ── account menu ─────────────────────────────────────────────────── */
+    .fh-me { display: flex; align-items: center; gap: 8px; flex: none; }
+    /* The Indian Virtual server icon: the LAST item in the header, and the
+       button that opens the account / theme menu. Hover and focus thicken the
+       ring; open (native popover or the fallback class) paints it in focus. */
+    .fh-mebtn {
+      position: relative;
+      flex: none;
+      width: 36px; height: 36px;
+      display: block;
+      padding: 0;
+      border-radius: var(--fh-r2);
+      box-shadow: 0 0 0 1px var(--fh-line);
+      transition: box-shadow 120ms;
+    }
+    .fh-mebtn img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+    /* A 44px hit area round the 36px icon (DESIGN.md §10), not clipped. */
+    .fh-mebtn::before { content: ""; position: absolute; inset: -4px; }
+    .fh-mebtn:hover { box-shadow: 0 0 0 2px var(--fh-line-2); }
+    :where(#homeView) .fh-mebtn:focus-visible { border-radius: var(--fh-r2); }
+    /* Kept as SEPARATE rules: an unsupported :popover-open would void a shared list. */
+    .fh-me:has(.fh-menu:popover-open) .fh-mebtn { box-shadow: 0 0 0 2px var(--fh-focus); }
+    .fh-me:has(.fh-menu-fallback-open) .fh-mebtn { box-shadow: 0 0 0 2px var(--fh-focus); }
+    .fh-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: grid; place-items: center;
+      border: 1px solid var(--fh-line);
+      background: var(--fh-s2);
+      font-family: var(--fh-mono); font-size: 12px; font-weight: 500; color: var(--fh-ink);
+      transition: border-color 120ms;
+    }
+    /* A native popover at every width (no JS); the fallback class below covers
+       browsers without the Popover API. Still inside #homeView, so the
+       delegated click handler sees every button. */
+    .fh-menu {
+      position: fixed;
+      inset: calc(var(--fh-head) - 6px) max(var(--fh-gut), calc((100vw - var(--fh-col)) / 2)) auto auto;
+      margin: 0;
+      width: min(272px, calc(100vw - 32px));
+      padding: 6px;
+      border: 0;
+      border-radius: var(--fh-r3);
+      background: var(--fh-s3);
+      color: var(--fh-ink);
+      box-shadow: var(--fh-shadow-2);
+      flex-direction: column;
+      overflow: visible;
+    }
+    .fh-menu:popover-open { display: flex; }
+    /* No Popover API (iOS Safari < 17): fleet-mode-home.js toggles this class.
+       Kept as SEPARATE rules: an unsupported :popover-open would void a shared list. */
+    @supports not selector(:popover-open) {
+      .fh-menu { display: none; z-index: 100; }
+      .fh-menu.fh-menu-fallback-open { display: flex; }
+    }
+    .fh-menu-head {
+      display: flex; flex-direction: column; gap: 1px;
+      padding: 8px 10px 10px;
+      margin-bottom: 6px;
+      border-bottom: 1px solid var(--fh-line);
+      min-width: 0;
+    }
+    .fh-me-name { font-size: 14px; font-weight: 500; color: var(--fh-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fh-menu-sub { font-size: 12px; color: var(--fh-mute); }
+    .fh-iconbtn {
+      display: flex; align-items: center; gap: 10px;
+      width: 100%;
+      min-height: 40px;
+      padding: 0 10px;
+      border-radius: var(--fh-r2);
+      font-size: 14px;
+      color: var(--fh-ink);
+      white-space: nowrap;
+      transition: background-color 120ms;
+    }
+    .fh-iconbtn svg { width: 16px; height: 16px; color: var(--fh-ink-2); }
+    .fh-iconbtn:hover { background: var(--fh-soft); }
+    .fh-iconbtn:disabled { color: var(--fh-mute); cursor: progress; }
+    .fh-menu-sep { height: 1px; margin: 6px -6px; background: var(--fh-line); }
+    .fh-menu-theme {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      min-height: 40px; padding: 0 6px 0 10px;
+      font-size: 14px; color: var(--fh-ink);
+    }
+    .fh-theme { display: inline-flex; gap: 2px; padding: 2px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--fh-line); }
+    .fh-theme > button {
+      display: grid; place-items: center;
+      width: 30px; height: 30px; border-radius: 50%;
+      color: var(--fh-mute);
+      transition: color 120ms, background-color 120ms;
+    }
+    .fh-theme > button:hover { color: var(--fh-ink); }
+    .fh-theme > button[aria-pressed="true"] { color: var(--fh-ink); background: var(--fh-s2); box-shadow: inset 0 0 0 1px var(--fh-line); }
+    .fh-theme svg { width: 14px; height: 14px; }
+
+    /* ── tab rail (sticky) ────────────────────────────────────────────── */
+    .fh-tabrail {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: var(--fh-s1);
+      border-bottom: 1px solid var(--fh-line);
+    }
+    .fh-tabrail-in { display: flex; align-items: center; }
+    /* The server icon slides in once the header has scrolled away (.is-stuck). */
+    .fh-tabrail-mark {
+      display: flex; align-items: center;
+      width: 0; opacity: 0; overflow: hidden; flex: none;
+      transform: translateY(-6px);
+      transition: width 200ms ease, opacity 200ms ease, transform 200ms ease, margin 200ms ease;
+    }
+    .fh-tabrail-mark img { flex: none; width: 22px; height: 22px; border-radius: var(--fh-r1); box-shadow: 0 0 0 1px var(--fh-line); }
+    .fh-tabrail.is-stuck .fh-tabrail-mark { width: 22px; margin-right: 14px; opacity: 1; transform: none; }
+    .fh-tabscroll {
+      position: relative;
+      display: flex;
+      flex: 1;
+      min-width: 0;
+      margin-inline: -10px;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scrollbar-width: none;
+    }
+    .fh-tabscroll::-webkit-scrollbar { display: none; }
+    .fh-tabscroll.has-more {
+      -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 44px), transparent);
+      mask-image: linear-gradient(90deg, #000 calc(100% - 44px), transparent);
+    }
+    .fh-nav { display: flex; align-items: stretch; }
+    .fh-navlink {
+      position: relative;
+      z-index: 1;
+      flex: none;
+      display: flex;
+      align-items: center;
+      height: var(--fh-tabs);
+      padding: 0 10px;
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--fh-ink-2);
+      white-space: nowrap;
+      border-radius: var(--fh-r2);
+      transition: color 120ms;
+    }
+    .fh-navlink:hover { color: var(--fh-ink); }
+    /* Active tab: ink text, plus the sliding 2px ink rule (.fh-tabink). Never a fill. */
+    .fh-navlink.on { color: var(--fh-ink); }
+    .fh-navlink:focus-visible { outline-offset: -6px; }
+    .fh-tabhover {
+      position: absolute; left: 0; top: 8px;
+      height: 30px; width: 0;
+      border-radius: var(--fh-r2);
+      background: var(--fh-soft);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 160ms ease, width 160ms ease, opacity 160ms ease;
+    }
+    .fh-tabink {
+      position: absolute; left: 0; bottom: 0;
+      height: 2px; width: 0;
+      border-radius: 2px 2px 0 0;
+      background: var(--fh-gold);
+      pointer-events: none;
+      transition: transform 220ms var(--fh-ease), width 220ms var(--fh-ease);
+    }
+
+    /* status toast (#fhFollowToast, #fhAdmToast) — bottom right, full width on a phone */
+    .fh-follow-toast {
+      position: fixed;
+      right: 16px;
+      bottom: calc(16px + env(safe-area-inset-bottom));
+      z-index: 95;   /* above the tail sheet (70) and the dialogs (80, 90) */
+      width: max-content;
+      max-width: min(360px, calc(100vw - 32px));
+      padding: 12px 14px;
+      border-radius: var(--fh-r-md);
+      background: var(--fh-s3);
+      color: var(--fh-ink);
+      font-size: 14px;
+      line-height: 1.45;
+      box-shadow: var(--fh-shadow-2);
+      animation: fh-rise 200ms var(--fh-ease);
+    }
+    /* Cached-board label: out of flow (fixed), no animation, so it neither
+       shifts the layout nor needs a reduced-motion branch. Below the tail sheet (70). */
+    .fh-board-status {
+      position: fixed;
+      left: 16px;
+      bottom: calc(16px + env(safe-area-inset-bottom));
+      z-index: 60;
+      width: max-content;
+      max-width: calc(100vw - 32px);
+      padding: 8px 12px;
+      border-radius: var(--fh-r-md);
+      background: var(--fh-s3);
+      color: var(--fh-ink-2);
+      font-size: 13px;
+      line-height: 1.4;
+      box-shadow: var(--fh-shadow-2);
+      pointer-events: none;
+    }
+    .fh-board-status[hidden] { display: none; }
+    @keyframes fh-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    /* ── page scaffold ────────────────────────────────────────────────── */
+    /* Opacity only: a transform here would capture the fixed-position tail
+       sheet that lives inside the Fleet screen. */
+    .fh-screen {
+      display: grid;
+      gap: 20px;
+      align-content: start;
+      width: 100%;
+      max-width: calc(var(--fh-col) + 2 * var(--fh-gut));
+      margin: 0 auto;
+      padding: 24px var(--fh-gut) 0;
+      animation: fh-fade 240ms var(--fh-ease) both;
+    }
+    .fh-screen > * { min-width: 0; }
+    .fh-page-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px 24px;
+    }
+    .fh-page-head > div:first-child { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .fh-page-head h1 { font-size: 26px; line-height: 1.15; font-weight: 600; letter-spacing: -0.04em; text-wrap: balance; }
+    .fh-lede { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 14px; color: var(--fh-ink-2); }
+    .fh-lede .fh-sub { font-size: 14px; }
+    .fh-lede-sep { color: var(--fh-line-2); }
+    .fh-head-actions { display: flex; gap: 8px; width: 100%; }
+    /* On a phone the lede stacks: a slash that wraps to the start of a line
+       reads as a stray mark, not a separator. */
+    @media (max-width: 639.98px) {
+      .fh-lede { flex-direction: column; align-items: flex-start; gap: 2px; }
+      .fh-lede-sep { display: none; }
+    }
+    .fh-head-actions > * { flex: 1; }
+
+    /* ── cards ────────────────────────────────────────────────────────── */
+    /* One object or group per card; never nested. `overflow: clip` keeps the
+       rounded corners clean without becoming a scroll container, so the
+       sticky board headers inside still stick to the viewport. */
+    .fh-blk {
+      min-width: 0;
+      background: var(--fh-s1);
+      border: 1px solid var(--fh-line);
+      border-radius: var(--fh-r3);
+      box-shadow: var(--fh-shadow-1);
+      overflow: clip;
+    }
+    .fh-blk-head {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px 12px;
+      min-height: 52px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--fh-line);
+    }
+    .fh-blk-head h2, .fh-blk-title {
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 20px;
+      letter-spacing: -0.005em;
+      color: var(--fh-ink);
+    }
+    .fh-blk-head .fh-sub { margin-left: auto; font-size: 13px; color: var(--fh-mute); }
+    .fh-blk-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+    .fh-blk-body { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+    .fh-blk-foot {
+      display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--fh-line);
+      font-size: 13px;
+      color: var(--fh-mute);
+    }
+
+    /* ── buttons ──────────────────────────────────────────────────────── */
+    /* Box rule. `.fh-btn-red` deliberately precedes `.fh-btn-primary` so the
+       fill rule's adjacent pair below stays unique in the file. */
+    .fh-btn,
+    .fh-btn-ghost,
+    .fh-btn-red,
+    .fh-btn-primary {
+      min-height: 40px;
+      padding: 0 14px;
+      border-radius: var(--fh-r2);
+      border: 1px solid var(--fh-line);
+      background: var(--fh-s1);
+      color: var(--fh-ink);
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.2;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      white-space: nowrap;
+      text-align: center;
+      transition: background-color 120ms, border-color 120ms, color 120ms;
+    }
+    .fh-btn:hover, .fh-btn-ghost:hover { background: var(--fh-s2); border-color: var(--fh-line-2); }
+    .fh-btn:active, .fh-btn-ghost:active { background: var(--fh-soft); }
+
+    /* Primary action: the accent fill (ink in light, near-white in dark) with
+       the page ground as its text. One per view. */
+    .fh-btn-primary, .fh-btn-red {
+      background: var(--fh-gold);
+      border-color: var(--fh-gold);
+      color: var(--fh-bg);
+    }
+    .fh-btn-primary:hover, .fh-btn-red:hover { background: var(--fh-gold-hi); border-color: var(--fh-gold-hi); }
+
+    .fh-btn:disabled, .fh-btn-ghost:disabled, .fh-btn-primary:disabled, .fh-btn-red:disabled {
+      background: var(--fh-s2); border-color: var(--fh-line); color: var(--fh-mute); cursor: not-allowed;
+    }
+    .fh-btn-sm { min-height: 32px; font-size: 13px; padding: 0 10px; }
+    .fh-btn-sm svg { width: 14px; height: 14px; }
+
+    .fh-cta { min-height: 52px; flex-direction: column; gap: 2px; line-height: 1.25; width: 100%; padding-block: 8px; }
+    .fh-cta-hint { font-size: 12px; font-weight: 400; opacity: .72; }
+    .fh-cta:disabled { color: var(--fh-mute); background: transparent; border-style: dashed; border-color: var(--fh-line-2); cursor: default; }
+    .fh-cta-primary {
+      background: var(--fh-gold);
+      border-color: var(--fh-gold);
+      color: var(--fh-bg);
+    }
+    .fh-cta-primary:hover:not(:disabled) { background: var(--fh-gold-hi); border-color: var(--fh-gold-hi); }
+    .fh-support { text-decoration: none; align-self: flex-start; }
+
+    /* ── status: pill · dot · text ────────────────────────────────────── */
+    /* A status is a pill with a dot AND a word. The dot takes the meaning's
+       dot colour, the word its text ink, the pill its soft fill. */
+    /* inline-block, not flex: a squeezed chip then ends in "…" instead of
+       being cut mid-word (text-overflow does nothing on a flex container). */
+    .fh-chip {
+      display: inline-block;
+      vertical-align: middle;
+      flex: none;
+      height: 22px;
+      padding: 0 8px;
+      border-radius: 999px;
+      font-family: var(--fh-sans);
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 22px;
+      white-space: nowrap;
+      color: var(--fh-ink-2);
+      background: var(--fh-s2);
+      box-shadow: inset 0 0 0 1px var(--fh-line);
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .fh-chip::before { content: ''; display: inline-block; vertical-align: 1px; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; color: var(--fh-sched); background: currentColor; }
+    .fh-chip-air { color: var(--fh-air-ink); background: var(--fh-air-soft); box-shadow: none; }
+    .fh-chip-air::before { color: var(--fh-air); animation: fh-ping 1.8s ease-out infinite; }
+    .fh-chip-gnd { color: var(--fh-gnd-ink); background: var(--fh-gnd-soft); box-shadow: none; }
+    .fh-chip-gnd::before { color: var(--fh-gnd); }
+    .fh-chip-stop { color: var(--fh-stop-ink); background: var(--fh-stop-soft); box-shadow: none; }
+    .fh-chip-stop::before { color: var(--fh-stop); }
+    .fh-chip-warn { color: var(--fh-warn-ink); background: var(--fh-warn-soft); box-shadow: none; }
+    .fh-chip-warn::before { color: var(--fh-warn); }
+    .fh-chip-sched, .fh-chip-stored { color: var(--fh-ink-2); }
+    .fh-chip-bad { color: var(--fh-bad-ink); background: var(--fh-bad-soft); box-shadow: none; }
+    .fh-chip-bad::before { color: var(--fh-bad); }
+    .fh-chip-done { color: var(--fh-done-ink); background: var(--fh-done-soft); box-shadow: none; }
+    .fh-chip-done::before { color: var(--fh-done); background: transparent; box-shadow: inset 0 0 0 1.5px currentColor; }
+    /* A pulsing ring means live, and nothing else (DESIGN.md §2.6). */
+    @keyframes fh-ping {
+      0% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 55%, transparent); }
+      100% { box-shadow: 0 0 0 5px transparent; }
+    }
+
+    .fh-c-air { color: var(--fh-air-ink); }
+    .fh-c-gnd { color: var(--fh-gnd-ink); }
+    .fh-c-stop { color: var(--fh-stop-ink); }
+    .fh-c-warn { color: var(--fh-warn-ink); }
+    .fh-c-bad { color: var(--fh-bad-ink); }
+    .fh-c-stored, .fh-c-sched { color: var(--fh-ink-2); }
+    .fh-c-done { color: var(--fh-done-ink); }
+
+    /* On a surface-2 fill (hover, selection, the leg inset) muted text steps up
+       to ink-2: ink-3 on surface-2 is 4.2:1 in light, under AA (DESIGN.md §10). */
+    .fh-tail:hover, .fh-tail.sel, .fh-trow:hover, .fh-group:hover,
+    button.fh-stat:hover, button.fh-stat[aria-pressed="true"], .fh-leg-box { --fh-mute: var(--fh-ink-2); }
+
+    .fh-fill-air { background: var(--fh-air); }
+    .fh-fill-gnd { background: var(--fh-gnd); }
+    .fh-fill-stop { background: var(--fh-stop); }
+    .fh-fill-warn { background: var(--fh-warn); }
+    .fh-fill-sched { background: var(--fh-sched); }
+
+    /* aircraft type: a neutral mono tag — types are not a status */
+    .fh-ty {
+      flex: none;
+      font-family: var(--fh-mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: .02em;
+      line-height: 18px;
+      color: var(--fh-ink-2);
+      background: var(--fh-s1);
+      border: 1px solid var(--fh-line);
+      padding: 0 5px;
+      border-radius: var(--fh-r1);
+    }
+
+    .fh-dot { position: relative; width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--c, var(--fh-mute)); }
+    .fh-dot.sq, .fh-sq { border-radius: 2px; }
+    .fh-sq { width: 8px; height: 8px; flex: none; background: var(--fh-sched); }
+
+    /* ── KPI strip ────────────────────────────────────────────────────── */
+    /* One card cut into cells by hairlines: 2 × 2 on a phone, a row of four
+       from 760px. On the Fleet screen the cells are buttons and filter the map
+       and the list (aria-pressed); elsewhere they only report. */
+    .fh-stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      background: var(--fh-s1);
+      border: 1px solid var(--fh-line);
+      border-radius: var(--fh-r3);
+      box-shadow: var(--fh-shadow-1);
+      overflow: hidden;
+    }
+    .fh-stats:empty { display: none; }
+    .fh-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      min-width: 0;
+      width: 100%;
+      padding: 14px 16px 16px;
+      border: 0;
+      border-top: 1px solid var(--fh-line);
+      border-left: 1px solid var(--fh-line);
+      background: none;
+      text-align: left;
+      transition: background-color 120ms;
+    }
+    .fh-stat:nth-child(odd) { border-left: 0; }
+    .fh-stat:nth-child(-n+2) { border-top: 0; }
+    button.fh-stat:hover { background: var(--fh-s2); }
+    button.fh-stat[aria-pressed="true"] { background: var(--fh-s2); box-shadow: inset 0 -2px 0 var(--fh-gold); }
+    button.fh-stat:focus-visible { outline-offset: -2px; border-radius: 0; }
+    .fh-stat .fh-k { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 13px; color: var(--fh-ink-2); }
+    /* The dot beside a label carries the status; the figure stays ink. */
+    .fh-stat .fh-k::before { content: ''; display: none; width: 8px; height: 8px; border-radius: 50%; flex: none; color: var(--c); background: currentColor; }
+    .fh-stat:has(.fh-c-air) .fh-k::before { display: block; --c: var(--fh-air); animation: fh-ping 1.8s ease-out infinite; }
+    .fh-stat:has(.fh-c-gnd) .fh-k::before { display: block; --c: var(--fh-gnd); }
+    .fh-stat:has(.fh-c-stop) .fh-k::before { display: block; --c: var(--fh-stop); }
+    .fh-stat:has(.fh-c-warn) .fh-k::before { display: block; --c: var(--fh-warn); }
+    .fh-stat:has(.fh-c-bad) .fh-k::before { display: block; --c: var(--fh-bad); }
+    .fh-stat:has(.fh-c-done) .fh-k::before { display: block; --c: var(--fh-done); }
+    .fh-stat:has(.fh-c-stored) .fh-k::before { display: block; --c: var(--fh-sched); border-radius: 2px; }
+    .fh-stat-v {
+      margin-top: 4px;
+      font-family: var(--fh-sans);
+      font-size: 24px;
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: -0.025em;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .fh-stats .fh-stat-v { color: var(--fh-ink); }
+    .fh-stat-v small { font-size: 14px; font-weight: 500; letter-spacing: 0; color: var(--fh-ink-2); margin-left: 2px; }
+    .fh-stat-s { font-size: 13px; color: var(--fh-mute); }
+    /* Ready to fly: the tails themselves, as outline pills on an amber→yellow tint. */
+    .fh-stat-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+    .fh-ready-pill {
+      display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 999px;
+      font-size: 11px; font-weight: 600; line-height: 16px; letter-spacing: 0.02em;
+      color: var(--fh-ready-ink);
+      border: 1px solid color-mix(in srgb, var(--fh-ready-a) 55%, transparent);
+      background: linear-gradient(135deg,
+        color-mix(in srgb, var(--fh-ready-a) 16%, transparent),
+        color-mix(in srgb, var(--fh-ready-b) 6%, transparent));
+    }
+    .fh-ready-pill.more { color: var(--fh-mute); border-color: var(--fh-line); background: none; }
+    .fh-a-stats { min-width: 0; }
+
+    /* composition of the fleet, under the cells */
+    .fh-statbar { grid-column: 1 / -1; display: grid; gap: 10px; padding: 14px 16px 16px; border-top: 1px solid var(--fh-line); }
+    .fh-statbar-track { display: flex; gap: 2px; height: 8px; border-radius: 999px; overflow: hidden; background: var(--fh-s2); }
+    .fh-statbar-track > span { height: 100%; min-width: 2px; }
+    .fh-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--fh-ink-2); }
+    .fh-leg { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .fh-leg b { font-weight: 600; color: var(--fh-ink); font-variant-numeric: tabular-nums; }
+    .fh-leg img { width: 14px; height: 14px; object-fit: contain; filter: var(--fh-logo-filter); }
+    .fh-leg .fh-dot { width: 8px; height: 8px; }
+    .fh-leg-plane { display: inline-grid; place-items: center; width: 12px; height: 12px; }
+    .fh-leg-plane svg { width: 12px; height: 12px; display: block; fill: currentColor; }
+
+    /* ── live map ─────────────────────────────────────────────────────── */
+    .fh-mapwrap {
+      position: relative;
+      height: max(300px, 52vh);
+      height: max(300px, 52dvh);
+      overflow: hidden;
+      background: var(--fh-map-bg);
+    }
+    #fhMap { position: absolute; inset: 0; --fh-mks: 0.8; }
+    .fh-a-map { scroll-margin-top: calc(var(--fh-top) + 12px); }
+
+    #homeView .maplibregl-ctrl-group {
+      background: var(--fh-s1) !important;
+      border: 0 !important;
+      box-shadow: var(--fh-shadow-2) !important;
+      border-radius: var(--fh-r-md) !important;
+      overflow: hidden;
+    }
+    #homeView .maplibregl-ctrl-group button + button { border-top: 1px solid var(--fh-line) !important; }
+    #homeView .maplibregl-ctrl-group button { background: transparent !important; width: 32px; height: 32px; }
+    #homeView .maplibregl-ctrl-group button:hover { background: var(--fh-s2) !important; }
+    #homeView .maplibregl-ctrl-group button span { filter: invert(var(--fh-ctl-invert)) opacity(.72); }
+    #homeView .maplibregl-ctrl-attrib {
+      font-size: 10px !important;
+      background: color-mix(in srgb, var(--fh-s1) 82%, transparent) !important;
+      color: var(--fh-mute) !important;
+      border-radius: var(--fh-r1);
+    }
+    #homeView .maplibregl-ctrl-attrib a { color: var(--fh-mute) !important; }
+    #homeView .maplibregl-ctrl-attrib-button { filter: invert(var(--fh-ctl-invert)) opacity(.6); }
+
+    /* markers (built in JS). --fh-mks scales with zoom; the scale lives on an
+       inner wrapper because MapLibre owns the root's transform. Labels wear a
+       halo in the map's own colour, so they read on any tile. */
+    .fh-apt { pointer-events: none; }
+    .fh-apt-in { display: flex; align-items: center; gap: 4px; transform: scale(var(--fh-mks)); transform-origin: left center; transition: transform 120ms ease-out; }
+    .fh-apt img { width: 18px; height: 18px; object-fit: contain; filter: var(--fh-logo-filter); }
+    .fh-apt-lab { line-height: 1.15; text-shadow: 0 0 3px var(--fh-map-bg), 0 0 3px var(--fh-map-bg), 0 0 2px var(--fh-map-bg); }
+    .fh-apt-lab b { display: block; font-size: 11px; font-weight: 600; color: var(--fh-ink); }
+    .fh-apt-lab span { display: block; font-family: var(--fh-mono); font-size: 10px; color: var(--fh-ink-2); }
+    .fh-apt-mark { width: 6px; height: 6px; border: 1px solid var(--fh-ink-2); transform: rotate(45deg); background: var(--fh-s1); flex: none; }
+    .fh-apt-code { font-family: var(--fh-mono); font-size: 10px; color: var(--fh-ink-2); text-shadow: 0 0 3px var(--fh-map-bg), 0 0 3px var(--fh-map-bg); white-space: nowrap; }
+    .fh-mk { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .fh-mk-in { position: relative; display: flex; align-items: center; justify-content: center; transform: scale(var(--fh-mks)); transform-origin: center; transition: transform 120ms ease-out; }
+    /* an airframe between airports: a plane in its status colour, nose to its heading */
+    .fh-mk-air { width: 18px; height: 18px; display: grid; place-items: center; }
+    .fh-mk-air svg { width: 18px; height: 18px; display: block; fill: currentColor; stroke: var(--fh-s1); stroke-width: 1.3; paint-order: stroke; }
+    .fh-mk-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--fh-s1); box-shadow: 0 0 0 1px rgba(0, 0, 0, .28); }
+    .fh-mk-dot.stored { width: 8px; height: 8px; border-radius: 2px; }
+    .fh-mk-ring { position: absolute; inset: -6px; border: 1.5px solid var(--fh-ink); border-radius: 50%; }
+    .fh-mk-tag {
+      position: absolute; left: 14px; top: -8px;
+      white-space: nowrap; padding: 2px 6px; border-radius: var(--fh-r1);
+      background: var(--fh-gold);
+      color: var(--fh-bg);
+      font-family: var(--fh-mono); font-size: 10px; font-weight: 500;
+    }
+
+    /* ── active fleet list ────────────────────────────────────────────── */
+    .fh-tails { display: flex; flex-direction: column; }
+    .fh-tail {
+      display: grid;
+      grid-template-columns: 8px minmax(0, 1fr) auto;
+      grid-template-areas:
+        "dot main  state"
+        ".   where where"
+        ".   next  next";
+      column-gap: 12px;
+      row-gap: 4px;
+      align-items: center;
+      width: 100%;
+      min-height: 64px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--fh-line);
+      color: var(--fh-ink);
+      position: relative;
+      transition: background-color 120ms;
+    }
+    .fh-tail:first-child { border-top: 0; }
+    .fh-tail:hover { background: var(--fh-s2); }
+    .fh-tail.sel { background: var(--fh-s2); box-shadow: inset 2px 0 0 var(--fh-ink); }
+    .fh-tail:focus-visible { outline-offset: -2px; border-radius: 0; }
+    .fh-tail .fh-dot { grid-area: dot; }
+    .fh-tail-main { grid-area: main; display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .fh-reg { font-size: 14px; font-weight: 600; letter-spacing: 0; white-space: nowrap; }
+    .fh-tail-state { grid-area: state; font-size: 13px; font-weight: 500; white-space: nowrap; justify-self: end; }
+    .fh-tail-state + .fh-tail-state { grid-area: auto; grid-column: 2 / -1; justify-self: start; font-size: 12px; }
+    .fh-tail-where, .fh-tail-next { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fh-tail-where { grid-area: where; font-size: 13px; color: var(--fh-ink-2); }
+    /* a tail between airports shows the route component, not a text line */
+    .fh-tail-where.fh-tail-route { display: flex; align-items: flex-start; gap: 12px; }
+    .fh-tail-route .fh-route { flex: 1 1 auto; }
+    .fh-rfl { flex: none; font-family: var(--fh-mono); font-size: 12px; line-height: 18px; color: var(--fh-mute); white-space: nowrap; }
+    .fh-tail-next { grid-area: next; font-size: 13px; color: var(--fh-mute); }
+    .fh-tail-next b, .fh-tail-where b { color: var(--fh-ink-2); font-weight: 500; }
+
+    /* ── selected tail (rail at 1140px, a sheet below) ────────────────── */
+    .fh-detail { display: flex; flex-direction: column; gap: 16px; padding: 16px; }
+    .fh-sel-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .fh-sel-reg { font-family: var(--fh-mono); font-size: 22px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
+    .fh-sel-head .fh-chip:first-of-type { margin-left: auto; }
+    .fh-sel-head + .fh-sub { margin-top: -10px; }
+
+    .fh-photo {
+      position: relative; line-height: 0; overflow: hidden;
+      border-radius: var(--fh-r-md);
+      border: 1px solid var(--fh-line);
+      background: var(--fh-s2);
+      width: 100%;
+      aspect-ratio: 16 / 9;
+    }
+    .fh-photo-link { display: block; height: 100%; }
+    .fh-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .fh-photo-credit {
+      position: absolute; right: 8px; bottom: 8px; z-index: 2;
+      font-family: var(--fh-mono); font-size: 10px; line-height: 1.5;
+      color: var(--fh-ink); background: color-mix(in srgb, var(--fh-s1) 84%, transparent);
+      border-radius: var(--fh-r1); padding: 2px 6px;
+    }
+
+    /* the current or next leg: an inset, not a second card */
+    .fh-leg-box {
+      --fh-halo: var(--fh-s2);
+      display: flex; flex-direction: column; gap: 10px;
+      padding: 12px;
+      border-radius: var(--fh-r-md);
+      background: var(--fh-s2);
+      box-shadow: inset 0 0 0 1px var(--fh-line);
+    }
+    .fh-leg-top { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .fh-leg-top .fh-k { font-size: 12px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fh-leg-top .fh-cs { margin-left: auto; font-size: 14px; }
+    .fh-leg-route { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .fh-leg-icao { font-family: var(--fh-mono); font-size: 24px; font-weight: 600; letter-spacing: -0.02em; }
+    .fh-leg-line { flex: 1; height: 1px; border-top: 1px dashed var(--fh-line-2); position: relative; min-width: 40px; }
+    .fh-leg-line i {
+      position: absolute; top: -5px; width: 9px; height: 9px; border-radius: 50%; margin-left: -4.5px;
+      background: var(--c, var(--fh-sched)); box-shadow: 0 0 0 3px var(--fh-halo, var(--fh-s1));
+      transition: left 600ms var(--fh-ease);
+    }
+    .fh-leg-ends { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--fh-ink-2); }
+    .fh-leg-ends span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fh-leg-ends span:last-child { text-align: right; }
+    .fh-note { font-size: 13px; color: var(--fh-ink-2); line-height: 1.5; text-wrap: pretty; }
+
+    .fh-kv { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
+    .fh-kv > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .fh-kv-v { font-size: 14px; font-weight: 500; color: var(--fh-ink); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+
+    .fh-sel-actions { display: flex; flex-direction: column; gap: 8px; }
+    .fh-sel-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .fh-sel-row .fh-btn-ghost { padding: 0 8px; font-size: 13px; }
+
+    /* ── the route component: code + name · dashed track · code + name ──
+       ONE element inside an existing Route cell (never a cell of its own, so
+       the 8/6/6 cell contracts hold). Codes mono, names sans and truncating —
+       the layout never wraps. The track is dashed (planned); the only colour
+       is the progress dot, which carries the leg's status. */
+    .fh-route { display: flex; align-items: flex-start; gap: 10px; min-width: 0; max-width: 100%; font-size: 15px; }
+    .fh-rp { display: flex; flex-direction: column; gap: 1px; flex: 0 1 auto; min-width: 4ch; font-family: var(--fh-mono); }
+    .fh-rp.to { text-align: right; }
+    .fh-route .fh-icao { font-size: 1em; line-height: 20px; font-weight: 600; }
+    .fh-rn {
+      display: block; font-family: var(--fh-sans); font-size: 12px; line-height: 16px; font-weight: 400;
+      color: var(--fh-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .fh-rtrack { position: relative; flex: 1 1 24px; min-width: 20px; height: 9px; margin-top: 6px; }
+    .fh-rtrack::before { content: ''; position: absolute; left: 0; right: 2px; top: 4px; border-top: 1px dashed var(--fh-line-2); }
+    .fh-rtrack::after {
+      content: ''; position: absolute; right: 1px; top: 1px; width: 6px; height: 6px;
+      border-top: 1px solid var(--fh-mute); border-right: 1px solid var(--fh-mute); transform: rotate(45deg);
+    }
+    .fh-rtrack i {
+      position: absolute; top: 0; width: 9px; height: 9px; margin-left: -4.5px; border-radius: 50%; z-index: 1;
+      background: var(--c, var(--fh-sched)); box-shadow: 0 0 0 3px var(--fh-halo, var(--fh-s1));
+      transition: left 600ms var(--fh-ease);
+    }
+    .fh-route-sm { font-size: 14px; }
+    .fh-route-sm .fh-icao { line-height: 18px; }
+    .fh-route-sm .fh-rn { font-size: 12px; line-height: 16px; }
+    .fh-route-sm .fh-rtrack { margin-top: 5px; }
+    .fh-route-lg { font-size: 24px; gap: 12px; }
+    .fh-route-lg .fh-icao { line-height: 28px; letter-spacing: -0.02em; }
+    .fh-route-lg .fh-rn { font-size: 13px; line-height: 18px; }
+    .fh-route-lg .fh-rtrack { margin-top: 10px; }
+
+    /* a figure that is LIVE (worked out from the aircraft's own position) wears
+       a small green (in-flight) dot at its end, painted on the element's own background so
+       it adds no box for the board's no-wrap check to measure. "≈" marks an
+       estimate; a filed figure is plain. */
+    .fh-num.fh-vlive { justify-self: start; width: fit-content; }
+    .fh-vlive {
+      padding-right: 12px;
+      background: radial-gradient(circle at calc(100% - 3px) 50%, var(--fh-air) 0 3px, transparent 3.5px) no-repeat;
+    }
+    .fh-via { margin-left: 6px; font-size: 12px; font-weight: 500; color: var(--fh-air-ink); }
+    .fh-via::before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; background: var(--fh-air); vertical-align: 1px; }
+
+    /* ── tables (cards on a phone, columns from 900px) ────────────────── */
+    /* ⚠ CELL COUNTS ARE LOAD-BEARING — sched 6 · board 8 · hist 6. Rows are
+       laid out BY COLUMN INDEX (:nth-child) in both forms. Restyle freely;
+       never add, drop or reorder a cell in the JS. */
+    .fh-thead { display: none; }
+    .fh-board { min-width: 0; }
+    .fh-board > :first-child, .fh-board > .fh-thead + * { border-top: 0; }
+    .fh-cs { font-size: 14px; font-weight: 600; color: var(--fh-ink); white-space: nowrap; }
+    .fh-icao { font-size: 14px; font-weight: 500; color: var(--fh-ink); white-space: nowrap; }
+    .fh-num { font-size: 13px; font-weight: 400; color: var(--fh-ink); white-space: nowrap; }
+    .fh-cell { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .fh-cell > .fh-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .fh-trow {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      padding: 14px 16px;
+      border-top: 1px solid var(--fh-line);
+      align-items: start;
+      width: 100%;
+      color: var(--fh-ink);
+      cursor: pointer;
+      position: relative;
+      transition: background-color 120ms;
+    }
+    .fh-trow:hover { background: var(--fh-s2); }
+    .fh-trow.sel { box-shadow: inset 2px 0 0 var(--fh-ink); }
+    .fh-trow-stale { opacity: .6; }
+    .fh-trow > * { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .fh-trow > .fh-r { align-items: flex-start; text-align: left; }
+    /* stacked-card labels; only cells given `content` below generate one */
+    .fh-trow > *::before { font-family: var(--fh-sans); font-size: 12px; font-weight: 500; color: var(--fh-mute); margin-bottom: 2px; }
+    /* A live figure that is a cell of its own carries its label above it on a
+       phone: keep the dot on the figure's line, not between the two. */
+    .fh-trow > .fh-vlive { background-size: 100% 1.5em; background-position: left bottom; }
+
+    /* Schedules board — 8 cells: Flight · Date · Route · Departs · Arrives · Block · Status · action */
+    .fh-board-grid.fh-trow {
+      grid-template-areas:
+        "f   f   st  st"
+        "r   r   r   r"
+        "d   dep arr blk"
+        "act act act act";
+    }
+    .fh-board-grid.fh-trow > :nth-child(1) { grid-area: f; }
+    .fh-board-grid.fh-trow > :nth-child(2) { grid-area: d; }
+    .fh-board-grid.fh-trow > :nth-child(3) { grid-area: r; }
+    .fh-board-grid.fh-trow > :nth-child(4) { grid-area: dep; }
+    .fh-board-grid.fh-trow > :nth-child(5) { grid-area: arr; }
+    .fh-board-grid.fh-trow > :nth-child(6) { grid-area: blk; }
+    .fh-board-grid.fh-trow > :nth-child(7) { grid-area: st; align-items: flex-end; flex-direction: row; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+    .fh-board-grid.fh-trow > :nth-child(8) { grid-area: act; }
+    .fh-board-grid.fh-trow > :nth-child(2)::before { content: 'Date'; }
+    .fh-board-grid.fh-trow > :nth-child(4)::before { content: 'Departs'; }
+    .fh-board-grid.fh-trow > :nth-child(5)::before { content: 'Arrives'; }
+    .fh-board-grid.fh-trow > :nth-child(6)::before { content: 'Block'; }
+
+    /* Active schedules — 6 cells: Flight · Route · Progress · Time to run · Arrives · Status */
+    .fh-sched-grid.fh-trow {
+      grid-template-areas:
+        "f  f  st st"
+        "r  r  r  r"
+        "p  p  p  p"
+        "t  t  e  e";
+    }
+    .fh-sched-grid.fh-trow > :nth-child(1) { grid-area: f; }
+    .fh-sched-grid.fh-trow > :nth-child(2) { grid-area: r; }
+    .fh-sched-grid.fh-trow > :nth-child(3) { grid-area: p; gap: 6px; }
+    .fh-sched-grid.fh-trow > :nth-child(4) { grid-area: t; }
+    .fh-sched-grid.fh-trow > :nth-child(5) { grid-area: e; }
+    .fh-sched-grid.fh-trow > :nth-child(6) { grid-area: st; align-items: flex-end; }
+    .fh-sched-grid.fh-trow > :nth-child(4)::before { content: 'Time to run'; }
+    .fh-sched-grid.fh-trow > :nth-child(5)::before { content: 'Arrives'; }
+
+    /* Flight log — 6 cells: (icon) · Flight · Route · Flown · Block · Status */
+    .fh-hist-grid.fh-trow {
+      grid-template-columns: 8px repeat(3, minmax(0, 1fr));
+      grid-template-areas:
+        "i f  f  st"
+        "i r  r  r"
+        "i fl fl b";
+      cursor: default;
+    }
+    .fh-hist-grid.fh-trow:hover { background: none; }
+    .fh-hist-grid.fh-trow > :nth-child(1) { grid-area: i; }
+    .fh-hist-grid.fh-trow > :nth-child(2) { grid-area: f; }
+    .fh-hist-grid.fh-trow > :nth-child(3) { grid-area: r; }
+    .fh-hist-grid.fh-trow > :nth-child(4) { grid-area: fl; }
+    .fh-hist-grid.fh-trow > :nth-child(5) { grid-area: b; }
+    .fh-hist-grid.fh-trow > :nth-child(6) { grid-area: st; align-items: flex-end; }
+    .fh-hist-grid.fh-trow > :nth-child(5)::before { content: 'Block'; }
+    .fh-hist-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--fh-sched)); margin-top: 6px; }
+
+    /* meters: a 6px pill track; the board's progress uses the thin one */
+    .fh-bar { height: 6px; width: 100%; overflow: hidden; border-radius: 999px; background: var(--fh-s2); box-shadow: inset 0 0 0 1px var(--fh-line); }
+    .fh-bar i { display: block; height: 100%; border-radius: inherit; background: var(--c, var(--fh-ink)); transition: width 600ms var(--fh-ease); }
+    .fh-sched-grid .fh-bar { height: 4px; }
+
+    .fh-eta { display: flex; flex-direction: column; gap: 1px; }
+    /* Phone: the 4-column board row gives Arrives ~75px, so a long "14:40 · 10 Jul" wraps inside its own cell, only before the dot (.fh-nw spans; nowrap again from 900px). */
+    .fh-eta-t { font-size: 13px; font-weight: 400; white-space: normal; min-width: 0; }
+    .fh-nw { white-space: nowrap; }
+    .fh-eta-rel { font-size: 12px; color: var(--fh-mute); white-space: nowrap; }
+
+    /* Row action. Base = the thing to do (Request); quiet = neutral;
+       on = committed (filled); mine = your leg (positive). */
+    .fh-act {
+      min-height: 40px;
+      width: 100%;
+      padding: 0 12px;
+      border-radius: var(--fh-r2);
+      border: 1px solid var(--fh-line-2);
+      background: var(--fh-s1);
+      color: var(--fh-ink);
+      font-size: 13px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: background-color 120ms, border-color 120ms, color 120ms;
+    }
+    .fh-act:hover { background: var(--fh-s2); border-color: var(--fh-mute); }
+    .fh-act:disabled { opacity: .6; cursor: progress; }
+    /* DONE is not PENDING. The only two disabled states on this button are
+       "sending" (· · ·, which keeps cursor: progress above) and "you have
+       already requested this leg" — and the second is a settled fact, not work
+       in flight. It keeps its fill, loses the hover and stays fully readable:
+       the whole point is that it still says, clearly, that the leg is yours
+       to wait on. */
+    .fh-act-on:disabled { opacity: 1; cursor: default; }
+    .fh-act-on:disabled:hover { background: var(--fh-gold); }
+    .fh-act-quiet { border-color: var(--fh-line); color: var(--fh-ink-2); }
+    .fh-act-quiet:hover { color: var(--fh-ink); border-color: var(--fh-line-2); }
+    .fh-act-on {
+      background: var(--fh-gold);
+      border-color: var(--fh-gold);
+      color: var(--fh-bg);
+    }
+    .fh-act-on:hover { background: var(--fh-gold-hi); border-color: var(--fh-gold-hi); }
+    .fh-act-mine { border-color: transparent; background: var(--fh-gnd-soft); color: var(--fh-gnd-ink); }
+    .fh-act-mine:hover { background: var(--fh-gnd-soft); border-color: transparent; }
+    .fh-act-mine::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--fh-gnd); }
+
+    /* The leg-alert bell, left of the row action. Outlined off, gold filled on. */
+    .fh-actwrap { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; }
+    .fh-actwrap .fh-act { flex: 1 1 auto; min-width: 0; }
+    .fh-bell {
+      flex: none;
+      width: 40px;
+      min-height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--fh-r2);
+      border: 1px solid var(--fh-line);
+      background: var(--fh-s1);
+      color: var(--fh-ink-2);
+      transition: background-color 120ms, border-color 120ms, color 120ms;
+    }
+    .fh-bell svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
+    .fh-bell:hover { color: var(--fh-ink); border-color: var(--fh-line-2); background: var(--fh-s2); }
+    .fh-bell.on { color: var(--fh-gold); border-color: var(--fh-gold); }
+    .fh-bell.on svg { fill: currentColor; }
+    .fh-bell:disabled { opacity: .6; cursor: progress; }
+    /* The one-time leg-alert tip (placeBellTip in fleet-mode-home.js). Fixed
+       and placed under the bell from JS, because the board's cards clip.
+       Above the tail sheet (70), below the dialogs (80, 90). */
+    .fh-belltip {
+      position: fixed;
+      z-index: 75;
+      max-width: min(260px, calc(100vw - 32px));
+      padding: 8px 12px;
+      border: 1px solid var(--fh-line-2);
+      border-radius: var(--fh-r2);
+      background: var(--fh-s3);
+      color: var(--fh-ink);
+      font-size: 13px;
+      line-height: 1.4;
+      box-shadow: var(--fh-shadow-2);
+      cursor: pointer;
+      animation: fh-rise 200ms var(--fh-ease);
+    }
+    .fh-belltip[hidden] { display: none; }
+    .fh-belltip::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      left: var(--fh-tip-x, 22px);
+      width: 10px;
+      height: 10px;
+      margin-left: -5px;
+      background: var(--fh-s3);
+      border-top: 1px solid var(--fh-line-2);
+      border-left: 1px solid var(--fh-line-2);
+      transform: rotate(45deg);
+    }
+
+    /* ── schedules screen: filters, search, sort ──────────────────────── */
+    .fh-schbar { display: grid; gap: 12px; min-width: 0; }
+    .fh-pills {
+      display: flex; gap: 6px;
+      overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+      margin: 0 calc(var(--fh-gut) * -1); padding: 2px var(--fh-gut);
+    }
+    .fh-pills::-webkit-scrollbar { display: none; }
+    .fh-pill {
+      min-height: 40px; padding: 0 12px; border-radius: 999px;
+      border: 1px solid var(--fh-line);
+      background: var(--fh-s1);
+      display: inline-flex; align-items: center; gap: 6px; flex: none; white-space: nowrap;
+      font-size: 13px; font-weight: 500; color: var(--fh-ink-2);
+      position: relative;
+      transition: border-color 120ms, color 120ms;
+    }
+    .fh-pill:hover { color: var(--fh-ink); border-color: var(--fh-line-2); }
+    .fh-pill.on { border-color: var(--fh-gold); box-shadow: inset 0 0 0 1px var(--fh-gold); color: var(--fh-ink); }
+    .fh-pill-n { font-size: 12px; color: var(--fh-mute); font-variant-numeric: tabular-nums; }
+    .fh-pill.on .fh-pill-n { color: var(--fh-ink-2); }
+
+    .fh-schtools { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+    .fh-search {
+      grid-column: 1 / -1;
+      height: 40px; width: 100%; min-width: 0;
+      padding: 0 12px 0 34px;
+      border-radius: var(--fh-r2);
+      border: 1px solid var(--fh-line);
+      background: var(--fh-s1) no-repeat 10px 50% / 16px 16px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23808080' stroke-width='1.75' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
+      color: var(--fh-ink);
+      font-size: 16px;
+      transition: border-color 120ms, box-shadow 120ms;
+    }
+    .fh-search::placeholder { color: var(--fh-mute); }
+    .fh-search:hover { border-color: var(--fh-line-2); }
+    .fh-search:focus { outline: none; border-color: var(--fh-mute); box-shadow: 0 0 0 3px var(--fh-soft); }
+    .fh-search::-webkit-search-cancel-button { filter: invert(var(--fh-ctl-invert)) opacity(.6); }
+    .fh-sortwrap {
+      display: flex; align-items: center; gap: 8px; min-width: 0;
+      height: 40px; padding: 0 10px 0 12px;
+      border: 1px solid var(--fh-line); border-radius: var(--fh-r2);
+      background: var(--fh-s1);
+      transition: border-color 120ms, box-shadow 120ms;
+    }
+    .fh-sortwrap:hover { border-color: var(--fh-line-2); }
+    .fh-sortwrap:focus-within { border-color: var(--fh-mute); box-shadow: 0 0 0 3px var(--fh-soft); }
+    .fh-sortlab { font-size: 13px; color: var(--fh-ink-2); flex: none; }
+    .fh-select {
+      flex: 1; min-width: 0; height: 100%;
+      appearance: none; -webkit-appearance: none;
+      border: 0; background: transparent no-repeat right center / 10px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6' fill='none' stroke='%23808080' stroke-width='1.3'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+      color: var(--fh-ink); font-size: 16px; font-weight: 500; padding-right: 18px; cursor: pointer;
+    }
+    .fh-select:focus { outline: none; }
+    .fh-select option { background: var(--fh-s1); color: var(--fh-ink); }
+    .fh-expand { flex: none; }
+
+    /* tail group header — the whole row is the control */
+    .fh-group {
+      display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px;
+      width: 100%; min-height: 56px;
+      padding: 10px 16px;
+      border-top: 1px solid var(--fh-line);
+      color: var(--fh-ink);
+      position: sticky; top: var(--fh-top); z-index: 4;
+      background: var(--fh-s1);
+      transition: background-color 120ms;
+    }
+    .fh-group:hover { background: var(--fh-s2); }
+    .fh-group.sel { box-shadow: inset 2px 0 0 var(--fh-ink); }
+    .fh-caret { width: 12px; height: 12px; flex: none; position: relative; }
+    .fh-caret::before {
+      content: ''; position: absolute; left: 3px; top: 2px; width: 6px; height: 6px;
+      border-right: 1.5px solid var(--fh-ink-2); border-bottom: 1.5px solid var(--fh-ink-2);
+      transform: rotate(-45deg); transition: transform 160ms var(--fh-ease);
+    }
+    .fh-group.open .fh-caret::before { transform: rotate(45deg); top: 0; }
+    .fh-group-label { font-family: var(--fh-mono); font-size: 14px; font-weight: 600; white-space: nowrap; }
+    .fh-group .fh-chip:first-of-type { margin-left: auto; }
+    .fh-group-where {
+      order: 10; flex: 1 1 60%; min-width: 0; padding-left: 40px;
+      font-size: 13px; color: var(--fh-ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .fh-group-n { order: 11; font-size: 12px; color: var(--fh-mute); white-space: nowrap; margin-left: auto; font-variant-numeric: tabular-nums; }
+    .fh-group-n b { color: var(--fh-ink); font-weight: 600; }
+    /* Bounty chip (My activity phase 5a): lives INSIDE an existing cell of the
+       Fleet list / Schedules group header, never as a grid child of its own. */
+    .fh-bty {
+      display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 12px; font-weight: 600;
+      line-height: 18px; white-space: nowrap; color: var(--fh-warn-ink); background: var(--fh-warn-soft);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── airline ──────────────────────────────────────────────────────── */
+    .fh-org-grid { display: grid; gap: 20px; }
+    /* The organization IS the page head here, so it is not a card. */
+    .fh-org { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+    .fh-org h1 { font-size: 26px; line-height: 1.15; font-weight: 600; letter-spacing: -0.04em; text-wrap: balance; }
+    .fh-org-desc { display: block; font-size: 14px; line-height: 1.55; color: var(--fh-ink-2); max-width: 65ch; }
+    .fh-tags { display: flex; flex-wrap: wrap; gap: 4px 0; font-size: 13px; color: var(--fh-ink-2); }
+    .fh-tags span + span::before { content: '/'; padding: 0 10px; color: var(--fh-line-2); }
+    .fh-slot-bar { height: 6px; overflow: hidden; border-radius: 999px; background: var(--fh-s2); box-shadow: inset 0 0 0 1px var(--fh-line); }
+    .fh-slot-bar i { display: block; height: 100%; border-radius: inherit; background: var(--fh-ink); transition: width 600ms var(--fh-ease); }
+
+    .fh-hubs { display: flex; flex-direction: column; }
+    .fh-hub {
+      display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr));
+      gap: 12px; align-items: center; min-height: 56px; padding: 8px 16px;
+      border-top: 1px solid var(--fh-line);
+    }
+    .fh-hub.head { min-height: 0; padding: 10px 16px; border-top: 0; }
+    .fh-hub.head .fh-k { font-size: 12px; font-weight: 500; color: var(--fh-mute); }
+    .fh-hub.head > :not(:first-child), .fh-hub-n { text-align: right; justify-content: flex-end; }
+    .fh-hub > div { display: flex; flex-direction: column; min-width: 0; }
+    .fh-hub-city { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fh-hub.outstation .fh-hub-city::after { content: ' · outstation'; font-size: 12px; font-weight: 400; color: var(--fh-mute); }
+    .fh-hub-code { font-family: var(--fh-mono); font-size: 12px; color: var(--fh-mute); }
+    .fh-hub-n { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .fh-hub-n::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--c, transparent); }
+
+    .fh-type {
+      display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+      grid-template-areas: "ty sub n" "bar bar bar";
+      gap: 8px 12px; align-items: center; padding: 12px 16px; border-top: 1px solid var(--fh-line);
+    }
+    .fh-type:first-child { border-top: 0; }
+    .fh-type .fh-ty { grid-area: ty; }
+    .fh-type .fh-sub { grid-area: sub; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fh-type-n { grid-area: n; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .fh-type .fh-bar { grid-area: bar; }
+    .fh-net { display: flex; flex-wrap: wrap; gap: 6px; padding: 16px; }
+    .fh-netchip {
+      display: inline-flex; align-items: center; height: 24px; padding: 0 9px;
+      font-size: 12px; font-weight: 500; color: var(--fh-ink-2);
+      background: var(--fh-s2); box-shadow: inset 0 0 0 1px var(--fh-line); border-radius: 999px;
+      max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .fh-netchip.hub { color: var(--fh-ink); font-weight: 600; background: var(--fh-s1); box-shadow: inset 0 0 0 1px var(--fh-line-2); }
+    .fh-act-row {
+      display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; gap: 12px; align-items: baseline;
+      padding: 12px 16px; border-top: 1px solid var(--fh-line); font-size: 14px;
+    }
+    .fh-act-row:first-child { border-top: 0; }
+    .fh-act-row .fh-dot { align-self: center; }
+    .fh-act-row .fh-cell > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fh-thirds { display: grid; gap: 20px; }
+
+    /* ── history ──────────────────────────────────────────────────────── */
+    .fh-back {
+      display: inline-flex; align-items: center; gap: 6px; min-height: 36px;
+      font-size: 13px; font-weight: 500; color: var(--fh-ink-2); justify-self: start;
+    }
+    .fh-back:hover { color: var(--fh-ink); }
+    .fh-hist-head { display: flex; flex-direction: column; gap: 16px; }
+    #fhScreenSchedules .fh-thead { font-weight: 700; color: var(--fh-ink-2); }
+    .fh-hist-id { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+    .fh-hist-reg { font-family: var(--fh-mono); font-size: 28px; font-weight: 600; line-height: 1.1; letter-spacing: -0.03em; }
+    .fh-hist-badges { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .fh-hist-badges .fh-sub { flex-basis: 100%; font-size: 14px; }
+    .fh-photo-hist { max-width: 560px; }
+    .fh-hist-wrap { display: grid; gap: 20px; }
+    .fh-hist-wrap > div { display: grid; gap: 20px; align-content: start; min-width: 0; }
+    .fh-visit { display: grid; grid-template-columns: minmax(0, 1fr) 30% 32px; gap: 12px; align-items: center; padding: 10px 16px; border-top: 1px solid var(--fh-line); }
+    .fh-blk-head + .fh-visit { border-top: 0; }
+    .fh-visit-city { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fh-visit .fh-num { text-align: right; font-family: var(--fh-sans); font-weight: 600; }
+    .fh-rec { display: flex; justify-content: space-between; gap: 16px; padding: 10px 16px; border-top: 1px solid var(--fh-line); }
+    .fh-rec:first-child { border-top: 0; }
+    .fh-rec-k { font-size: 14px; color: var(--fh-ink-2); }
+    .fh-rec-v { font-size: 14px; font-weight: 500; text-align: right; min-width: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+
+    /* ── dialogs: bottom sheet on a phone, centred from 641px ─────────── */
+    /* The flight dialog (.fh-modal-sheet) is DETAIL, so from 641px it is a
+       side sheet; the confirmations and the admin editor stay centred. */
+    .fh-modal { position: fixed; inset: 0; z-index: 80; display: flex; align-items: flex-end; justify-content: center; }
+    .fh-modal-top { z-index: 90; }
+    .fh-modal-back { position: absolute; inset: 0; background: var(--fh-scrim); animation: fh-fade 200ms ease-out; }
+    .fh-modal-card {
+      position: relative;
+      width: 100%;
+      max-height: calc(100dvh - 40px);
+      display: flex;
+      flex-direction: column;
+      background: var(--fh-s1);
+      border-radius: 16px 16px 0 0;
+      box-shadow: var(--fh-shadow-3);
+      animation: fh-sheet-up 280ms var(--fh-ease);
+      overflow: hidden;
+    }
+    .fh-modal-card::before {
+      content: ''; position: absolute; top: 7px; left: 50%; width: 36px; height: 4px; margin-left: -18px;
+      border-radius: 999px; background: var(--fh-line-2);
+    }
+    .fh-modal-head {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 20px 12px 14px 20px;
+      border-bottom: 1px solid var(--fh-line);
+    }
+    .fh-modal-id { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; padding-top: 4px; }
+    .fh-modal-id .fh-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fh-modal-cs { font-family: var(--fh-mono); font-size: 18px; font-weight: 600; line-height: 24px; letter-spacing: -0.01em; }
+    #fhCfTitle { font-family: var(--fh-sans); font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+    #fhFmChip { padding-top: 5px; }
+    .fh-modal-x {
+      width: 40px; height: 40px; flex: none;
+      display: grid; place-items: center;
+      border-radius: 50%; color: var(--fh-ink-2);
+      transition: background-color 120ms, color 120ms;
+    }
+    .fh-modal-x svg { width: 16px; height: 16px; }
+    .fh-modal-x:hover { background: var(--fh-soft); color: var(--fh-ink); }
+    .fh-modal-body {
+      padding: 20px;
+      overflow-y: auto; overscroll-behavior: contain;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .fh-modal-body .fh-leg-route { padding: 4px 0; }
+    .fh-modal-ap { display: flex; flex-direction: column; gap: 2px; min-width: 0; max-width: 34%; }
+    .fh-modal-ap .fh-leg-icao { font-size: 30px; line-height: 1; }
+    .fh-modal-ap .fh-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fh-modal-ap.to { align-items: flex-end; text-align: right; }
+    .fh-modal-body p { font-size: 14px; line-height: 1.55; color: var(--fh-ink-2); text-wrap: pretty; }
+    .fh-modal-body p strong { color: var(--fh-ink); font-weight: 500; }
+    .fh-cf-seat { color: var(--fh-ink) !important; padding: 12px 0; border-top: 1px solid var(--fh-line); border-bottom: 1px solid var(--fh-line); }
+
+    /* "You already have legs waiting."
+       A heads-up before a pilot adds to their own backlog, shown on the request
+       prompt. Amber, never red: nothing here blocks the request, and the page
+       keeps red for Cancelled alone. */
+    .fh-cf-busy {
+      padding: 12px 14px; border-radius: var(--fh-r2);
+      /* s2, not s1: inside a modal card s1 is within a shade of the card and
+         the panel read as a stray amber line rather than a block. */
+      background: var(--fh-s2); border: 1px solid var(--fh-line);
+      border-left: 2px solid var(--fh-warn);
+    }
+    .fh-cf-busy-head { margin: 0 0 10px; color: var(--fh-ink) !important; }
+    .fh-modal-body .fh-cf-busy-head strong { color: var(--fh-warn); }
+    .fh-cf-busy-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+    /* A ROW, not a sentence: callsign, route, then the tail pushed to the far
+       edge. Run together with plain gaps, the registration read as the last
+       word of the route ("DEL VT-ANM"). */
+    .fh-cf-busy-list li {
+      display: flex; align-items: baseline; gap: 10px;
+      padding: 5px 0; font-size: 13px; color: var(--fh-ink-2);
+    }
+    .fh-cf-busy-list li + li { border-top: 1px solid var(--fh-line); }
+    .fh-cf-busy-list b {
+      font-weight: 400; color: var(--fh-ink); letter-spacing: .02em;
+      min-width: 62px; flex: none;
+    }
+    .fh-cf-rt { font-size: 12px; letter-spacing: .04em; color: var(--fh-ink-2); }
+    /* The tail sits last, quietest and hard right: which leg it is answers the
+       pilot's question, and the registration only places it. */
+    .fh-cf-reg {
+      font-family: var(--fh-mono); font-size: 11px; color: var(--fh-mute);
+      letter-spacing: .04em; margin-left: auto; padding-left: 10px; flex: none;
+    }
+    .fh-cf-more { color: var(--fh-mute) !important; font-size: 12px; }
+    .fh-cf-busy-note { margin: 12px 0 0 !important; font-size: 12.5px; color: var(--fh-mute) !important; }
+    /* explanation under the facts: a neutral note with an info icon */
+    .fh-modal-body .fh-modal-note {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 12px; border-radius: var(--fh-r-md);
+      background: var(--fh-s2); box-shadow: inset 0 0 0 1px var(--fh-line);
+      font-size: 13px; line-height: 1.55; color: var(--fh-ink-2);
+    }
+    .fh-modal-body .fh-modal-note::before {
+      content: ''; width: 16px; height: 16px; flex: none; margin-top: 1px;
+      background: var(--fh-ink-2);
+      -webkit-mask: var(--fh-i-info) center / 16px no-repeat;
+      mask: var(--fh-i-info) center / 16px no-repeat;
+    }
+    /* A Discord channel mention, rendered the way DISCORD renders one — the #
+       inside the chip, blurple, and a solid blurple fill on hover. The one
+       deliberate exception to "monochrome chrome, hue only for status" (owner
+       decision): this is a link OUT of the product into Discord, and wearing
+       Discord's own colour is what makes it read as a channel rather than as
+       one more button on the page. Light and dark take Discord's own light and
+       dark mention values (tokens at the top). */
+    .fh-dchan {
+      display: inline-flex; align-items: baseline; gap: 1px;
+      padding: 1px 6px 2px; border-radius: var(--fh-r1);
+      background: var(--fh-blurple-wash);
+      color: var(--fh-blurple-ink); text-decoration: none; font-weight: 500;
+      white-space: nowrap; transition: background 120ms, color 120ms;
+    }
+    .fh-dchan:hover { background: var(--fh-blurple); color: #fff; }
+    .fh-dchan:focus-visible { outline: 2px solid var(--fh-blurple-ink); outline-offset: 2px; }
+    /* The # is dimmer than the name in Discord's mention too — it is a marker,
+       not part of what the channel is called. */
+    .fh-dchan-h { opacity: .72; font-weight: 400; }
+    .fh-modal-actions {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+      border-top: 1px solid var(--fh-line);
+      background: var(--fh-s1);
+    }
+    .fh-modal-actions:empty { display: none; }
+    .fh-modal-actions > * { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .fh-span { grid-column: 1 / -1; }
+    /* The runway box's focus ring would be clipped by the overflow above. */
+    .fh-modal-actions > .fh-dp-rwy { overflow: visible; }
+    #fhCfActions { grid-template-columns: 1fr; }
+    @keyframes fh-sheet-up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+    @keyframes fh-sheet-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+    @keyframes fh-pop { from { transform: scale(.985); opacity: 0; } to { transform: none; opacity: 1; } }
+    @keyframes fh-fade { from { opacity: 0; } }
+
+    /* ════════════════════════════════════════════════════════════════════
+       The selected tail below 1140px — a SHEET, not a block at the foot of
+       the page: a bottom sheet on a phone, a side sheet from 641px. Same
+       element as the desktop rail (.fh-detail-col); the JS adds
+       .fh-sheet-open on a tap of a tail (openSheet). Closed = display none,
+       so nothing renders inline and the onboarding guide skips its "selected
+       tail" spotlight (a zero-width target is treated as absent). The scrim
+       is its next sibling and closes it.
+       ════════════════════════════════════════════════════════════════════ */
+    .fh-sheet-bar { display: none; }
+    .fh-sheet-scrim { display: none; }
+    html.fh-lock, html.fh-lock body { overflow: hidden; }
+    @media (max-width: 1139.98px) {
+      .fh-detail-col { display: none; }
+      .fh-detail-col.fh-sheet-open {
+        display: block;
+        position: fixed; z-index: 70;
+        left: 0; right: 0; bottom: 0;
+        max-height: calc(100% - 40px);
+        background: var(--fh-s1);
+        border-radius: 16px 16px 0 0;
+        box-shadow: var(--fh-shadow-3);
+        overflow-y: auto; overscroll-behavior: contain;
+        padding-bottom: env(safe-area-inset-bottom);
+        animation: fh-sheet-up 280ms var(--fh-ease);
+      }
+      .fh-detail-col.fh-sheet-open + .fh-sheet-scrim {
+        display: block;
+        position: fixed; inset: 0; z-index: 69;
+        background: var(--fh-scrim);
+        animation: fh-fade 200ms ease-out;
+      }
+      .fh-sheet-open .fh-sheet-bar {
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        position: sticky; top: 0; z-index: 2;
+        min-height: 60px; padding: 12px 10px 4px 20px;
+        background: var(--fh-s1);
+        border-bottom: 1px solid var(--fh-line);
+      }
+      .fh-sheet-open .fh-sheet-bar::before {
+        content: ''; position: absolute; top: 7px; left: 50%; width: 36px; height: 4px; margin-left: -18px;
+        border-radius: 999px; background: var(--fh-line-2);
+      }
+      .fh-sheet-title { font-size: 14px; font-weight: 600; color: var(--fh-ink); }
+      .fh-sheet-close {
+        width: 44px; height: 44px;
+        display: grid; place-items: center;
+        border-radius: 50%; color: var(--fh-ink-2);
+        transition: background-color 120ms, color 120ms;
+      }
+      .fh-sheet-close svg { width: 18px; height: 18px; }
+      .fh-sheet-close:hover { background: var(--fh-soft); color: var(--fh-ink); }
+      .fh-sheet-open #fhSelCard { border: 0; border-radius: 0; box-shadow: none; overflow: visible; }
+    }
+    @media (min-width: 641px) and (max-width: 1139.98px) {
+      .fh-detail-col.fh-sheet-open {
+        top: 8px; right: 8px; bottom: 8px; left: auto;
+        width: min(480px, calc(100vw - 16px));
+        max-height: none;
+        border-radius: var(--fh-r3);
+        animation-name: fh-sheet-in;
+      }
+      .fh-sheet-open .fh-sheet-bar { padding-top: 8px; min-height: 56px; }
+      .fh-sheet-open .fh-sheet-bar::before { display: none; }
+    }
+
+    /* ── motion preference ────────────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      #homeView *, #homeView *::before, #homeView *::after, .si * {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+
+    /* ════════════════════════════════════════════════════════════════════
+       ≥ 640px — side-by-side page heads, wider gutters (set on :root).
+       ════════════════════════════════════════════════════════════════════ */
+    @media (min-width: 640px) {
+      .fh-screen { padding-top: 32px; gap: 24px; }
+      .fh-page-head h1, .fh-org h1 { font-size: 32px; }
+      .fh-head-actions { width: auto; }
+      .fh-head-actions > * { flex: none; }
+      .fh-hist-reg { font-size: 32px; }
+      /* a tail group header fits on one line from here: reg, type, where,
+         status, legs — "where" is the part that gives way */
+      .fh-group { flex-wrap: nowrap; min-height: 52px; padding: 8px 16px; gap: 12px; }
+      .fh-group-where { order: 0; flex: 1 1 auto; padding-left: 8px; }
+      .fh-group .fh-chip:first-of-type { margin-left: 0; order: 1; }
+      .fh-group .fh-chip ~ .fh-chip { order: 1; }
+      .fh-group-n { order: 2; margin-left: 0; min-width: 120px; text-align: right; }
+      .fh-modal:not(.fh-modal-sheet) { align-items: center; padding: 24px; }
+      .fh-modal:not(.fh-modal-sheet) .fh-modal-card {
+        max-width: 560px; border-radius: var(--fh-r3); max-height: calc(100dvh - 48px); animation-name: fh-pop;
+      }
+      .fh-modal:not(.fh-modal-sheet) .fh-modal-card::before { display: none; }
+      .fh-modal-top .fh-modal-card { max-width: 440px; }
+      .fh-modal-head { padding: 14px 12px 14px 20px; }
+      .fh-modal-actions { padding: 12px 16px; }
+      /* the flight dialog: a sheet from the right */
+      .fh-modal-sheet { align-items: stretch; justify-content: flex-end; padding: 8px; }
+      .fh-modal-sheet .fh-modal-card {
+        width: min(480px, 100%); max-height: none; height: 100%;
+        border-radius: var(--fh-r3); animation-name: fh-sheet-in;
+      }
+      .fh-modal-sheet .fh-modal-card::before { display: none; }
+      .fh-modal-sheet .fh-modal-body { flex: 1; min-height: 0; }
+    }
+
+    /* ≥ 760px — four KPI cells in a row; the header gets its clock. */
+    @media (max-width: 759.98px) {
+      .fh-clock { display: none; }
+      .fh-iconbtn { min-height: 44px; }
+      .fh-theme > button { width: 36px; height: 36px; }
+    }
+    /* Touch: nothing a thumb has to hit is under 40px (DESIGN.md §10). */
+    @media (max-width: 899.98px) {
+      .fh-btn-sm { min-height: 40px; }
+      .fh-back { min-height: 40px; }
+    }
+    @media (min-width: 760px) {
+      .fh-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .fh-stat { border-top: 0; border-left: 1px solid var(--fh-line); }
+      .fh-stat:first-child { border-left: 0; }
+      .fh-stat:nth-child(odd):not(:first-child) { border-left: 1px solid var(--fh-line); }
+      .fh-stat:nth-child(4n + 1) { border-left: 0; }
+      .fh-stat:nth-child(n + 5) { border-top: 1px solid var(--fh-line); }
+    }
+
+    /* ════════════════════════════════════════════════════════════════════
+       ≥ 900px — tablet / desktop. Tables in columns, denser controls.
+       ════════════════════════════════════════════════════════════════════ */
+    @media (min-width: 900px) {
+      .fh-btn, .fh-btn-ghost, .fh-btn-red, .fh-btn-primary { min-height: 36px; }
+      .fh-btn-sm { min-height: 32px; }
+      .fh-cta { min-height: 52px; }
+      .fh-eta-t { white-space: nowrap; }
+
+      .fh-tail {
+        grid-template-columns: 8px 132px 100px minmax(0, 1fr) minmax(0, 1.2fr);
+        grid-template-areas: "dot main state where next";
+        column-gap: 16px;
+        min-height: 56px;
+        padding: 10px 16px;
+      }
+      .fh-tail-state { justify-self: start; }
+      .fh-tail-state + .fh-tail-state { display: none; }
+
+      .fh-thead {
+        display: grid;
+        gap: 16px;
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--fh-line);
+        font-size: 12px; font-weight: 500; line-height: 16px; color: var(--fh-mute);
+        /* 10 + 16 + 10 + 1px rule = 37px: the offset the group headers stick at */
+        position: sticky; top: var(--fh-top); z-index: 5; background: var(--fh-s1);
+      }
+      .fh-thead > span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .fh-board > .fh-thead + * { border-top: 0; }
+      .fh-trow { gap: 16px; padding: 12px 16px; align-items: center; grid-template-areas: none !important; }
+      .fh-trow > * { grid-area: auto !important; }
+      .fh-trow > *::before { content: none !important; }
+      .fh-trow > .fh-r { align-items: flex-end; text-align: right; }
+
+      .fh-board-grid { grid-template-columns: minmax(0, 1fr) 88px minmax(0, 1.8fr) 84px 112px 88px minmax(0, 1fr) 190px; }
+      .fh-board-grid.fh-trow > :nth-child(7) { flex-direction: column; align-items: flex-end; }
+      .fh-sched-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, 1.3fr) 96px 120px minmax(0, 1fr); }
+      .fh-hist-grid, .fh-hist-grid.fh-trow { grid-template-columns: 8px minmax(0, .9fr) minmax(0, 1.6fr) minmax(0, 1.2fr) 72px minmax(0, 1fr); }
+      .fh-hist-dot { margin-top: 0; }
+      .fh-act { width: auto; min-height: 32px; }
+      .fh-actwrap { width: auto; justify-content: flex-end; }
+      .fh-actwrap .fh-act { flex: 0 1 auto; }
+      .fh-bell { width: 32px; min-height: 32px; }
+
+      .fh-group { top: calc(var(--fh-top) + 37px); }
+      .fh-rp { min-width: 3.4ch; }
+      .fh-rtrack { min-width: 12px; }
+      /* numbers sit under their right-aligned headings */
+      .fh-board-grid.fh-trow > :nth-child(4), .fh-board-grid.fh-trow > :nth-child(6),
+      .fh-hist-grid.fh-trow > :nth-child(5) { align-items: flex-end; text-align: right; }
+
+      .fh-pills { margin: 0; padding: 0; flex-wrap: wrap; overflow: visible; }
+      .fh-pill { min-height: 32px; }
+      .fh-schtools { grid-template-columns: minmax(0, 1fr) 220px auto; }
+      .fh-search { grid-column: auto; height: 36px; font-size: 14px; }
+      .fh-sortwrap { height: 36px; }
+      .fh-select { font-size: 14px; }
+
+      /* The registration fills the height beside the photo, from right under
+         "← Fleet"; the badges sit on the photo's baseline. */
+      .fh-hist-head { flex-direction: row; align-items: stretch; gap: 32px; }
+      .fh-hist-head .fh-photo-hist { flex: 0 0 340px; order: 2; margin-left: auto; }
+      .fh-hist-head .fh-hist-id { justify-content: space-between; }
+      .fh-hist-head .fh-hist-reg { font-size: clamp(44px, 6vw, 76px); line-height: 1; }
+      .fh-thirds { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
+      .fh-thirds > :nth-child(3) { grid-column: 1 / -1; }
+      .fh-org-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px 48px; align-items: start; }
+    }
+
+    /* ════════════════════════════════════════════════════════════════════
+       ≥ 1140px — the selected-tail rail sits beside the content.
+       ════════════════════════════════════════════════════════════════════ */
+    .fh-fleet-grid { display: grid; gap: 20px; min-width: 0; }
+    @media (min-width: 640px) { .fh-fleet-grid { gap: 24px; } }
+    @media (min-width: 1140px) {
+      .fh-fleet-grid {
+        grid-template-columns: minmax(0, 1fr) var(--fh-rail);
+        grid-template-areas:
+          "stats  detail"
+          "map    detail"
+          "tails  detail";
+        align-items: start;
+      }
+      .fh-a-stats { grid-area: stats; }
+      .fh-a-map { grid-area: map; }
+      .fh-a-tails { grid-area: tails; }
+      .fh-detail-col {
+        grid-area: detail;
+        position: sticky;
+        top: calc(var(--fh-top) + 16px);
+        max-height: calc(100vh - var(--fh-top) - 32px);
+        overflow-y: auto;
+        border-radius: var(--fh-r3);
+      }
+      .fh-hist-wrap { grid-template-columns: minmax(0, 1fr) var(--fh-rail); gap: 24px; align-items: start; }
+      .fh-hist-rail { position: sticky; top: calc(var(--fh-top) + 16px); }
+      .fh-org-grid { grid-template-columns: minmax(0, 1fr) var(--fh-rail); }
+      .fh-schbar { grid-template-columns: auto minmax(0, 1fr); align-items: center; }
+      .fh-schbar .fh-pills { flex-wrap: nowrap; }
+      .fh-thirds { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .fh-thirds > :nth-child(3) { grid-column: auto; }
+    }
+
+    /* 900–1139px: the Schedules table is 8 columns wide and the route component
+       needs a floor, or it slides under the Departs figure. Tighter fixed
+       columns and a smaller gap; the flexible ones (flight, status) give way. */
+    @media (min-width: 900px) and (max-width: 1139.98px) {
+      .fh-board-grid, .fh-thead.fh-board-grid {
+        column-gap: 10px;
+        grid-template-columns: minmax(0, .8fr) 68px minmax(150px, 1.7fr) 72px 92px 72px minmax(0, 1.1fr) 160px;
+      }
+      .fh-board-grid .fh-act { padding: 0 8px; font-size: 13px; }
+      /* the live board: crew and dep/block lines wrap rather than lose a name */
+      .fh-sched-grid .fh-cell > .fh-sub { white-space: normal; overflow: visible; }
+    }
+
+    /* Landscape phone: almost no vertical room. */
+    @media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+      .fh-mapwrap { height: 80vh; height: 80dvh; }
+      .fh-modal-card { max-height: calc(100dvh - 12px); }
+    }
+
+    /* Short screens (a phone on its side): a dialog scrolls as one piece, so its
+       actions do not pin a tall footer over a sliver of content. */
+    @media (max-height: 520px) {
+      .fh-modal-card { overflow-y: auto; overscroll-behavior: contain; }
+      .fh-modal-body, .fh-modal-sheet .fh-modal-body { flex: none; overflow: visible; }
+    }
+
+    /* Touch screens of any width (a tablet is not a phone by width): nothing a
+       thumb has to hit is under 40px (DESIGN.md §10). */
+    @media (pointer: coarse) {
+      .fh-btn, .fh-btn-ghost, .fh-btn-red, .fh-btn-primary, .fh-btn-sm, .fh-act, .fh-pill, .fh-back { min-height: 40px; }
+      .fh-search, .fh-sortwrap { height: 40px; }
+      /* input. outranks fleet-bag.css's 900px rule, which loads after this. */
+      .fh-bag-actions input.fh-bag-rwy-in { height: 40px; }
+      .fh-theme > button { width: 40px; height: 40px; }
+      #homeView .maplibregl-ctrl-group button { width: 40px; height: 40px; }
+    }
+
+
+    /* ═══ ADMIN SCREEN ═════════════════════════════════════════════════════
+       Staff only (assets/js/fleet-admin.js). Not redesigned yet: it takes the INVA Line
+       tokens and the shared parts (buttons, pills, inputs, cards), and keeps
+       its own layout and mono micro-labels until its pass. One primary
+       action per block. Destructive actions use --fh-bad, outlined, so the
+       one filled button in any group is still the safe default. Mobile-first:
+       the base rules are the 390px phone, 900px adds the split view.
+       ═════════════════════════════════════════════════════════════════════ */
+    .fh-adm-headact { align-items: center; }
+    .fh-adm-headact > * { flex: none; }
+    .fh-adm-headact > span { flex: none; display: inline-flex; align-items: center; }
+    .fh-adm-badge {
+      min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px;
+      display: inline-grid; place-items: center;
+      font-family: var(--fh-mono); font-size: 11px;
+      font-weight: 600; background: var(--fh-warn-soft); color: var(--fh-warn-ink);
+    }
+    .fh-adm-pane { padding: 16px; }
+    .fh-adm-pane > .fh-blk-head:first-child { margin: -16px -16px 16px; }
+    .fh-adm-gap { margin-top: 32px; }
+    .fh-adm-warn {
+      font-size: 14px; line-height: 1.5; color: var(--fh-ink-2); text-wrap: pretty;
+      padding: 10px 12px; border-left: 2px solid var(--fh-warn);
+      background: color-mix(in oklab, var(--fh-warn) 7%, transparent);
+      border-radius: 0 var(--fh-r1) var(--fh-r1) 0;
+    }
+    .fh-adm-warn strong { color: var(--fh-ink); font-weight: 500; }
+    .fh-adm-connwarn { margin-bottom: 16px; border-left-color: var(--fh-bad); background: color-mix(in oklab, var(--fh-bad) 8%, transparent); }
+    .fh-adm-hint { font-size: 13px; color: var(--fh-mute); line-height: 1.5; padding: 4px 0 12px; }
+    .fh-adm-meta { font-size: 13px; color: var(--fh-ink-2); line-height: 1.5; }
+    .fh-adm-pad { padding: 12px; font-size: 13px; }
+    .fh-adm-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .fh-adm-link { color: var(--fh-ink-2); border-color: transparent; }
+    .fh-adm-inline {
+      color: var(--fh-ink); text-decoration: underline; text-underline-offset: 3px;
+      font-size: inherit; padding: 0; min-height: 0; background: none; border: 0;
+    }
+
+    /* destructive: outlined red, never a fill */
+    .fh-btn.fh-btn-danger { border-color: color-mix(in oklab, var(--fh-bad) 55%, var(--fh-line-2)); color: var(--fh-bad); }
+    .fh-btn.fh-btn-danger:hover { background: color-mix(in oklab, var(--fh-bad) 12%, transparent); border-color: var(--fh-bad); }
+
+    /* ── requests ── */
+    /* Grouped by tail, open by default; the admin collapses a tail they have
+       finished with and that sticks (st.reqClosed) across the 20s poll. */
+    .fh-adm-group { border-top: 1px solid var(--fh-line); }
+    .fh-adm-group:first-of-type { border-top: 0; }
+    .fh-adm-group > summary {
+      display: flex; align-items: center; gap: 10px; cursor: pointer;
+      min-height: 48px; padding: 4px 0; list-style: none;
+      /* wraps so the schedule strip can take a row of its own on a phone */
+      flex-wrap: wrap; row-gap: 0;
+    }
+    .fh-adm-group > summary::-webkit-details-marker { display: none; }
+    .fh-adm-group > summary:focus-visible { outline: 2px solid var(--fh-focus); outline-offset: 2px; }
+    .fh-adm-group > summary:hover .fh-ty { color: var(--fh-ink); }
+    .fh-adm-gchev {
+      width: 8px; height: 8px; flex: none; margin-left: 2px;
+      border-right: 1.5px solid var(--fh-mute); border-bottom: 1.5px solid var(--fh-mute);
+      transform: rotate(-45deg); transition: transform .15s ease;
+    }
+    .fh-adm-group[open] > summary .fh-adm-gchev { transform: rotate(45deg); }
+    .fh-adm-group > summary .fh-adm-badge { margin-left: auto; }
+    .fh-adm-glist { padding-bottom: 8px; }
+
+    /* ── the group header's schedule strip ──
+       ICAO → ICAO → ICAO beside the registration, with what is seated on each
+       leg drawn under that leg: a figure per pilot, a warn dot where nobody is.
+       No text — an admin settles this queue a tail at a time and the only
+       question is which legs still need somebody, so it is a glance cue and
+       nothing else.
+
+       TWO LAYOUTS, one markup. On a phone the strip takes a ROW OF ITS OWN
+       under the registration (order: 1 puts it after the badge, so the header
+       line keeps its shape and the badge stays hard right); from 900px it sits
+       inline beside the registration. It is not hidden on mobile: this is the
+       cue that decides whether a card is worth opening, and a phone is where
+       opening one costs the most. It is indented to the registration's left
+       edge so the eye reads chevron → reg → strip as one block.
+
+       The strip SCROLLS sideways on a phone rather than wrapping: a chain that
+       wraps mid-route reads as two routes, which is the one thing this must
+       never say. Dragging a scroller inside <summary> does not toggle it —
+       only a tap does — so the gesture is safe. */
+    .fh-admss {
+      display: inline-flex; align-items: flex-start; gap: 10px;
+      min-width: 0; margin-left: 2px;
+      order: 1; flex-basis: 100%; padding: 2px 0 6px 28px;
+      overflow-x: auto; overflow-y: hidden;
+      scrollbar-width: none; -ms-overflow-style: none;
+      /* The right edge fades, so a chain running past the screen reads as
+         "there is more" rather than as a glyph that got cut in half. Static,
+         not toggled on scrollWidth: the strip is always the full row, so on a
+         short chain the fade falls on empty space and is invisible. */
+      -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+      mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+    }
+    .fh-admss::-webkit-scrollbar { display: none; }
+    .fh-admss > * { flex: none; }
+    .fh-admss-run { display: inline-flex; align-items: flex-start; }
+    /* Runs sit apart, so an arrow never implies a join that is not there. */
+    .fh-admss-run + .fh-admss-run { margin-left: 10px; padding-left: 10px; border-left: 1px solid var(--fh-line); }
+    .fh-admss-icao {
+      font-family: var(--fh-mono); font-size: 11px; font-weight: 400; line-height: 14px;
+      letter-spacing: .04em; color: var(--fh-ink-2); padding-top: 1px;
+    }
+    /* The leg column: arrow on the ICAO baseline, crew directly beneath it. */
+    .fh-admss-leg {
+      display: inline-flex; flex-direction: column; align-items: center;
+      gap: 2px; cursor: default; min-width: 26px;
+    }
+    .fh-admss-leg .fh-arr { font-size: 11px; line-height: 14px; padding: 1px 4px 0; }
+    .fh-admss-crew { display: inline-flex; align-items: center; gap: 1px; height: 9px; }
+    .fh-admss-p { width: 8px; height: 9px; fill: var(--fh-ink-2); flex: none; }
+    /* The one hue in the strip: a leg with nobody on it. */
+    .fh-admss-none { width: 6px; height: 6px; margin-top: 1px; border-radius: 50%; background: var(--fh-warn); flex: none; }
+    .fh-admss-leg.is-empty .fh-arr { color: var(--fh-ink-2); }
+    .fh-admss-more {
+      font-size: 11px; font-weight: 400; line-height: 14px; color: var(--fh-mute);
+      padding-top: 1px; flex: none;
+    }
+    /* Desktop: back onto the header line, no scroller, no indent. */
+    @media (min-width: 900px) {
+      .fh-admss {
+        order: 0; flex-basis: auto; padding: 0; overflow: hidden;
+        -webkit-mask-image: none; mask-image: none;
+      }
+    }
+
+    /* WHAT ELSE THIS PILOT IS CARRYING.
+       Under the seat meter on a crew-request card: the legs this pilot is
+       already rostered on elsewhere in the fleet. Reuses the group-header
+       strip's shapes (.fh-admss-run / -icao / -leg) so an admin reads one
+       visual language on this page, with a registration chip per aircraft.
+
+       Present ONLY when the pilot has other legs, so its presence is itself
+       the signal — a row reading "0 other legs" on every card would be the
+       noise this is meant to cut through.
+
+       ONE accent, and the severity is about WHERE: more legs on the tail in
+       hand is a rotation being built, which is normal; legs on OTHER tails is
+       the case that cannot physically work. A leg already in the air had its
+       own red tier here and does not need one — the page's only red is
+       Cancelled, and this block is a heads-up, not an alarm. */
+    .fh-adm-commit {
+      display: flex; flex-direction: column; gap: 6px;
+      padding: 8px 10px 8px 12px; border-radius: var(--fh-r1);
+      background: var(--fh-s1); border-left: 2px solid var(--fh-line-2);
+    }
+    .fh-adm-commit.is-other { border-left-color: var(--fh-warn); }
+    .fh-adm-commit-head {
+      /* flex-start, not center: the head wraps to two lines on a phone, and a
+         centred icon then floats in the gutter beside neither line. */
+      display: inline-flex; align-items: flex-start; gap: 6px;
+      font-family: var(--fh-mono); font-size: 11px; line-height: 15px;
+      letter-spacing: .04em; text-transform: uppercase; color: var(--fh-ink-2);
+    }
+    .fh-adm-commit-head .fh-admss-p {
+      width: 9px; height: 10px; fill: var(--fh-ink-2); flex: none; margin-top: 3px;
+    }
+    .fh-adm-commit.is-other .fh-adm-commit-head { color: var(--fh-warn); }
+    .fh-adm-commit-head .fh-admss-p,
+    .fh-adm-commit.is-other .fh-adm-commit-head .fh-admss-p { fill: currentColor; }
+    .fh-adm-commit-list { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .fh-adm-commit-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    /* The chip for the tail being decided reads quieter than the others: it is
+       context, where another registration is the finding. */
+    .fh-adm-commit-row .fh-ty.is-same { color: var(--fh-mute); border-color: var(--fh-line); }
+    /* RESET the strip's own layout. Inside a <summary> it is a full-width row
+       that scrolls and indents itself (see .fh-admss above); here it is an
+       inline run beside a chip, and inheriting those rules pushed it onto its
+       own line with a 28px gutter. */
+    .fh-adm-commit .fh-admss {
+      order: 0; flex-basis: auto; margin-left: 0; padding: 0;
+      gap: 8px; align-items: center;
+      /* The header strip fades its right edge to say "there is more" while it
+         scrolls. Here the row ends where it ends, so an inherited fade just
+         greys out the last ICAO — which read as a disabled airport rather than
+         as an overflow. The "+N" chip carries overflow in this block instead. */
+      -webkit-mask-image: none; mask-image: none;
+      /* Scrolls rather than overflowing: a pilot on a long rotation must not
+         widen the card. No fade over it — see above. */
+      overflow-x: auto; overflow-y: hidden;
+    }
+    /* No crew figures in this strip — the pilot IS the subject, so a figure
+       under every leg would say the same thing on each. The arrow alone marks
+       the leg; a leg's status is in its tooltip, never in a colour. */
+    .fh-adm-commit .fh-admss-leg { min-width: 0; }
+    .fh-adm-commit .fh-admss-leg .fh-arr { padding: 0 2px; }
+
+    /* seats as pips + "n/3 crew" — replaces the old sentence.
+       Deliberately NOT .fh-seats/.fh-seat: those name the crew dialog's seat
+       list below, and sharing the names let its rules restyle these pips. */
+    .fh-crewmeter { display: inline-flex; align-items: center; gap: 4px; }
+    .fh-crewmeter b { font-family: var(--fh-mono); font-size: 12px; font-weight: 400; letter-spacing: .04em; color: var(--fh-ink-2); margin-left: 4px; }
+    .fh-crewpip {
+      width: 7px; height: 7px; flex: none; border-radius: 2px;
+      border: 1px solid var(--fh-line-2); background: transparent;
+    }
+    .fh-crewpip.is-on { background: var(--fh-ink-2); border-color: var(--fh-ink-2); }
+
+    /* contention: one avatar per pilot asking for THIS leg, the card's own
+       pilot ringed. Present only when contested, so its presence is the signal. */
+    .fh-adm-seatrow { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .fh-adm-vie { display: inline-flex; align-items: center; cursor: default; }
+    .fh-adm-vie .fh-av {
+      width: 22px; height: 22px; flex: none; display: inline-grid; place-items: center;
+      margin-left: -6px; border-radius: 999px; background: var(--fh-s2);
+      border: 1px solid var(--fh-bg); box-shadow: 0 0 0 1px var(--fh-line-2);
+      font-family: var(--fh-mono); font-size: 9px; font-style: normal; letter-spacing: .02em;
+      color: var(--fh-ink-2);
+    }
+    .fh-adm-vie .fh-av:first-child { margin-left: 0; }
+    .fh-adm-vie .fh-av.is-me { background: var(--fh-ink); color: var(--fh-bg); box-shadow: 0 0 0 1px var(--fh-ink); z-index: 1; }
+    .fh-adm-vie b {
+      font-family: var(--fh-mono); font-size: 11px; font-weight: 400; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--fh-warn); margin-left: 8px;
+    }
+
+    .fh-adm-card { display: flex; flex-direction: column; gap: 10px; padding: 20px 0; border-top: 1px solid var(--fh-line); }
+    .fh-adm-card:first-of-type { border-top: 0; padding-top: 4px; }
+    .fh-adm-card-top { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+    .fh-adm-who { font-size: 16px; min-width: 0; }
+    .fh-adm-who strong { font-weight: 500; }
+    /* A seated or requesting pilot's name, everywhere in Fleet Mode. */
+    .fh-pilot { color: var(--fh-pilot); }
+    .fh-adm-role { margin-left: auto; font-family: var(--fh-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--fh-ink-2); }
+    .fh-adm-legline { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 17px; }
+    .fh-adm-decline { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid var(--fh-line-2); border-radius: var(--fh-r2); background: var(--fh-s1); }
+    .fh-adm-quick { display: flex; flex-wrap: wrap; gap: 6px; }
+    .fh-adm-qr {
+      min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--fh-line-2);
+      font-size: 13px; color: var(--fh-ink-2);
+    }
+    .fh-adm-qr:hover { color: var(--fh-ink); border-color: var(--fh-line-2); }
+
+    /* ── form controls ── */
+    .fh-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .fh-field-label { font-family: var(--fh-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--fh-mute); }
+    .fh-input {
+      width: 100%; min-width: 0; height: 40px; padding: 0 12px;
+      border: 1px solid var(--fh-line); border-radius: var(--fh-r2);
+      background: var(--fh-s1); color: var(--fh-ink); font: inherit; font-size: 16px;
+      transition: border-color 120ms, box-shadow 120ms;
+    }
+    @media (min-width: 900px) { .fh-input { height: 36px; font-size: 14px; } }
+    .fh-input:hover { border-color: var(--fh-line-2); }
+    .fh-input.fh-mono { font-family: var(--fh-mono); }
+    .fh-upper { text-transform: uppercase; }
+    .fh-input::placeholder { color: var(--fh-mute); text-transform: none; }
+    .fh-input:focus { outline: none; border-color: var(--fh-mute); box-shadow: 0 0 0 3px var(--fh-soft); }
+    select.fh-input {
+      appearance: none; -webkit-appearance: none; padding-right: 32px; cursor: pointer;
+      background: var(--fh-s1) no-repeat right 12px center / 10px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6' fill='none' stroke='%23808080' stroke-width='1.3'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+    }
+    select.fh-input option { background: var(--fh-s1); color: var(--fh-ink); }
+    .fh-textarea { height: auto; min-height: 72px; padding: 10px 12px; line-height: 1.5; resize: vertical; }
+    .fh-input.err, .fh-field.err .fh-input { border-color: var(--fh-bad); }
+    .fh-field-err { font-size: 13px; color: var(--fh-bad); }
+    .fh-field-err:empty { display: none; }
+    .fh-field-hint { font-size: 13px; color: var(--fh-mute); line-height: 1.4; }
+    .fh-field-hint:empty { display: none; }
+
+    .fh-adm-form { display: flex; flex-direction: column; gap: 16px; }
+    .fh-adm-row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+    .fh-adm-check { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 14px; cursor: pointer; }
+    .fh-adm-check input { width: 18px; height: 18px; accent-color: var(--fh-gold); flex: none; }
+    .fh-adm-row3 { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 12px; }
+    .fh-adm-row3[hidden] { display: none; }
+    .fh-adm-row3 > :last-child { grid-column: 1 / -1; }
+    .fh-adm-od { display: grid; grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1fr); gap: 8px; align-items: start; }
+    .fh-adm-swap { margin-top: 22px; }
+    .fh-adm-summary {
+      font-size: 14px; line-height: 1.6; color: var(--fh-ink-2);
+      padding: 12px; border-radius: var(--fh-r2); background: var(--fh-bg); border: 1px solid var(--fh-line);
+    }
+    .fh-adm-more { border-top: 1px solid var(--fh-line); padding-top: 12px; }
+    .fh-adm-more > summary { cursor: pointer; font-size: 14px; color: var(--fh-ink-2); min-height: 32px; display: flex; align-items: center; gap: 6px; }
+    .fh-adm-more[open] > summary { margin-bottom: 12px; }
+    .fh-adm-more .fh-field + .fh-field { margin-top: 16px; }
+    .fh-adm-formerr { font-size: 14px; color: var(--fh-ink); padding: 10px 12px; border-left: 2px solid var(--fh-bad); background: color-mix(in oklab, var(--fh-bad) 8%, transparent); }
+    .fh-adm-mtitle { font-family: var(--fh-sans); font-size: 20px; font-weight: 500; letter-spacing: -0.01em; }
+
+    /* ── small square icon buttons (reorder, more, swap) ── */
+    .fh-adm-icon {
+      width: 36px; height: 36px; flex: none; display: inline-grid; place-items: center;
+      border: 1px solid var(--fh-line-2); border-radius: var(--fh-r2);
+      font-family: var(--fh-mono); font-size: 15px; color: var(--fh-ink-2);
+    }
+    .fh-adm-icon:hover:not(:disabled) { background: var(--fh-s2); color: var(--fh-ink); }
+    .fh-adm-icon:disabled { opacity: .35; cursor: default; }
+
+    /* ── schedules: tail list ↔ legs (one at a time on a phone) ── */
+    .fh-adm-split:not(.show-legs) .fh-adm-legs { display: none; }
+    .fh-adm-split.show-legs .fh-adm-tails { display: none; }
+    .fh-adm-tails { display: flex; flex-direction: column; gap: 8px; }
+    .fh-adm-taillist { display: flex; flex-direction: column; }
+    .fh-adm-tail {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "reg ty n" "sub sub sub";
+      gap: 4px 10px; align-items: center; text-align: left;
+      min-height: 64px; padding: 12px; border-bottom: 1px solid var(--fh-line); position: relative;
+    }
+    .fh-adm-tail:hover { background: var(--fh-s1); }
+    .fh-adm-tail.on { background: var(--fh-s1); }
+    .fh-adm-tail.on::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 2px; background: var(--fh-ink); }
+    .fh-adm-tail-reg { grid-area: reg; font-size: 16px; }
+    .fh-adm-tail .fh-ty { grid-area: ty; }
+    .fh-adm-tail-n { grid-area: n; font-family: var(--fh-mono); font-size: 12px; color: var(--fh-mute); }
+    .fh-adm-tail-sub { grid-area: sub; font-size: 13px; color: var(--fh-ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .fh-adm-back { margin-bottom: 8px; }
+    .fh-adm-legs-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-bottom: 16px; }
+    .fh-adm-legs-id { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .fh-adm-legs-reg { font-size: 28px; line-height: 1; letter-spacing: -0.01em; }
+    .fh-adm-legs-head + .fh-adm-warn { margin-bottom: 12px; }
+
+    .fh-adm-leglist { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--fh-line); }
+    .fh-adm-leg {
+      display: grid; grid-template-columns: 16px 20px minmax(0, 1fr) auto;
+      grid-template-areas: "grip seq id chip" "grip seq time time" "grip seq crew crew" "grip seq act act";
+      gap: 6px 10px; padding: 16px 0; border-bottom: 1px solid var(--fh-line); position: relative;
+      transition: background 120ms;
+    }
+    .fh-adm-leg.busy { opacity: .55; }
+    .fh-adm-leg.dragging { opacity: .4; }
+    .fh-adm-leg.drop-before { box-shadow: inset 0 2px 0 var(--fh-ink); }
+    .fh-adm-leg.drop-after { box-shadow: inset 0 -2px 0 var(--fh-ink); }
+    .fh-adm-grip { grid-area: grip; color: var(--fh-mute); font-size: 12px; line-height: 22px; letter-spacing: -2px; cursor: grab; user-select: none; }
+    .fh-adm-grip.off { cursor: default; }
+    .fh-adm-seq { grid-area: seq; font-size: 13px; color: var(--fh-mute); line-height: 22px; }
+    .fh-adm-leg-id { grid-area: id; display: flex; align-items: baseline; gap: 4px 10px; flex-wrap: wrap; min-width: 0; }
+    .fh-adm-cs { font-size: 17px; color: var(--fh-ink); }
+    .fh-adm-route { font-size: 15px; color: var(--fh-ink); }
+    .fh-adm-ft { font-size: 13px; }
+    .fh-adm-leg-chip { grid-area: chip; align-self: start; }
+    .fh-adm-leg-time { grid-area: time; font-size: 13px; color: var(--fh-ink-2); }
+    .fh-adm-leg-crew { grid-area: crew; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; align-items: baseline; }
+    .fh-adm-crewname .fh-dim { font-family: var(--fh-mono); font-size: 11px; }
+    .fh-adm-seats { font-family: var(--fh-mono); font-size: 12px; }
+    .fh-adm-leg-act { grid-area: act; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; padding-top: 6px; }
+    .fh-adm-leglist-closed { margin-top: 8px; }
+    .fh-adm-leglist-closed .fh-adm-leg { opacity: .8; }
+    .fh-adm-closed-toggle { margin-top: 16px; }
+
+    .fh-adm-menuwrap { position: relative; display: inline-flex; }
+    .fh-adm-menu {
+      position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 210px;
+      display: flex; flex-direction: column; padding: 6px;
+      background: var(--fh-s3); border: 0; border-radius: var(--fh-r3);
+      box-shadow: var(--fh-shadow-2);
+    }
+    .fh-adm-menu button { min-height: 40px; padding: 0 12px; text-align: left; border-radius: var(--fh-r1); font-size: 14px; color: var(--fh-ink); }
+    .fh-adm-menu button:hover { background: var(--fh-s2); }
+    .fh-adm-menu .fh-adm-menu-danger { color: var(--fh-bad); border-top: 1px solid var(--fh-line); border-radius: 0 0 var(--fh-r1) var(--fh-r1); margin-top: 4px; }
+
+    /* ── crew seats + picker ── */
+    .fh-seats { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+    .fh-seat {
+      display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 8px 12px;
+      border: 1px solid var(--fh-line-2); border-radius: var(--fh-r2); background: var(--fh-bg);
+    }
+    .fh-seat.empty { border-style: dashed; background: transparent; }
+    .fh-seat.picking { border-color: var(--fh-ink); border-style: solid; }
+    .fh-seat-av {
+      width: 36px; height: 36px; flex: none; border-radius: 50%; display: grid; place-items: center;
+      background: var(--fh-s2); font-family: var(--fh-mono); font-size: 12px; color: var(--fh-ink);
+    }
+    .fh-seat-av.empty { background: transparent; border: 1px dashed var(--fh-line-2); color: var(--fh-mute); }
+    .fh-seat-who { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+    .fh-seat-role { font-family: var(--fh-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--fh-mute); }
+    .fh-seat-name { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fh-seat-act { display: flex; gap: 6px; flex: none; flex-wrap: wrap; justify-content: flex-end; }
+
+    .fh-adm-picker { display: flex; flex-direction: column; gap: 10px; padding-top: 16px; margin-top: 8px; border-top: 1px solid var(--fh-line); }
+    .fh-adm-picker-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .fh-adm-picker-x { margin-left: auto; }
+    .fh-seg { display: inline-flex; border-radius: var(--fh-r-md); padding: 2px; gap: 2px; background: var(--fh-s2); box-shadow: inset 0 0 0 1px var(--fh-line); }
+    .fh-seg button { min-height: 36px; padding: 0 14px; border-radius: 6px; font-size: 13px; color: var(--fh-ink-2); }
+    .fh-seg button.on { background: var(--fh-s1); color: var(--fh-ink); box-shadow: 0 0 0 1px var(--fh-line), 0 1px 2px rgba(0, 0, 0, .06); }
+    .fh-seg button:disabled { opacity: .4; cursor: not-allowed; }
+    .fh-adm-picklist { display: flex; flex-direction: column; max-height: 300px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--fh-line); border-radius: var(--fh-r2); }
+    .fh-pick { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--fh-line); width: 100%; }
+    .fh-pick:last-child { border-bottom: 0; }
+    .fh-pick:hover:not(:disabled) { background: var(--fh-s2); }
+    .fh-pick:disabled { opacity: .55; }
+    .fh-pick-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+    .fh-pick-name { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fh-pick-sub { font-size: 12px; color: var(--fh-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fh-pick-go { font-size: 13px; color: var(--fh-ink-2); flex: none; }
+    .fh-adm-lookup { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+    .fh-adm-lookup-row { display: flex; gap: 8px; }
+    .fh-adm-lookup-row .fh-input { height: 36px; font-size: 14px; }
+    #fhAdmLookupOut .fh-pick { border: 1px solid var(--fh-line-2); border-radius: var(--fh-r2); }
+
+    /* ── contracts ── */
+    .fh-adm-stat-v { font-size: 17px; overflow-wrap: anywhere; }
+    .fh-adm-contract-actions { padding: 16px 0 4px; }
+    .fh-adm-switch { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 4px; font-size: 14px; color: var(--fh-ink-2); }
+    .fh-adm-switch-track { width: 36px; height: 20px; border-radius: 10px; background: var(--fh-s2); border: 1px solid var(--fh-line-2); position: relative; flex: none; transition: background 160ms; }
+    .fh-adm-switch-knob { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--fh-mute); transition: transform 160ms var(--fh-ease), background 160ms; }
+    .fh-adm-switch[aria-checked="true"] { color: var(--fh-ink); }
+    .fh-adm-switch[aria-checked="true"] .fh-adm-switch-track { background: color-mix(in oklab, var(--fh-air) 30%, transparent); border-color: var(--fh-air); }
+    .fh-adm-switch[aria-checked="true"] .fh-adm-switch-knob { transform: translateX(16px); background: var(--fh-air); }
+    .fh-adm-table { display: flex; flex-direction: column; }
+    .fh-adm-trow { display: grid; grid-template-columns: minmax(0, 1fr) auto 72px 64px; gap: 12px; align-items: center; min-height: 48px; border-bottom: 1px solid var(--fh-line); font-size: 14px; }
+    .fh-adm-trow-2 { grid-template-columns: 96px minmax(0, 1fr); }
+
+    /* ── activity ── */
+    .fh-adm-activity { list-style: none; margin: 0; padding: 0; }
+    .fh-adm-activity li {
+      display: grid; grid-template-columns: 84px minmax(0, 1fr); grid-template-areas: "when what" ". who";
+      gap: 2px 12px; padding: 12px 0; border-bottom: 1px solid var(--fh-line); font-size: 14px;
+    }
+    .fh-adm-act-when { grid-area: when; font-size: 12px; color: var(--fh-mute); padding-top: 2px; }
+    .fh-adm-act-what { grid-area: what; line-height: 1.45; }
+    .fh-adm-act-who { grid-area: who; font-size: 12px; }
+
+    /* ── flight log (phone first: each flight is a stacked block) ── */
+    .fh-flog-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding-bottom: 12px; }
+    .fh-flog-pick { flex: 1 1 100%; }
+    .fh-flog-note { font-size: 13px; color: var(--fh-ink-2); margin: 0 0 12px; }
+    .fh-flog-list { border-top: 1px solid var(--fh-line); }
+    .fh-flog { display: grid; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--fh-line); }
+    .fh-flog-meta { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .fh-flog-route { font-size: 16px; }
+    .fh-flog-sub { font-size: 12px; color: var(--fh-mute); }
+    .fh-flog-leg { font-size: 13px; }
+    .fh-flog-match { font-size: 12px; color: var(--fh-mute); }
+    .fh-flog-match.weak { color: var(--fh-warn); }
+    .fh-flog-pilots { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+    .fh-flog-pilot-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 14px; }
+    .fh-flog-who { min-width: 0; overflow-wrap: anywhere; }
+    .fh-flog-ifname { display: block; font-size: 12px; color: var(--fh-mute); }
+    .fh-flog-time { flex: none; font-size: 13px; }
+    .fh-flog-bar { height: 3px; margin-top: 6px; background: var(--fh-line); border-radius: 2px; overflow: hidden; }
+    .fh-flog-bar span { display: block; height: 100%; background: var(--fh-gold); }
+    .fh-flog-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .fh-flog-tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--fh-line-2); color: var(--fh-ink-2); }
+    .fh-flog-tag.warn { color: var(--fh-warn); border-color: currentColor; }
+    .fh-flog-noshow { margin: 10px 0 0; font-size: 13px; color: var(--fh-warn); }
+    .fh-flog-sum { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--fh-line); }
+    .fh-flog-sum li {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who time" "facts facts";
+      gap: 4px 12px; padding: 12px 0; border-bottom: 1px solid var(--fh-line); font-size: 14px;
+    }
+    .fh-flog-sum .fh-flog-who { grid-area: who; }
+    .fh-flog-sum-time { grid-area: time; }
+    .fh-flog-sum-facts { grid-area: facts; font-size: 12px; }
+    .fh-flog-more { display: flex; justify-content: center; padding-top: 16px; }
+
+    #fhAdmCActions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #fhAdmCBody p + p { margin-top: 8px; }
+
+    @media (min-width: 900px) {
+      .fh-adm-split, .fh-adm-split.show-legs { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 40px; align-items: start; }
+      /* Same specificity as the phone rules that hide one side, or they win. */
+      .fh-adm-split.show-legs .fh-adm-tails, .fh-adm-split:not(.show-legs) .fh-adm-tails { display: flex; }
+      .fh-adm-split:not(.show-legs) .fh-adm-legs, .fh-adm-split.show-legs .fh-adm-legs { display: block; }
+      #fhAdmRequests, #fhAdmActivity { max-width: 880px; }
+      .fh-adm-tails { position: sticky; top: calc(var(--fh-top) + 16px); max-height: calc(100dvh - var(--fh-top) - 32px); }
+      .fh-adm-taillist { overflow-y: auto; min-height: 0; }
+      .fh-adm-back { display: none; }
+      .fh-adm-legs-reg { font-size: 36px; }
+      .fh-adm-leg {
+        grid-template-columns: 16px 24px minmax(0, 1.25fr) minmax(0, 1.3fr) minmax(0, 1fr) 118px auto;
+        grid-template-areas: "grip seq id time crew chip act";
+        align-items: center; gap: 12px; padding: 12px 8px;
+      }
+      .fh-adm-leg:hover { background: var(--fh-s1); }
+      .fh-adm-leg-act { padding-top: 0; flex-wrap: nowrap; justify-content: flex-end; }
+      .fh-adm-leg-chip { align-self: center; justify-self: start; }
+      .fh-adm-leg-id { flex-direction: column; gap: 2px; }
+      .fh-adm-row3 { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr); }
+      .fh-adm-row3 > :last-child { grid-column: auto; }
+      .fh-adm-wide .fh-modal-card { max-width: 640px; }
+      .fh-adm-activity li { grid-template-columns: 96px minmax(0, 1fr) 200px; grid-template-areas: "when what who"; }
+      .fh-adm-act-who { text-align: right; }
+      #fhAdmLog { max-width: 1040px; }
+      .fh-flog-pick { flex: 0 1 300px; }
+      .fh-flog { grid-template-columns: 280px minmax(0, 1fr); gap: 32px; padding: 18px 8px; }
+      .fh-flog:hover { background: var(--fh-s1); }
+      .fh-flog-sum li { grid-template-columns: minmax(0, 1fr) 110px minmax(0, 1.2fr); grid-template-areas: "who time facts"; align-items: baseline; padding: 12px 8px; }
+    }
+
+
+    /* ═══ ONBOARDING GUIDE ════════════════════════════════════════════════
+       Behaviour: assets/js/fleet-guide.js. The overlay is appended to <body>,
+       outside #homeView; it takes the theme from the --fh-* tokens on :root
+       through its own --fg-* names, so a guide restyle never touches the app.
+       ═════════════════════════════════════════════════════════════════════ */
+    .fg-root {
+      --fg-panel: var(--fh-s1);
+      --fg-inset: var(--fh-s2);
+      --fg-line: var(--fh-line);
+      --fg-stroke: var(--fh-line-2);
+      --fg-ink: var(--fh-ink);
+      --fg-ink-2: var(--fh-ink-2);
+      --fg-dim: var(--fh-mute);
+      --fg-gold: var(--fh-gold);
+      position: fixed;
+      inset: 0;
+      z-index: 9000;
+      font-family: var(--fh-sans);
+      color: var(--fg-ink);
+    }
+
+    .fg-root[hidden] {
+      display: none;
+    }
+
+    /* Deliberately NOT `overflow: hidden` on the body: spotlight steps below
+       the fold are reached with scrollIntoView, and a scroll lock would leave
+       the tour pointing at an element the pilot cannot see. The overlay is
+       fixed and the hole re-measures on scroll, so free scrolling is safe. */
+
+    /* The scrim IS the spotlight: an enormous spread shadow paints everything
+       outside this box, so moving the box moves the hole. Cheaper and far
+       smoother to animate than a clip-path or four separate panels. */
+    .fg-hole {
+      position: absolute;
+      border-radius: 12px;
+      box-shadow: 0 0 0 9999px var(--fg-scrim);
+      outline: 2px solid var(--fg-ink);
+      outline-offset: 0;
+      transition: top .34s cubic-bezier(.4, 0, .2, 1), left .34s cubic-bezier(.4, 0, .2, 1),
+        width .34s cubic-bezier(.4, 0, .2, 1), height .34s cubic-bezier(.4, 0, .2, 1);
+      pointer-events: none;
+    }
+
+    /* Hero steps: no cutout, just a full dim. */
+    .fg-hole.empty {
+      outline: none;
+    }
+
+    .fg-card {
+      position: absolute;
+      width: min(420px, calc(100vw - 24px));
+      background: var(--fg-panel);
+      border: 0;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: var(--fh-shadow-3);
+      color: var(--fg-ink);
+      max-height: calc(100vh - 24px);
+      max-height: calc(100dvh - 24px);
+      overflow-y: auto;
+      transition: top .3s cubic-bezier(.4, 0, .2, 1), left .3s cubic-bezier(.4, 0, .2, 1);
+      animation: fgIn .26s ease both;
+    }
+
+    .fg-card.hero {
+      width: min(540px, calc(100vw - 24px));
+    }
+
+    .fg-card.center {
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      transition: none;
+      max-height: calc(100vh - 40px);
+      max-height: calc(100dvh - 40px);
+      overflow-y: auto;
+    }
+
+    @keyframes fgIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+    }
+
+    .fg-card.center {
+      animation-name: fgInCenter;
+    }
+
+    @keyframes fgInCenter {
+      from {
+        opacity: 0;
+        transform: translate(-50%, calc(-50% + 6px));
+      }
+
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+      }
+    }
+
+    .fg-bar {
+      height: 2px;
+      background: var(--fg-line);
+    }
+
+    .fg-bar i {
+      display: block;
+      height: 100%;
+      background: var(--fg-gold);
+      transition: width .3s ease;
+    }
+
+    .fg-body {
+      padding: 20px 20px 4px;
+    }
+
+    .fg-eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      /* the eyebrow row must not run under the Skip button */
+      padding-right: 56px;
+    }
+
+    .fg-chapter {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--fg-ink-2);
+    }
+
+    .fg-count {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--fg-dim);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .fg-title {
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1.3;
+      margin: 0 0 8px;
+      letter-spacing: -0.02em;
+      text-wrap: balance;
+    }
+
+    .fg-card.hero .fg-title {
+      font-size: 22px;
+    }
+
+    .fg-text {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--fg-ink-2);
+    }
+
+    .fg-text p {
+      margin: 0 0 10px;
+    }
+
+    .fg-text p:last-child {
+      margin-bottom: 0;
+    }
+
+    .fg-text b {
+      color: var(--fg-ink);
+      font-weight: 600;
+    }
+
+    .fg-text i {
+      color: var(--fg-ink);
+      font-style: italic;
+    }
+
+    .fg-foot {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      margin-top: 16px;
+      border-top: 1px solid var(--fg-line);
+    }
+
+    .fg-grow {
+      flex: 1;
+    }
+
+    .fg-dots {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .fg-dot {
+      width: 6px;
+      height: 6px;
+      padding: 0;
+      border-radius: 50%;
+      border: none;
+      background: var(--fg-stroke);
+      cursor: pointer;
+      transition: background .2s, width .2s;
+    }
+
+    .fg-dot.done {
+      background: var(--fg-dim);
+    }
+
+    .fg-dot.on {
+      width: 16px;
+      border-radius: 3px;
+      background: var(--fg-gold);
+    }
+
+    .fg-btn-go {
+      height: 36px;
+      padding: 0 14px;
+      border-radius: 6px;
+      border: 1px solid var(--fg-gold);
+      background: var(--fg-gold);
+      color: var(--fh-bg);
+      font-size: 14px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background .12s, border-color .12s;
+    }
+
+    .fg-btn-go:hover {
+      background: var(--fh-gold-hi);
+      border-color: var(--fh-gold-hi);
+    }
+
+    .fg-btn-quiet {
+      height: 36px;
+      padding: 0 12px;
+      border-radius: 6px;
+      border: 1px solid var(--fg-line);
+      background: var(--fg-panel);
+      color: var(--fg-ink);
+      font-size: 14px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background .12s, border-color .12s;
+    }
+
+    .fg-btn-quiet:hover {
+      background: var(--fg-inset);
+      border-color: var(--fg-stroke);
+    }
+
+    .fg-x {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      min-width: 44px;
+      min-height: 40px;
+      padding: 0 8px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--fg-ink-2);
+    }
+
+    .fg-x:hover {
+      color: var(--fg-ink);
+      background: var(--fh-soft);
+    }
+
+    /* ── illustrations ─────────────────────────────────────────────────── */
+    /* Insets built from the app's own parts, so they read as the product. */
+    .fg-art {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 8px;
+      background: var(--fg-inset);
+      box-shadow: inset 0 0 0 1px var(--fg-line);
+    }
+
+    .fg-reg {
+      font-family: var(--fh-mono);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--fg-ink);
+    }
+
+    .fg-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: 20px;
+      padding: 0 7px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .fg-chip::before {
+      content: '';
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .fg-chip-ok {
+      background: var(--fh-gnd-soft);
+      color: var(--fh-gnd-ink);
+    }
+
+    /* the aircraft group header above the illustrated legs — the board is
+       grouped by tail, so the example has to show what a block looks like */
+    .fg-leg-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 2px 9px;
+    }
+
+    .fg-leg-where {
+      font-size: 12px;
+      color: var(--fg-dim);
+    }
+
+    .fg-leg {
+      display: grid;
+      grid-template-columns: auto 1fr auto auto;
+      gap: 10px;
+      align-items: center;
+      padding: 9px 11px;
+      border-radius: 6px;
+      background: var(--fg-panel);
+      box-shadow: inset 0 0 0 1px var(--fg-line);
+      margin-bottom: 6px;
+    }
+
+    .fg-leg:last-child {
+      margin-bottom: 0;
+    }
+
+    .fg-leg.on {
+      box-shadow: inset 0 0 0 1px var(--fg-ink);
+    }
+
+    .fg-leg-cs {
+      font-family: var(--fh-mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--fg-ink);
+    }
+
+    .fg-leg-rt {
+      font-family: var(--fh-mono);
+      font-size: 12px;
+      color: var(--fg-ink-2);
+    }
+
+    .fg-leg-tm {
+      font-family: var(--fh-mono);
+      font-size: 12px;
+      color: var(--fg-ink-2);
+    }
+
+    .fg-leg-ft {
+      font-size: 12px;
+      color: var(--fg-dim);
+    }
+
+    /* crew-request chapter: ask → review → assigned */
+    .fg-art-crew {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .fg-step-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--fg-panel);
+      box-shadow: inset 0 0 0 1px var(--fg-line);
+    }
+
+    .fg-step-n {
+      flex: 0 0 auto;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--fg-ink);
+      color: var(--fg-panel);
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .fg-step-b {
+      min-width: 0;
+    }
+
+    .fg-step-t {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--fg-ink);
+    }
+
+    .fg-step-s {
+      font-size: 12px;
+      color: var(--fg-ink-2);
+      margin-top: 2px;
+      line-height: 1.45;
+    }
+
+    .fg-art-hero {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: relative;
+      padding: 18px 16px;
+    }
+
+    .fg-hero-line {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      top: 50%;
+      border-top: 1px dashed var(--fg-stroke);
+    }
+
+    .fg-hero-a,
+    .fg-hero-b {
+      position: relative;
+      font-family: var(--fh-mono);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--fg-ink);
+      background: var(--fg-inset);
+      padding: 0 8px;
+    }
+
+    .fg-hero-plane {
+      position: relative;
+      display: grid;
+      place-items: center;
+      color: var(--fg-ink);
+      background: var(--fg-inset);
+      padding: 0 8px;
+      animation: fgTaxi 3.4s ease-in-out infinite;
+    }
+
+    .fg-hero-plane svg {
+      width: 16px;
+      height: 16px;
+      display: block;
+    }
+
+    @keyframes fgTaxi {
+
+      0%,
+      100% {
+        transform: translateX(-14px);
+      }
+
+      50% {
+        transform: translateX(14px);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      .fg-hole,
+      .fg-card {
+        transition: none;
+      }
+
+      .fg-card,
+      .fg-hero-plane {
+        animation: none;
+      }
+    }
+
+    /* ── the guide on a touch screen ──────────────────────────────────────
+       Anchored placement has nowhere to go on a phone, so the card docks to
+       the bottom. That created the bug it was meant to solve: a card up to
+       72vh tall covered the very element the spotlight was pointing at, and
+       `scrollIntoView({block:'center'})` put the target dead behind it.
+
+       So the docked height is capped, `--fg-dock` tells the script exactly
+       how much of the screen the card owns, and place() keeps the cutout in
+       the band above it (fleet-guide.js). The two numbers must agree — the
+       script reads this custom property rather than assuming.
+
+       Heights are dvh, not vh: on mobile browsers vh includes the space under
+       a retracted URL bar, so a 72vh card genuinely can be taller than the
+       screen you are looking at. */
+    @media (max-width: 720px) {
+      .fg-root {
+        --fg-dock: 54;
+        /* per cent of the viewport the docked card may take */
+      }
+
+      .fg-card,
+      .fg-card.hero {
+        top: auto !important;
+        bottom: 10px;
+        left: 50% !important;
+        transform: translateX(-50%);
+        width: calc(100vw - 20px);
+        width: calc(100dvw - 20px);
+        max-height: 54vh;
+        max-height: calc(var(--fg-dock) * 1dvh);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+      }
+
+      .fg-card.center {
+        top: 50% !important;
+        bottom: auto;
+        transform: translate(-50%, -50%);
+        max-height: 84vh;
+        max-height: 84dvh;
+      }
+
+      /* A hero step has no cutout to protect, so it may use the whole screen. */
+      .fg-card.hero.center {
+        max-height: 84vh;
+        max-height: 84dvh;
+      }
+
+      /* full-width tap targets — these are the only way through the tour */
+      .fg-foot {
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .fg-btn-go {
+        flex: 1 1 100%;
+        order: 3;
+        min-height: 44px;
+        justify-content: center;
+      }
+
+      .fg-btn-quiet {
+        min-height: 44px;
+      }
+
+      .fg-dots {
+        order: 1;
+      }
+
+      .fg-body {
+        padding: 16px 16px 14px;
+      }
+
+      .fg-title {
+        font-size: 17px;
+      }
+    }
+
+    /* Landscape on a phone: almost no vertical room, so the card takes a side
+       instead of the bottom and the spotlight keeps the other half. */
+    @media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+      .fg-root {
+        --fg-dock: 0;
+      }
+
+      .fg-card,
+      .fg-card.hero {
+        top: 8px !important;
+        bottom: 8px;
+        left: auto !important;
+        right: 8px;
+        transform: none;
+        width: min(340px, 52vw);
+        max-height: none;
+      }
+
+      .fg-card.center {
+        top: 50% !important;
+        left: 50% !important;
+        right: auto;
+        bottom: auto;
+        transform: translate(-50%, -50%);
+        max-height: 92dvh;
+      }
+    }
+  </style>
+  <!-- The Flight bag tab (fh-bag-*): its own sheet so the page's 3,000-line
+       <style> does not grow. Same --fh-* tokens, mobile-first. -->
+  <link rel="stylesheet" href="/assets/css/fleet-bag.css?h=cde506c891">
+</head>
+
+<body>
+
+  <!-- ═══ SIGN IN — OAuth2 (PKCE) with Infinite Flight ═══
+       One screen, no scroll. fleet-mode.js reads #btnSignIn and #signInError
+       by id and restores the button's innerHTML after "Connecting…". -->
+  <section id="signinView" class="si">
+    <div class="si-stage">
+      <div class="si-wrap">
+        <div class="si-brand">
+          <span class="name">INVA</span>
+          <span class="pill-fleet">Fleet</span>
+          <span class="badge-beta">Beta</span>
+        </div>
+        <div class="si-hero">
+          <h1 class="si-display">Fly the<br><span class="fleet-wrap"><em>fleet</em><img class="si-yoke"
+                src="/assets/fleet-yoke.png" alt="" aria-hidden="true"></span></h1>
+        </div>
+        <p class="si-sub">Pick a tail where it actually is. It flies when you fly it — and it lands where you leave it.
+        </p>
+        <div class="si-card">
+          <div class="si-card-label">Sign in to continue</div>
+          <button id="btnSignIn" class="btn-cyan btn-xl">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M2 16l20-9-8 20-3-8-9-3z" fill="currentColor" />
+            </svg>
+            Continue with Infinite Flight
+          </button>
+          <div id="signInError" class="si-error" hidden></div>
+        </div>
+      </div>
+    </div>
+    <img class="si-globe" src="/assets/fleet-globe.png" alt="" aria-hidden="true">
+  </section>
+
+  <!-- ═══ FLEET HOME — the screen sign-in lands on ═══════════════════════
+       Static shell only; every list, figure and chip below is rendered by
+       assets/js/fleet-mode-home.js from the live IF fleet read. Read-only. Skeletons inside the render targets are
+       replaced by the first render.
+       ══════════════════════════════════════════════════════════════════ -->
+  <section id="homeView" hidden>
+    <!-- Header: scrolls away. The tab rail below it sticks, and the server
+         icon slides into the rail once the header is gone (.is-stuck).
+         Same order as the career header: the pilot on the left (a plain
+         label), the Indian Virtual server icon at the extreme right, and that
+         icon opens the account / theme menu. -->
+    <header class="fh-top" id="fhTop">
+      <div class="fh-wrap fh-top-in">
+        <div class="fh-who">
+          <span class="fh-avatar" id="fhMeInitials" aria-hidden="true">--</span>
+          <span class="fh-who-name" id="fhWhoName">—</span>
+          <span class="fh-mode-pill">Fleet Mode</span>
+        </div>
+        <span class="fh-clock" id="fhClock" title="Time in India (IST)"></span>
+        <div class="fh-me">
+          <!-- The account menu: a native popover at every width (no JS). Still
+               inside #homeView, so the delegated click handler sees every
+               button in it. -->
+          <div class="fh-menu" id="fhMeMenu" popover>
+            <div class="fh-menu-head">
+              <span class="fh-me-name" id="fhMeName">—</span>
+              <span class="fh-menu-sub">Signed in with Infinite Flight</span>
+            </div>
+            <button class="fh-iconbtn" id="fhReload" type="button" title="Refresh the fleet">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+              <span>Refresh</span>
+            </button>
+            <button class="fh-iconbtn" id="fhGuide" type="button" title="Replay the Fleet Mode guide">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>
+              <span>Guide</span>
+            </button>
+            <div class="fh-menu-theme">
+              <span>Theme</span>
+              <div class="fh-theme" role="group" aria-label="Theme">
+                <button type="button" data-fhtheme="system" aria-pressed="true" aria-label="System" title="System">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+                </button>
+                <button type="button" data-fhtheme="light" aria-pressed="false" aria-label="Light" title="Light">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+                </button>
+                <button type="button" data-fhtheme="dark" aria-pressed="false" aria-label="Dark" title="Dark">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="fh-menu-sep" role="separator"></div>
+            <button class="fh-iconbtn" id="fhSignOut" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></svg>
+              <span>Sign out</span>
+            </button>
+          </div>
+          <!-- The LAST item in the header. .fh-mebtn is the hook the
+               no-Popover fallback in fleet-mode-home.js toggles the menu from. -->
+          <button class="fh-mebtn" type="button" popovertarget="fhMeMenu" aria-haspopup="true" aria-controls="fhMeMenu" aria-expanded="false" aria-label="Account and theme menu" title="Account and theme">
+            <img src="/assets/img/brand/indian-virtual.webp" width="36" height="36" alt="" decoding="async">
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Tabs: the only navigation, at every width. Filled by renderNav();
+         the ink rule and the hover pill are positioned by fleet-mode-home.js. -->
+    <nav class="fh-tabrail" id="fhTabrail" aria-label="Fleet Mode sections">
+      <div class="fh-wrap fh-tabrail-in">
+        <span class="fh-tabrail-mark" aria-hidden="true"><img src="/assets/img/brand/indian-virtual.webp" width="22" height="22" alt="" decoding="async"></span>
+        <div class="fh-tabscroll" id="fhTabScroll">
+          <span class="fh-tabhover" id="fhTabHover" aria-hidden="true"></span>
+          <div class="fh-nav" id="fhNav"></div>
+          <span class="fh-tabink" id="fhTabInk" aria-hidden="true"></span>
+        </div>
+      </div>
+    </nav>
+
+    <!-- In-page status line (request sent, leg alert on, dispatch notices).
+         The id predates the removal of Follow-a-tail. Fixed, bottom right. -->
+    <div class="fh-follow-toast" id="fhFollowToast" role="status" hidden></div>
+
+    <!-- Over a cached board only: "Board from HH:MM IST · refreshing…". Fixed,
+         bottom left (the toast is bottom right), so it never moves the page. -->
+    <div class="fh-board-status" id="fhBoardStatus" role="status" hidden></div>
+
+    <!-- ── Fleet ─────────────────────────────────────────────────────── -->
+    <div class="fh-screen" id="fhScreenFleet">
+      <div class="fh-page-head">
+        <div>
+          <h1>Fleet</h1>
+          <p class="fh-lede">
+            <span class="fh-sub" id="fhFleetSub"><span class="fh-skel" style="width:220px"></span></span>
+            <span class="fh-lede-sep" aria-hidden="true">/</span>
+            <span class="fh-tz">All times IST</span>
+          </p>
+        </div>
+        <div class="fh-head-actions">
+          <button class="fh-btn" id="fhAllSchedules" type="button">All schedules
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="fh-error" id="fhError" role="alert" hidden></div>
+
+      <!-- One column on a phone; the rail moves alongside at 1140px. The grid
+           AREAS let the rail span the left column, so the four .fh-a-*
+           blocks must keep their classes. -->
+      <div class="fh-fleet-grid">
+        <!-- The KPI strip. Its cells are the map + list filters (data-filter). -->
+        <section class="fh-a-stats" aria-label="The fleet at a glance">
+          <div class="fh-stats" id="fhStats">
+            <div class="fh-stat"><span class="fh-skel" style="width:60%"></span><span class="fh-skel fh-skel-v"></span></div>
+            <div class="fh-stat"><span class="fh-skel" style="width:60%"></span><span class="fh-skel fh-skel-v"></span></div>
+            <div class="fh-stat"><span class="fh-skel" style="width:60%"></span><span class="fh-skel fh-skel-v"></span></div>
+            <div class="fh-stat"><span class="fh-skel" style="width:60%"></span><span class="fh-skel fh-skel-v"></span></div>
+          </div>
+        </section>
+
+        <section class="fh-blk fh-a-map">
+          <div class="fh-blk-head">
+            <h2>Live map</h2>
+            <div class="fh-blk-actions">
+              <button class="fh-btn fh-btn-sm" id="fhFitFleet" type="button">Fit fleet</button>
+            </div>
+          </div>
+          <div class="fh-mapwrap">
+            <div id="fhMap"></div>
+          </div>
+          <div class="fh-blk-foot">
+            <div class="fh-legend" id="fhLegend"></div>
+          </div>
+        </section>
+
+        <section class="fh-blk fh-a-tails">
+          <div class="fh-blk-head">
+            <h2>Active fleet</h2>
+            <span class="fh-sub" id="fhFleetCount"></span>
+          </div>
+          <!-- ids kept: the onboarding guide spotlights #fhStripWrap -->
+          <div id="fhStripWrap">
+            <div class="fh-tails" id="fhStrip">
+              <div class="fh-skel-row"><span class="fh-skel" style="width:40%"></span><span class="fh-skel" style="width:70%"></span></div>
+              <div class="fh-skel-row"><span class="fh-skel" style="width:36%"></span><span class="fh-skel" style="width:62%"></span></div>
+              <div class="fh-skel-row"><span class="fh-skel" style="width:44%"></span><span class="fh-skel" style="width:58%"></span></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- The rail. `detail-col` is a grid AREA at 1140px; below that it is
+             a sheet (fleet-mode-home.js openSheet): a bottom sheet on a phone,
+             a side sheet from 641px. The bar is only visible then, and the
+             scrim right after it closes the sheet. -->
+        <div class="fh-detail-col" id="fhDetailCol">
+          <div class="fh-sheet-bar">
+            <span class="fh-sheet-title">Aircraft</span>
+            <button class="fh-sheet-close" id="fhSelClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <section class="fh-blk" id="fhSelCard">
+            <div class="fh-skel-row"><span class="fh-skel" style="height:24px;width:50%"></span><span class="fh-skel" style="width:80%"></span></div>
+          </section>
+        </div>
+        <div class="fh-sheet-scrim" data-fhsheetclose="1" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <!-- ── Board ─────────────────────────────────────────────────────── -->
+    <!-- Every leg in the air or stopped en route right now. Six cells per row
+         (.fh-sched-grid) — see the cell-count note in the table CSS. -->
+    <div class="fh-screen" id="fhScreenBoard" hidden>
+      <div class="fh-page-head">
+        <div>
+          <h1>Board</h1>
+          <p class="fh-lede">
+            <span class="fh-sub" id="fhSchedCount"></span>
+            <span class="fh-lede-sep" aria-hidden="true">/</span>
+            <span class="fh-tz">All times IST</span>
+          </p>
+        </div>
+      </div>
+      <section class="fh-blk">
+        <div class="fh-board" id="fhSchedTable">
+          <div class="fh-skel-row"><span class="fh-skel" style="width:30%"></span><span class="fh-skel" style="width:90%"></span></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ── Schedules ─────────────────────────────────────────────────── -->
+    <div class="fh-screen" id="fhScreenSchedules" hidden>
+      <div class="fh-page-head">
+        <div>
+          <h1>Schedules</h1>
+          <p class="fh-lede">
+            <span class="fh-sub" id="fhSchHeadline"></span>
+            <span class="fh-lede-sep" aria-hidden="true">/</span>
+            <span class="fh-tz">All times IST</span>
+          </p>
+        </div>
+      </div>
+      <div class="fh-stats" id="fhSchStats"></div>
+      <div class="fh-schbar">
+        <div class="fh-pills" id="fhSchFilters" role="group" aria-label="Show legs"></div>
+        <!-- Static, NOT rendered: the 90s poll re-draws the board, and rebuilding
+             these would drop the caret mid-word and close the sort dropdown.
+             renderSchedules only syncs their values (syncSchedControls). -->
+        <div class="fh-schtools">
+          <input class="fh-search" id="fhSchSearch" type="search" autocomplete="off"
+                 spellcheck="false" aria-label="Search schedules"
+                 placeholder="Tail, type, pilot, airport or flight">
+          <label class="fh-sortwrap" for="fhSchSort">
+            <span class="fh-sortlab">Sort</span>
+            <select class="fh-select" id="fhSchSort"></select>
+          </label>
+          <button class="fh-btn fh-expand" id="fhSchExpand" type="button">Expand all</button>
+        </div>
+      </div>
+      <section class="fh-blk">
+        <div class="fh-board" id="fhSchTable"></div>
+      </section>
+    </div>
+
+    <!-- ── Flight bag ────────────────────────────────────────────────── -->
+    <!-- The pilot's own legs, in the order they were approved, with the same
+         Dispatch -> SimBrief -> OFP loop as the flight dialog. Rendered by
+         assets/js/fleet-flight-bag.js into #fhBagBody; every control in it
+         reaches the delegated click handler in fleet-mode-home.js. -->
+    <div class="fh-screen" id="fhScreenBag" hidden>
+      <div class="fh-page-head">
+        <div>
+          <h1>Flight bag</h1>
+          <p class="fh-lede">
+            <span class="fh-sub" id="fhBagSub"></span>
+            <span class="fh-lede-sep" aria-hidden="true">/</span>
+            <span class="fh-tz">All times IST</span>
+            <!-- Outside #fhBagBody on purpose: it ticks (textContent only), and a
+                 ticking string inside the body would rebuild the table. Not
+                 aria-live — a new leg is announced by the toast instead. -->
+            <span class="fh-lede-sep" id="fhBagLiveSep" aria-hidden="true" hidden>/</span>
+            <span class="fh-bag-live" id="fhBagLive" hidden></span>
+          </p>
+        </div>
+      </div>
+      <div class="fh-bag" id="fhBagBody">
+        <div class="fh-blk">
+          <div class="fh-skel-row"><span class="fh-skel" style="width:30%"></span><span class="fh-skel" style="width:90%"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Airline ───────────────────────────────────────────────────── -->
+    <div class="fh-screen" id="fhScreenAirline" hidden>
+      <div class="fh-org-grid">
+        <section class="fh-org">
+          <h1 id="fhOrgName">Indian Virtual</h1>
+          <span class="fh-org-desc" id="fhOrgDesc"></span>
+          <div class="fh-tags" id="fhOrgTags"></div>
+        </section>
+        <section class="fh-blk fh-slots">
+          <div class="fh-blk-head">
+            <h2>Active fleet slots</h2>
+            <span class="fh-sub" id="fhSlotLabel"></span>
+          </div>
+          <div class="fh-blk-body">
+            <div class="fh-slot-bar"><i id="fhSlotBar" style="width:0%"></i></div>
+            <span class="fh-note" id="fhSlotNote"></span>
+            <!-- Opens the organization's own page on Infinite Flight Live, where
+                 members support the airline and its slot count grows. -->
+            <a class="fh-btn fh-btn-sm fh-support" id="fhOrgSupport"
+              href="https://live.infiniteflight.com/organization/25f27176-a2d4-46e3-844e-cc39eb3a5579" target="_blank"
+              rel="noopener noreferrer">Support this airline <span aria-hidden="true">↗</span></a>
+          </div>
+        </section>
+      </div>
+
+      <section class="fh-blk">
+        <div class="fh-blk-head">
+          <h2>Hubs</h2>
+          <span class="fh-sub">Where the fleet is right now</span>
+        </div>
+        <div class="fh-hubs" id="fhHubs"></div>
+      </section>
+
+      <div class="fh-thirds">
+        <section class="fh-blk">
+          <div class="fh-blk-head">
+            <h2>Fleet by type</h2>
+            <span class="fh-sub" id="fhTypeCount"></span>
+          </div>
+          <div id="fhByType"></div>
+        </section>
+        <section class="fh-blk">
+          <div class="fh-blk-head">
+            <h2>Network</h2>
+            <span class="fh-sub" id="fhNetworkCount"></span>
+          </div>
+          <div class="fh-net" id="fhNetwork"></div>
+        </section>
+        <section class="fh-blk">
+          <div class="fh-blk-head">
+            <h2>Recent activity</h2>
+            <span class="fh-sub">Today · IST</span>
+          </div>
+          <div id="fhActivity"></div>
+        </section>
+      </div>
+
+      <!-- Monthly leaderboard (the config/fleetLeaderboard snapshot, via
+           /api/fleetPilotProfile). Painted by fleet-mode-home.js from
+           assets/js/fleet-activity.js; each callsign opens that pilot's page. -->
+      <section class="fh-blk" id="fhLbBlock">
+        <div class="fh-blk-head">
+          <h2>This month’s leaderboard</h2>
+          <span class="fh-sub">Most legs · IST month</span>
+        </div>
+        <div id="fhLeaderboard"></div>
+      </section>
+    </div>
+
+    <!-- ── My activity ───────────────────────────────────────────────────
+         Rendered by assets/js/fleet-activity.js (loaded on first open) into
+         #fhActHead / #fhActBody. #fhActivityGlobe is the mount for the route
+         globe (a lazy module, loaded by the activity script): empty and hidden until a pilot
+         with routes is on screen; a plain route list if WebGL is unavailable. -->
+    <div class="fh-screen" id="fhScreenActivity" hidden>
+      <div class="fh-page-head" id="fhActHead"></div>
+      <div class="fh-act-globe" id="fhActivityGlobe" role="region" aria-label="Route globe"></div>
+      <div class="fh-mya" id="fhActBody">
+        <div class="fh-blk"><div class="fh-blk-body"><div class="fh-skel-row"><span class="fh-skel" style="width:30%"></span><span class="fh-skel" style="width:90%"></span></div></div></div>
+      </div>
+    </div>
+
+    <!-- ── Aircraft history ──────────────────────────────────────────── -->
+    <div class="fh-screen" id="fhScreenHistory" hidden>
+      <button class="fh-back" id="fhHistBack" type="button"><span class="fh-arr" aria-hidden="true">←</span>Fleet</button>
+      <div class="fh-hist-head" id="fhHistHead"></div>
+      <div class="fh-hist-wrap">
+        <div>
+          <div class="fh-stats" id="fhHistStats"></div>
+          <section class="fh-blk">
+            <div class="fh-blk-head">
+              <h2>Flight log</h2>
+              <span class="fh-sub">Most recent first · IST</span>
+            </div>
+            <div class="fh-board" id="fhHistLegs"></div>
+          </section>
+        </div>
+        <div class="fh-hist-rail">
+          <section class="fh-blk" id="fhHistVisited"></section>
+          <section class="fh-blk" id="fhHistRecord"></section>
+          <button class="fh-btn-red fh-cta" id="fhHistSchedules" type="button">Open schedules</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Admin (staff only) ─────────────────────────────────────────────
+         assets/js/fleet-admin.js. The tab appears only when
+         /api/fleetAdminMe says this IF account is INVA staff; every action is
+         re-checked server-side and written on the org connection. Static
+         controls (the tail search) live here, not in rendered HTML, so the
+         90 s fleet poll can repaint the lists without dropping the caret.
+         Not redesigned yet: it takes the INVA Line tokens and shared parts. -->
+    <div class="fh-screen" id="fhScreenAdmin" hidden>
+      <div class="fh-page-head">
+        <div>
+          <h1>Admin</h1>
+          <p class="fh-lede">
+            <span class="fh-sub" id="fhAdmSub">Changes go straight to Infinite Flight.</span>
+            <span class="fh-lede-sep" aria-hidden="true">/</span>
+            <span class="fh-tz">All times IST</span>
+          </p>
+        </div>
+        <div class="fh-head-actions fh-adm-headact">
+          <span id="fhAdmConn"></span>
+          <button class="fh-btn" id="fhAdmRefresh" type="button">Refresh</button>
+        </div>
+      </div>
+      <p class="fh-adm-warn fh-adm-connwarn" id="fhAdmConnWarn" role="alert" hidden></p>
+      <div class="fh-pills fh-adm-tabs" id="fhAdmTabs" role="tablist" aria-label="Admin sections"></div>
+      <div class="fh-error" id="fhAdmError" role="alert" hidden></div>
+
+      <section class="fh-blk fh-adm-pane" id="fhAdmPaneRequests">
+        <div id="fhAdmRequests"></div>
+      </section>
+
+      <section class="fh-blk fh-adm-pane" id="fhAdmPaneSchedules" hidden>
+        <div class="fh-adm-split" id="fhAdmSplit">
+          <div class="fh-adm-tails">
+            <input class="fh-search" id="fhAdmTailSearch" type="search" autocomplete="off" spellcheck="false"
+                   aria-label="Find an aircraft" placeholder="Tail, type or airport">
+            <div class="fh-adm-taillist" id="fhAdmTailList"></div>
+          </div>
+          <div class="fh-adm-legs" id="fhAdmLegs"></div>
+        </div>
+      </section>
+
+      <section class="fh-blk fh-adm-pane" id="fhAdmPaneContracts" hidden>
+        <div id="fhAdmContracts"></div>
+      </section>
+
+      <section class="fh-blk fh-adm-pane" id="fhAdmPaneLog" hidden>
+        <div class="fh-blk-head"><h2>Flight log</h2><span class="fh-sub">Who actually flew each leg, and for how long</span></div>
+        <div id="fhAdmLog"></div>
+      </section>
+
+      <!-- Metrics + Rewards settings: rendered by assets/js/fleet-admin-metrics.js (lazy, first open). -->
+      <section class="fh-blk fh-adm-pane" id="fhAdmPaneMetrics" hidden>
+        <div class="fh-blk-head"><h2>Metrics</h2><span class="fh-sub">From the daily rollups</span></div>
+        <div id="fhAdmMetrics"></div>
+      </section>
+
+      <section class="fh-blk fh-adm-pane" id="fhAdmPaneRewards" hidden>
+        <div class="fh-blk-head"><h2>Rewards settings</h2><span class="fh-sub">Bounties and achievements</span></div>
+        <div id="fhAdmRewards"></div>
+      </section>
+
+      <section class="fh-blk fh-adm-pane" id="fhAdmPaneActivity" hidden>
+        <div class="fh-blk-head"><h2>Recent admin activity</h2><span class="fh-sub">Last 20 · this screen only</span></div>
+        <div id="fhAdmActivity"></div>
+      </section>
+    </div>
+
+    <!-- Admin dialog (leg editor, crew, flight plan) and its confirm, which
+         sits above it. Bottom sheet on a phone, centred from 641px. -->
+    <div class="fh-modal" id="fhAdmModal" hidden>
+      <div class="fh-modal-back" data-admclose-back="1"></div>
+      <div class="fh-modal-card" role="dialog" aria-modal="true" aria-labelledby="fhAdmMTitle">
+        <div class="fh-modal-head">
+          <div class="fh-modal-id">
+            <span class="fh-modal-cs fh-adm-mtitle" id="fhAdmMTitle"></span>
+            <span class="fh-sub" id="fhAdmMSub"></span>
+          </div>
+          <button class="fh-modal-x" type="button" data-admclose="1" aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="fh-modal-body" id="fhAdmMBody"></div>
+        <div class="fh-modal-actions" id="fhAdmMActions"></div>
+      </div>
+    </div>
+    <div class="fh-modal fh-modal-top" id="fhAdmConfirm" hidden>
+      <div class="fh-modal-back" data-admcfcancel-back="1"></div>
+      <div class="fh-modal-card" role="alertdialog" aria-modal="true" aria-labelledby="fhAdmCTitle" aria-describedby="fhAdmCBody">
+        <div class="fh-modal-head">
+          <div class="fh-modal-id"><span class="fh-adm-mtitle" id="fhAdmCTitle"></span></div>
+        </div>
+        <div class="fh-modal-body" id="fhAdmCBody"></div>
+        <div class="fh-modal-actions" id="fhAdmCActions"></div>
+      </div>
+    </div>
+    <div class="fh-follow-toast" id="fhAdmToast" role="status" hidden></div>
+
+    <!-- ── Flight dialog ─────────────────────────────────────────────────
+         Detail, so a SHEET: from the bottom on a phone, from the right from
+         641px. Inside #homeView so the delegated click handler sees it. -->
+    <div class="fh-modal fh-modal-sheet" id="fhFlightModal" hidden>
+      <div class="fh-modal-back" data-fhclose="1"></div>
+      <div class="fh-modal-card" role="dialog" aria-modal="true" aria-labelledby="fhFmTitle">
+        <div class="fh-modal-head">
+          <div class="fh-modal-id">
+            <span class="fh-modal-cs" id="fhFmTitle"></span>
+            <span class="fh-sub" id="fhFmSub"></span>
+          </div>
+          <span id="fhFmChip"></span>
+          <button class="fh-modal-x" data-fhclose="1" aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="fh-modal-body" id="fhFmBody"></div>
+        <div class="fh-modal-actions" id="fhFmActions"></div>
+      </div>
+    </div>
+
+    <!-- ── "Captain's seat is taken" ─────────────────────────────────────
+         An offer of the right-hand seat, not a refusal — friendly, never red.
+         Sits above the flight dialog (z-index) and inside #homeView. -->
+    <div class="fh-modal fh-modal-top" id="fhCrewConfirm" hidden>
+      <div class="fh-modal-back" data-cfcancel="1"></div>
+      <div class="fh-modal-card" role="alertdialog" aria-modal="true"
+           aria-labelledby="fhCfTitle" aria-describedby="fhCfBody">
+        <div class="fh-modal-head">
+          <div class="fh-modal-id">
+            <span class="fh-modal-cs" id="fhCfTitle">Captain’s seat is taken</span>
+            <span class="fh-sub" id="fhCfSub"></span>
+          </div>
+          <button class="fh-modal-x" data-cfcancel="1" aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="fh-modal-body" id="fhCfBody"></div>
+        <div class="fh-modal-actions" id="fhCfActions"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Order is load-bearing; all eager. fleet-mode.js checks for
+       window.INVA_FLEET_HOME at boot. simbrief-helper.js must be loaded
+       before any click so the dispatch popup opens synchronously.
+       invaCalc.js is pure (no Firebase, no career collection): its
+       resolveTailSeats is the one seat number per tail the dispatch pax is
+       sampled against. -->
+  <script src="/assets/js/aircraft-photo.js?h=8831f79a37"></script>
+  <script src="/assets/js/fleet-guide.js?h=a53663eeb0"></script>
+  <script src="/invaCalc.js?h=7574db247c"></script>
+  <script src="/assets/js/api-auth.js?h=4bb4beb133"></script>
+  <script src="/simbrief-helper.js?h=31ceedac6a"></script>
+  <script src="/assets/js/fleet-dispatch.js?h=1c92a7290e"></script>
+  <script src="/assets/js/fleet-flight-bag.js?h=aa4d48aac7"></script>
+  <script src="/assets/js/fleet-admin.js?h=490cc01015"></script>
+  <script src="/assets/js/fleet-mode-home.js?h=fbdc5d826a"></script>
+  <script src="/assets/js/fleet-mode.js?h=998dd5e199"></script>
+  <!-- Diwali kandils + fireworks, 1–15 Nov 2026 IST only; decorative, click-through -->
+  <script src="/assets/js/diwali-decor.js?h=be0f4d8d3c" defer></script>
+</body>
+
+</html>
