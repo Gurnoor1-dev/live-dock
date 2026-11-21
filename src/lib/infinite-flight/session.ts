@@ -1,5 +1,5 @@
 import "server-only";
-import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, randomBytes, randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
 
 export const IF_SESSION_COOKIE = "vb_if_session";
@@ -119,4 +119,13 @@ export async function getIFSession(): Promise<IFSession | null> {
   };
   store.set(IF_SESSION_COOKIE, encrypt(refreshed), cookieOptions(COOKIE_MAX_AGE));
   return refreshed;
+}
+
+export async function getIFDeviceId() {
+  const store = await cookies();
+  const existing = store.get("vb_if_device")?.value;
+  if (existing && /^[0-9a-f-]{36}$/i.test(existing)) return existing;
+  const id = randomUUID();
+  store.set("vb_if_device", id, cookieOptions(60 * 60 * 24 * 365));
+  return id;
 }
