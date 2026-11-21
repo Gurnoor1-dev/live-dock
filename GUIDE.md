@@ -4,7 +4,7 @@ This guide covers local development, the Live Dock Supabase project and producti
 
 ## 1. Prerequisites
 
-- Node.js 20.9 or newer and npm
+- Node.js 22 or newer and npm
 - Access to Supabase project **Live Dock** (`npsftsvbcqkwsjtlgckj`)
 - GitHub access to `Gurnoor1-dev/live-dock`
 - Vercel account for hosting
