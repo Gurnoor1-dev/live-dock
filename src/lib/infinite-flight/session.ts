@@ -48,7 +48,7 @@ function cookieOptions(maxAge: number) {
   return { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/", maxAge };
 }
 
-function clearSessionCookies(store: Awaited<ReturnType<typeof cookies>>) {
+type SessionCookieOptions = ReturnType<typeof cookieOptions> & { expires?: Date };\n\nfunction clearSessionCookies(store: Awaited<ReturnType<typeof cookies>>) {
   const expired = { ...cookieOptions(0), expires: new Date(0) };
   store.set(IF_SESSION_COOKIE, "", expired);
   store.set(SESSION_CHUNKS_COOKIE, "", expired);
@@ -57,7 +57,7 @@ function clearSessionCookies(store: Awaited<ReturnType<typeof cookies>>) {
 
 export async function saveIFSession(session: IFSession, response?: NextResponse) {
   const store = response ? null : await cookies();
-  const set = (name: string, value: string, options: ReturnType<typeof cookieOptions>) => {
+  const set = (name: string, value: string, options: SessionCookieOptions) => {
     if (response) response.cookies.set(name, value, options);
     else store!.set(name, value, options);
   };
