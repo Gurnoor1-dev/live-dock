@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { Activity, ArrowUpRight, CalendarDays, ChevronDown, Command, Compass, LogOut, Menu, Moon, Plane, RadioTower, RefreshCw, ShieldCheck, Sun, Users, X } from "lucide-react";
+import { Activity, ArrowUpRight, CalendarDays, Command, Compass, LogOut, Menu, Moon, Plane, RadioTower, RefreshCw, ShieldCheck, Sun, Users, X } from "lucide-react";
 
 type Organization={id:string;name:string;role:number;description?:string|null;worldType:number;operationType:number};
 type Aircraft={id:string;aircraftId:string;organizationId:string;registration:string;status:number;visibility:number;fleetPriority:number|null;fleetRank:number;isFleetActiveSlot:boolean};
