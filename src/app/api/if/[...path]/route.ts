@@ -143,7 +143,7 @@ async function proxy(request: NextRequest, context: RouteContext) {
 const ORGANIZATION_ID = "d50dcc80-8dac-4608-970c-61d6a4739488";
 const GALLERY_MANIFEST_PATH = "aircraft-gallery/manifest.json";
 type GalleryPhoto = { id: string; fileName: string; blobPath: string; url: string; altText: string; caption: string; credit: { name: string; url: string; displayText: string }; displayOrder: number; isVisible: boolean; uploadedAt: string };
-type GalleryManifest = { schemaVersion: number; manifestVersion: number; lastUpdatedAt: string; organization: { id: string; name: string }; settings: { maxPhotosPerAircraft: number; slideshowIntervalMs: number; transition: string }; instructions: Record<string, string>; aircraft: Record<string, { registration: string; photos: GalleryPhoto[] }> };
+type GalleryManifest = { schemaVersion: number; manifestVersion: number; lastUpdatedAt: string; organization: { id: string; name: string }; settings: { maxPhotosPerAircraft: number; slideshowIntervalMs: number; transition: string }; instructions: Record<string, string>; examplePhoto: GalleryPhoto; aircraft: Record<string, { registration: string; photos: GalleryPhoto[] }> };
 
 function emptyGalleryManifest(): GalleryManifest {
   return {
@@ -157,8 +157,12 @@ function emptyGalleryManifest(): GalleryManifest {
       registration: "Use the exact aircraft registration as the key, for example N123VB. The key must match an aircraft registration returned by Infinite Flight.",
       maxPhotos: "Keep no more than four photo objects per registration. displayOrder starts at 0.",
       credit: "Always fill credit.name when a photographer is known. credit.url is optional; displayText is the compact visible credit.",
-      fields: "url is the public Blob URL; blobPath is the exact Blob pathname; isVisible controls whether the site displays the image."
+      fields: "url is the public Blob URL; blobPath is the exact Blob pathname; isVisible controls whether the site displays the image.",
+      addEntry: "Copy examplePhoto into the photos array for the correct registration. Replace every example value, especially id, fileName, blobPath, url and uploadedAt. Keep displayOrder unique starting at 0.",
+      editEntry: "You may edit caption, credit.name, credit.url, credit.displayText, displayOrder and isVisible directly in this JSON file. Do not change the schemaVersion or remove required fields.",
+      warning: "examplePhoto is a template only. The website ignores it. Never leave the template inside an aircraft photos array."
     },
+    examplePhoto: { id: "replace-with-a-unique-id", fileName: "example-aircraft-photo.jpg", blobPath: "aircraft-gallery/images/example-aircraft-photo.jpg", url: "https://replace-with-your-public-blob-url", altText: "Aircraft registration aircraft photograph", caption: "Optional short caption", credit: { name: "Photographer name", url: "", displayText: "Photo: Photographer name" }, displayOrder: 0, isVisible: true, uploadedAt: "2026-11-21T00:00:00.000Z" },
     aircraft: {}
   };
 }
@@ -272,3 +276,4 @@ export const GET = proxy;
 export const POST = proxy;
 export const PUT = proxy;
 export const DELETE = proxy;
+export const PATCH = proxy;
