@@ -1,8 +1,13 @@
 import "server-only";
 import { createCipheriv, createDecipheriv, randomBytes, randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
+import type { NextResponse } from "next/server";
 
 export const IF_SESSION_COOKIE = "vb_if_session";
+const SESSION_CHUNK_PREFIX = `${IF_SESSION_COOKIE}_`;
+const SESSION_CHUNKS_COOKIE = `${IF_SESSION_COOKIE}_chunks`;
+const SESSION_CHUNK_SIZE = 3000;
+const MAX_SESSION_CHUNKS = 16;
 export const IF_STATE_COOKIE = "vb_if_oauth_state";
 export const IF_VERIFIER_COOKIE = "vb_if_pkce_verifier";
 const AUTH_BASE = "https://api.infiniteflight.com/auth/v2/connect";
