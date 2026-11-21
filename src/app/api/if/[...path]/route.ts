@@ -75,7 +75,8 @@ async function proxy(request: NextRequest, context: RouteContext) {
   const path = "/" + parts.join("/");
   if (!allowed(request.method, path)) return NextResponse.json({ error: "This Infinite Flight API operation is not enabled in this app." }, { status: 405 });
 
-  const target = new URL(path, API_BASE);
+  // A leading slash in URL() would discard the /public/v3 base path.
+  const target = new URL(`${API_BASE}${path}`);
   target.search = request.nextUrl.search;
   const body = ["GET", "HEAD"].includes(request.method) ? undefined : await request.text();
   const tokenKey = createHash("sha256").update(session.accessToken).digest("hex");
