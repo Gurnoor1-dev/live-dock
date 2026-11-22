@@ -1,14 +1,96 @@
 "use client";
 
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, type Dispatch, type ReactNode, type RefObject, type SetStateAction, type FormEvent } from "react";
 
-const WorkspaceContext = createContext<Record<string, any> | null>(null);
+type Organization={id:string;name:string;role:number;description?:string|null;worldType:number;operationType:number};
+type Aircraft={id:string;aircraftId:string;organizationId:string;registration:string;status:number;visibility:number;fleetPriority:number|null;fleetRank:number;isFleetActiveSlot:boolean};
+type Member={userId:string;username:string|null;role:number;joinedAt:string;activeLifts:number};
+type Crew={userId:string;username:string|null;role:number};
+type Schedule={id:string;status:number;callsign:string;organizationId:string;aircraftId:string;flightType:number;originIcao:string;destinationIcao:string;isTimeless:boolean;scheduledDepartureUtc:string;scheduledArrivalUtc:string;briefing:string|null;flightPlan:string|null;crew:Crew[];sequence:number};
+type FlightHistoryCrewMember={username?:string|null;userId?:string};
+type FlightHistoryRecord={id?:string;actualDepartureUtc?:string;actualArrivalUtc?:string;originIcao?:string;destinationIcao?:string;flightTimeMinutes?:number;crew?:FlightHistoryCrewMember[]};
+type Position={id:string;state:number;isOnGround:boolean;latitude:number;longitude:number;altitude:number;heading:number;speed:number;verticalSpeed:number;lastPilotId?:string;lastPilotUsername?:string;updatedAt:string};
+type AircraftType={id:string;name:string};
+type GalleryPhoto={id:string;url:string;altText:string;caption:string;credit:{name:string;url:string;displayText:string};displayOrder:number;isVisible:boolean};
+type GalleryManifest={settings:{maxPhotosPerAircraft:number;slideshowIntervalMs:number};aircraft:Record<string,{photos:GalleryPhoto[]}>};
 
-export function WorkspaceProvider({value,children}:{value:Record<string,any>;children:ReactNode}){
+export interface WorkspaceContextValue {
+  active:string;
+  organization:Organization|null;
+  aircraft:Aircraft[];
+  aircraftTypes:AircraftType[];
+  members:Member[];
+  schedules:Schedule[];
+  liveSchedules:Schedule[];
+  positions:Record<string,Position>;
+  selectedAircraft:Aircraft|null;
+  selectedPosition:Position|undefined;
+  selectedActiveSchedule:Schedule|undefined;
+  selectedNextSchedule:Schedule|undefined;
+  selectedPhotos:GalleryPhoto[];
+  photoIndex:number;
+  routeProgress:number|null;
+  parkedAirport:string;
+  flightHistory:FlightHistoryRecord[];
+  canManage:boolean;
+  query:string;
+  setQuery:Dispatch<SetStateAction<string>>;
+  visibleAircraft:Aircraft[];
+  mapContainer:RefObject<HTMLDivElement|null>;
+  setSelectedAircraft:Dispatch<SetStateAction<Aircraft|null>>;
+  navigatePage:(page:string)=>void;
+  statusName:(status:number)=>string;
+  dateTime:(value:string|undefined,timeless?:boolean)=>string;
+  aircraftCategory:(code:string)=>string;
+  busy:boolean;
+  deleteSchedule:(id:string)=>Promise<void>;
+  callsign:string;
+  setCallsign:Dispatch<SetStateAction<string>>;
+  aircraftId:string;
+  setAircraftId:Dispatch<SetStateAction<string>>;
+  origin:string;
+  setOrigin:Dispatch<SetStateAction<string>>;
+  destination:string;
+  setDestination:Dispatch<SetStateAction<string>>;
+  timeless:boolean;
+  setTimeless:Dispatch<SetStateAction<boolean>>;
+  departure:string;
+  setDeparture:Dispatch<SetStateAction<string>>;
+  arrival:string;
+  setArrival:Dispatch<SetStateAction<string>>;
+  briefing:string;
+  setBriefing:Dispatch<SetStateAction<string>>;
+  createSchedule:(event:FormEvent)=>Promise<void>;
+  crewSelections:Record<string,string>;
+  setCrewSelections:Dispatch<SetStateAction<Record<string,string>>>;
+  crewRoles:Record<string,string>;
+  setCrewRoles:Dispatch<SetStateAction<Record<string,string>>>;
+  assignCrew:(schedule:Schedule)=>Promise<void>;
+  gallery:GalleryManifest|null;
+  galleryLoading:boolean;
+  galleryRegistration:string;
+  setGalleryRegistration:Dispatch<SetStateAction<string>>;
+  galleryCredit:string;
+  setGalleryCredit:Dispatch<SetStateAction<string>>;
+  galleryCreditUrl:string;
+  setGalleryCreditUrl:Dispatch<SetStateAction<string>>;
+  galleryCaption:string;
+  setGalleryCaption:Dispatch<SetStateAction<string>>;
+  galleryFile:File|null;
+  setGalleryFile:Dispatch<SetStateAction<File|null>>;
+  uploadAircraftPhoto:(event:FormEvent)=>Promise<void>;
+  deleteAircraftPhoto:(registration:string,photoId:string)=>Promise<void>;
+  roleName:(role:number)=>string;
+  [key:string]:any;
+}
+
+const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
+
+export function WorkspaceProvider({value,children}:{value:WorkspaceContextValue;children:ReactNode}){
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }
 
-export function useWorkspace(){
+export function useWorkspace():WorkspaceContextValue{
   const value=useContext(WorkspaceContext);
   if(!value)throw new Error("Workspace page components must be rendered inside WorkspaceProvider.");
   return value;
