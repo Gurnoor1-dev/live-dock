@@ -45,6 +45,7 @@ export function InfiniteFlightDashboard(){
   const [schedules,setSchedules]=useState<Schedule[]>([]);
   const [active,setActive]=useState<Tab>("Fleet");
   const [theme,setTheme]=useState<"light"|"dark">("light");
+  const [themeReady,setThemeReady]=useState(false);
   const [mobileNav,setMobileNav]=useState(false);
   const [query,setQuery]=useState("");
   const [busy,setBusy]=useState(false);
@@ -87,6 +88,19 @@ export function InfiniteFlightDashboard(){
   const selectedActiveSchedule=selectedAircraft?schedules.find(item=>item.aircraftId===selectedAircraft.aircraftId&&[2,3,4,6].includes(item.status)):undefined;
   const selectedNextSchedule=selectedAircraft?schedules.filter(item=>item.aircraftId===selectedAircraft.aircraftId&&item.status===1&&!item.isTimeless&&new Date(item.scheduledDepartureUtc).getTime()>Date.now()).sort((a,b)=>new Date(a.scheduledDepartureUtc).getTime()-new Date(b.scheduledDepartureUtc).getTime())[0]:undefined;
   const selectedPhotos=selectedAircraft?(gallery?.aircraft?.[selectedAircraft.registration]?.photos||[]).filter(photo=>photo.isVisible).sort((a,b)=>a.displayOrder-b.displayOrder):[];
+
+  useEffect(()=>{
+    try{
+      const saved=window.localStorage.getItem("vb-theme");
+      if(saved==="light"||saved==="dark")setTheme(saved);
+    }catch{}
+    setThemeReady(true);
+  },[]);
+
+  useEffect(()=>{
+    if(!themeReady)return;
+    try{window.localStorage.setItem("vb-theme",theme);}catch{}
+  },[theme,themeReady]);
 
   const loadOrganization=useCallback(async()=>{
     setBusy(true);setError("");setNotice("");
@@ -399,7 +413,7 @@ export function InfiniteFlightDashboard(){
     </aside>
     {mobileNav&&<button className="mobile-scrim" onClick={()=>setMobileNav(false)} aria-label="Close navigation"/>}
     <main className="main-area">
-      <header className="topbar"><div className="topbar-left"><button className="icon-button mobile-menu" onClick={()=>setMobileNav(true)} aria-label="Open menu"><Menu size={19}/></button><span className="breadcrumb">Virtual Blue <b>/</b> {active}</span></div><div className="topbar-actions"><span className="live-indicator"><i/> IF API connected</span><button className="icon-button" onClick={refresh} aria-label="Refresh Infinite Flight data" title="Refresh"><RefreshCw size={16}/></button><button className="icon-button" onClick={()=>setTheme(theme==="light"?"dark":"light")} aria-label="Toggle theme">{theme==="light"?<Moon size={17}/>:<Sun size={17}/>}</button></div></header>
+      <header className="topbar"><div className="topbar-left"><button className="icon-button mobile-menu" onClick={()=>setMobileNav(true)} aria-label="Open menu"><Menu size={19}/></button><span className="breadcrumb">Virtual Blue <b>/</b> {active}</span></div><div className="topbar-actions"><span className="live-indicator"><i/> IF API connected</span><button className="icon-button" onClick={refresh} aria-label="Refresh Infinite Flight data" title="Refresh"><RefreshCw size={16}/></button><button className={`theme-switch ${theme}`} onClick={()=>setTheme(theme==="light"?"dark":"light")} aria-label={`Switch to ${theme==="light"?"dark":"light"} theme`} aria-pressed={theme==="dark"} title={`Switch to ${theme==="light"?"dark":"light"} theme`}><span className="theme-switch-copy"><span className="theme-switch-icon">{theme==="light"?<Sun size={15}/>:<Moon size={15}/>}</span><span>{theme==="light"?"Light":"Dark"}</span></span><span className="theme-switch-track" aria-hidden="true"><span className="theme-switch-thumb"/></span></button></div></header>
       <div className="content">
         <div className="page-heading"><div><p className="eyebrow">VIRTUAL BLUE · INFINITE FLIGHT LIVE</p><h1>{active}</h1><p className="muted">{active==="Fleet"?"Virtual Blue aircraft, fleet positions and registration records.":active==="Schedules"?"Plan and manage Virtual Blue flights directly through Infinite Flight.":active==="Crew"?"Virtual Blue pilots, roles and assigned schedule crew.":"Virtual Blue schedule publishing and crew administration."}</p></div><div className="heading-actions"><span className="date-chip"><CalendarDays size={15}/>{new Intl.DateTimeFormat("en",{dateStyle:"medium"}).format(new Date())}</span></div></div>
         {error&&<p className="form-error" role="alert">{error}</p>}{notice&&<p className="form-success" role="status">{notice}</p>}
