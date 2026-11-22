@@ -191,3 +191,24 @@ After the Vercel project is connected to GitHub and the production environment v
 **Not provided by PublicApi v3:** organisation aircraft creation/deletion. Manage those in Infinite Flight.
 
 The original Fleet Mode assets and `example/fleet.html` remain under `example/` as a visual/behaviour reference.
+
+
+## 8. Neon Postgres with Drizzle
+
+The application uses Neon Postgres through a single server-side `DATABASE_URL` and Drizzle ORM. It does not require Neon Auth, AI Gateway, Functions, or Realtime services.
+
+1. Create or select a Neon Postgres database and copy its pooled connection string.
+2. Add `DATABASE_URL` to `.env.local` for local development and to Vercel → Project Settings → Environment Variables for Production and Preview. Keep it server-only; never prefix it with `NEXT_PUBLIC_`.
+3. Install dependencies with `npm install`.
+4. Generate and apply the initial schema:
+
+```bash
+npm run db:generate
+npm run db:migrate
+```
+
+5. Verify the connection locally at `http://localhost:3000/api/health/database` or on the deployed site at `/api/health/database`. A healthy response is `{ "ok": true, "service": "neon-postgres" }`.
+
+The initial app-owned table is `app_settings`, reserved for small application configuration. Infinite Flight remains the source of truth for live organisation, aircraft, members, schedules and flight records. Live positions, telemetry, and raw Infinite Flight API responses are deliberately not copied into Postgres. Existing OAuth2 authentication and encrypted session cookies remain in Next.js; Neon Auth is not required.
+
+The database driver is `@neondatabase/serverless` with Drizzle's `neon-http` adapter, which is suitable for stateless Next.js serverless route handlers. The connection is created lazily per request so a missing local environment variable does not break static compilation.
