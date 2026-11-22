@@ -4,6 +4,7 @@
 /* eslint-disable react-hooks/purity, react-hooks/set-state-in-effect */
 
 import { useCallback, useEffect, useMemo, useState, useRef, type FormEvent, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import vbLogo from "@/assets/vb.png";
@@ -23,6 +24,18 @@ type AircraftType={id:string;name:string};
 type GalleryPhoto={id:string;url:string;altText:string;caption:string;credit:{name:string;url:string;displayText:string};displayOrder:number;isVisible:boolean};
 type GalleryManifest={settings:{maxPhotosPerAircraft:number;slideshowIntervalMs:number};aircraft:Record<string,{photos:GalleryPhoto[]}>};
 const ORGANIZATION_ID="d50dcc80-8dac-4608-970c-61d6a4739488";
+const PAGE_ROUTES:Record<Tab,string>={
+  "Home":"/home",
+  "Schedules":"/schedules",
+  "My Flights":"/my-flights",
+  "Organisation Dock":"/organisation-dock",
+  "Admin Schedules":"/admin/schedules",
+  "Integrations":"/admin/integrations",
+  "Applications":"/admin/applications",
+  "User Management":"/admin/users",
+  "Feature Selection":"/admin/features",
+  "History":"/history"
+};
 
 async function api(path:string,init:RequestInit={}) {
   const response=await fetch(`/api/if${path}`,{
@@ -41,14 +54,15 @@ function dateTime(value:string|undefined,timeless=false){return timeless?"Timele
 function aircraftCategory(code:string){const value=code.toUpperCase();if(/(A33|A34|A35|A38|B74|B76|B77|B78|B79|777|787|330|340|350|380|747|767|MD1|DC1)/.test(value))return "Wide-body";if(/(A19|A20|A21|B70|B71|B72|B73|B75|737|319|320|321|220|E17|E19|CRJ)/.test(value))return "Narrow-body";if(/(C17|C13|C30|C5|AN2|AN7|DH8)/.test(value))return "Regional / cargo";return "Unknown";}
 function haversineKm(a:{latitude:number;longitude:number},b:{latitude:number;longitude:number}){const rad=(n:number)=>n*Math.PI/180;const dLat=rad(b.latitude-a.latitude),dLon=rad(b.longitude-a.longitude);const value=Math.sin(dLat/2)**2+Math.cos(rad(a.latitude))*Math.cos(rad(b.latitude))*Math.sin(dLon/2)**2;return 6371*2*Math.atan2(Math.sqrt(value),Math.sqrt(1-value));}
 
-export function InfiniteFlightDashboard(){
+export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}={}){
+  const router=useRouter();
   const [auth,setAuth]=useState<"checking"|"signed-out"|"signed-in">("checking");
   const [organization,setOrganization]=useState<Organization|null>(null);
   const [aircraft,setAircraft]=useState<Aircraft[]>([]);
   const [aircraftTypes,setAircraftTypes]=useState<AircraftType[]>([]);
   const [members,setMembers]=useState<Member[]>([]);
   const [schedules,setSchedules]=useState<Schedule[]>([]);
-  const [active,setActive]=useState<Tab>("Home");
+  const [active,setActive]=useState<Tab>(initialPage);
   const [theme,setTheme]=useState<"light"|"dark">("light");
   const [themeReady,setThemeReady]=useState(false);
   const [mobileNav,setMobileNav]=useState(false);
@@ -87,6 +101,13 @@ export function InfiniteFlightDashboard(){
   const [galleryFile,setGalleryFile]=useState<File|null>(null);
 
   const canManage=Boolean(organization&&(organization.role===1||organization.role===2));
+  const navigatePage=useCallback((page:Tab)=>{
+    setActive(page);
+    setMobileNav(false);
+    router.push(PAGE_ROUTES[page]);
+  },[router]);
+
+  useEffect(()=>{setActive(initialPage);},[initialPage]);
   const visibleAircraft=useMemo(()=>aircraft.filter(item=>item.registration.toLowerCase().includes(query.toLowerCase())),[aircraft,query]);
   const liveSchedules=schedules.filter(item=>[1,2,3,4,6].includes(item.status));
   const selectedPosition=selectedAircraft?positions[selectedAircraft.aircraftId]:undefined;
@@ -413,13 +434,13 @@ export function InfiniteFlightDashboard(){
       <div className="sidebar-section">
         <p className="nav-caption">PILOT</p>
         <nav>
-          {([{label:"Home",icon:<Plane size={17}/>},{label:"Schedules",icon:<CalendarDays size={17}/>},{label:"My Flights",icon:<PlaneTakeoff size={17}/>},{label:"Organisation Dock",icon:<Building2 size={17}/>} ] as {label:Tab;icon:ReactNode}[]).map(item=><button key={item.label} className={active===item.label?"nav-item active":"nav-item"} onClick={()=>{setActive(item.label);setMobileNav(false);}}>{item.icon}<span>{item.label}</span></button>)}
+          {([{label:"Home",icon:<Plane size={17}/>},{label:"Schedules",icon:<CalendarDays size={17}/>},{label:"My Flights",icon:<PlaneTakeoff size={17}/>},{label:"Organisation Dock",icon:<Building2 size={17}/>} ] as {label:Tab;icon:ReactNode}[]).map(item=><button key={item.label} className={active===item.label?"nav-item active":"nav-item"} onClick={()=>navigatePage(item.label)}>{item.icon}<span>{item.label}</span></button>)}
         </nav>
       </div>
       {canManage&&<div className="sidebar-section admin-sidebar-section">
         <p className="nav-caption">ADMIN</p>
         <nav>
-          {([{label:"Schedules",tab:"Admin Schedules" as Tab,icon:<CalendarDays size={17}/>},{label:"Integrations",tab:"Integrations" as Tab,icon:<Plug size={17}/>},{label:"Applications",tab:"Applications" as Tab,icon:<ClipboardList size={17}/>},{label:"User Management",tab:"User Management" as Tab,icon:<UserRoundCog size={17}/>},{label:"Feature Selection",tab:"Feature Selection" as Tab,icon:<SlidersHorizontal size={17}/>}]).map(item=><button key={item.tab} className={active===item.tab?"nav-item active":"nav-item"} onClick={()=>{setActive(item.tab);setMobileNav(false);}}>{item.icon}<span>{item.label}</span></button>)}
+          {([{label:"Schedules",tab:"Admin Schedules" as Tab,icon:<CalendarDays size={17}/>},{label:"Integrations",tab:"Integrations" as Tab,icon:<Plug size={17}/>},{label:"Applications",tab:"Applications" as Tab,icon:<ClipboardList size={17}/>},{label:"User Management",tab:"User Management" as Tab,icon:<UserRoundCog size={17}/>},{label:"Feature Selection",tab:"Feature Selection" as Tab,icon:<SlidersHorizontal size={17}/>}]).map(item=><button key={item.tab} className={active===item.tab?"nav-item active":"nav-item"} onClick={()=>navigatePage(item.tab)}>{item.icon}<span>{item.label}</span></button>)}
         </nav>
       </div>}
 
@@ -447,7 +468,7 @@ export function InfiniteFlightDashboard(){
             <div className="section-head"><div><p className="eyebrow">AIRCRAFT RECORD</p><h2>{selectedAircraft.registration}</h2><p>Fleet number #{selectedAircraft.fleetRank} · {selectedPosition?.state===2?"In flight":selectedPosition?.state===1?"On ground":selectedPosition?.state===5?"Maintenance":selectedPosition?.state===4?"Stopped":"Status unknown"}</p></div><button className="icon-button" onClick={()=>setSelectedAircraft(null)} aria-label="Close aircraft details"><X size={17}/></button></div>
             {selectedPhotos.length>0&&<div className="aircraft-photo-frame"><img key={selectedPhotos[photoIndex]?.id} src={selectedPhotos[photoIndex]?.url} alt={selectedPhotos[photoIndex]?.altText||selectedAircraft.registration}/>{selectedPhotos[photoIndex]?.caption&&<span className="photo-caption">{selectedPhotos[photoIndex].caption}</span>}{selectedPhotos[photoIndex]?.credit?.displayText&&<span className="photo-credit">{selectedPhotos[photoIndex].credit.displayText}</span>}</div>}
             <div className="aircraft-route-card"><div><small>{selectedPosition?.state===2?"Current flight":"Next flight"}</small><b>{selectedActiveSchedule?.callsign||selectedNextSchedule?.callsign||"No scheduled flight"}</b></div><strong>{selectedActiveSchedule?selectedActiveSchedule.originIcao+" → "+selectedActiveSchedule.destinationIcao:selectedNextSchedule?selectedNextSchedule.originIcao+" → "+selectedNextSchedule.destinationIcao:"Route not scheduled"}</strong><span>{selectedActiveSchedule?"In progress":selectedNextSchedule?(selectedNextSchedule.crew?.length?"Crew assigned":"Ready to fly"):selectedPosition?.state===1?"Ready to fly":"No upcoming leg"}</span></div><div className="aircraft-facts"><div><small>Aircraft type</small><b>{aircraftTypes.find(type=>type.id===selectedAircraft.aircraftId)?.name||"Unknown"}</b></div><div><small>Aircraft ICAO</small><b>{"Not supplied by Infinite Flight API"}</b></div><div><small>Aircraft category</small><b>{aircraftCategory(aircraftTypes.find(type=>type.id===selectedAircraft.aircraftId)?.name||"")}</b></div><div><small>Flight number</small><b>{selectedActiveSchedule?.callsign||"Unknown"}</b></div><div><small>Estimated route progress</small><b>{routeProgress===null?"Unknown":routeProgress+"%"}</b></div><div><small>Departure / scheduled ETA</small><b>{selectedActiveSchedule?dateTime(selectedActiveSchedule.scheduledDepartureUtc)+" / "+dateTime(selectedActiveSchedule.scheduledArrivalUtc):selectedNextSchedule?dateTime(selectedNextSchedule.scheduledDepartureUtc):"Unknown"}</b></div><div><small>Heading</small><b>{selectedPosition?Math.round(selectedPosition.heading)+"°":"Unknown"}</b></div><div><small>Last pilot</small><b>{selectedPosition?.lastPilotUsername||"Unknown"}</b></div><div><small>Altitude</small><b>{selectedPosition?Math.round(selectedPosition.altitude).toLocaleString()+" ft":"Unknown"}</b></div><div><small>Ground speed</small><b>{selectedPosition?Math.round(selectedPosition.speed)+" kt":"Unknown"}</b></div><div><small>Vertical speed</small><b>{selectedPosition?Math.round(selectedPosition.verticalSpeed)+" ft/min":"Unknown"}</b></div><div><small>Last update</small><b>{selectedPosition?.updatedAt?dateTime(selectedPosition.updatedAt):"Unknown"}</b></div><div><small>Last flown</small><b>{flightHistory[0]?.actualArrivalUtc?dateTime(flightHistory[0].actualArrivalUtc):flightHistory[0]?.actualDepartureUtc?dateTime(flightHistory[0].actualDepartureUtc):"Unknown"}</b></div><div><small>Parked at</small><b>{selectedPosition?.state===1?parkedAirport:"—"}</b></div><div><small>Last movement</small><b>{selectedPosition?.updatedAt?dateTime(selectedPosition.updatedAt):"Unknown"}</b></div><div><small>Schedules</small><b>{schedules.filter(item=>item.aircraftId===selectedAircraft.aircraftId).length}</b></div></div>
-            <div className="aircraft-detail-actions"><button className="outline-button" onClick={()=>setActive("History")}>View flight history</button><button className="outline-button" onClick={()=>{setActive("Schedules");setQuery(selectedAircraft.registration);}}>View schedules</button></div>
+            <div className="aircraft-detail-actions"><button className="outline-button" onClick={()=>navigatePage("History")}>View flight history</button><button className="outline-button" onClick={()=>{setQuery(selectedAircraft.registration);navigatePage("Schedules");}}>View schedules</button></div>
           </section>}
         </div>}
         {active==="Schedules"&&<section className="section-card"><div className="section-head"><div><h2>Fleet schedules</h2><p>Schedule changes are written directly to Infinite Flight.</p></div><span className="count-pill">{schedules.length} schedules</span></div>{schedules.length?<div className="table-wrap"><table><thead><tr><th>Flight number</th><th>Route</th><th>Departure</th><th>Arrival</th><th>Status</th><th>Crew</th>{canManage&&<th/>}</tr></thead><tbody>{schedules.filter(s=>!selectedAircraft||s.aircraftId===selectedAircraft.aircraftId).map(s=><tr key={s.id}><td className="mono"><b>{s.callsign}</b></td><td className="mono">{s.originIcao} → {s.destinationIcao}</td><td>{dateTime(s.scheduledDepartureUtc,s.isTimeless)}</td><td>{dateTime(s.scheduledArrivalUtc,s.isTimeless)}</td><td><span className="status scheduled"><i/>{statusName(s.status)}</span></td><td>{s.crew?.length||0}/3</td>{canManage&&<td><button className="row-action danger" onClick={()=>void deleteSchedule(s.id)} disabled={busy} title="Delete schedule">Delete</button></td>}</tr>)}</tbody></table></div>:<Empty title="No open schedules" body="When Virtual Blue publishes schedules in Infinite Flight, they will appear here."/>}</section>}
