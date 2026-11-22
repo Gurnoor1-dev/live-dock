@@ -404,12 +404,12 @@ export function InfiniteFlightDashboard(){
   return <div className="app-frame" data-theme={theme}>
     <aside className={`sidebar ${mobileNav?"open":""}`}>
       <div className="brand"><Image src={vbLogo} alt="Virtual Blue" className="brand-logo" priority/><span>VIRTUAL BLUE<small>FLEET OPERATIONS</small></span><button className="icon-button mobile-close" onClick={()=>setMobileNav(false)} aria-label="Close menu"><X size={18}/></button></div>
-      <div className="workspace"><Image src={vbLogo} alt="" className="workspace-logo"/><span><b>Virtual Blue</b><small>{organization?roleName(organization.role):"Organisation workspace"}</small></span></div>
+      <div className="user-row sidebar-account"><div className="avatar">IF</div><span><b>Infinite Flight pilot</b><small>{organization?roleName(organization.role):"Signed in"}</small></span><button className="signout-button" onClick={signOut} disabled={busy} title="Sign out of Infinite Flight"><LogOut size={15}/><span>Sign out</span></button></div>
       <p className="nav-caption">OPERATIONS</p>
       <nav>{(["Fleet","Schedules","Crew"] as Tab[]).map((item,index)=><button key={item} className={active===item?"nav-item active":"nav-item"} onClick={()=>{setActive(item);setMobileNav(false);}}>{index===0?<Plane size={17}/>:index===1?<CalendarDays size={17}/>:<Users size={17}/>}<span>{item}</span></button>)}</nav>
       <p className="nav-caption secondary">MANAGEMENT</p>
       <nav><button className={active==="Admin"?"nav-item active":"nav-item"} onClick={()=>{setActive("Admin");setMobileNav(false);}}><ShieldCheck size={17}/><span>Admin</span></button></nav>
-      <div className="sidebar-bottom"><div className="help-card"><Command size={17}/><span><b>Live API v3 connected</b><small>Infinite Flight is the source of truth</small></span><Activity size={14}/></div><div className="user-row"><div className="avatar">IF</div><span><b>Infinite Flight pilot</b><small>{organization?roleName(organization.role):"Signed in"}</small></span><button className="signout-button" onClick={signOut} disabled={busy} title="Sign out of Infinite Flight"><LogOut size={15}/><span>Sign out</span></button></div></div>
+
     </aside>
     {mobileNav&&<button className="mobile-scrim" onClick={()=>setMobileNav(false)} aria-label="Close navigation"/>}
     <main className="main-area">
