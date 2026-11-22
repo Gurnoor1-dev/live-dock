@@ -1,9 +1,9 @@
 "use client";
 
-/* eslint-disable @typescript-eslint/no-unused-vars, no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { ClipboardList } from "lucide-react";
-import { Empty } from "@/components/workspace/shared-ui";
+import { AdminGate, Empty } from "@/components/workspace/shared-ui";
 import { useWorkspace } from "../workspace-context";
 
 export function ApplicationsPage(){
@@ -19,5 +19,5 @@ export function ApplicationsPage(){
  setGalleryCredit,galleryCreditUrl,setGalleryCreditUrl,galleryCaption,setGalleryCaption,
  galleryFile,setGalleryFile,uploadAircraftPhoto,deleteAircraftPhoto,roleName
 }=useWorkspace();
-  return <>{active==="Applications"&&<section className="section-card"><div className="section-head"><div><h2>Pilot applications</h2><p>Review requests to access the Virtual Blue flight deck.</p></div><ClipboardList size={18}/></div><Empty title="Application review workspace" body="The planned access flow will require an approved Infinite Flight Community username before a pilot can use the app. Applications, review decisions and approval status will be managed here."/></section>}</>;
+  return <AdminGate>{active==="Applications"&&<section className="section-card"><div className="section-head"><div><h2>Pilot applications</h2><p>Review requests to access the Virtual Blue flight deck.</p></div><ClipboardList size={18}/></div><Empty title="Application review workspace" body="The planned access flow will require an approved Infinite Flight Community username before a pilot can use the app. Applications, review decisions and approval status will be managed here."/></section>}</AdminGate>;
 }

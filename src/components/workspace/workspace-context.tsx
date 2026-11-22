@@ -82,7 +82,6 @@ export interface WorkspaceContextValue {
   uploadAircraftPhoto:(event:FormEvent)=>Promise<void>;
   deleteAircraftPhoto:(registration:string,photoId:string)=>Promise<void>;
   roleName:(role:number)=>string;
-  [key:string]:any;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
