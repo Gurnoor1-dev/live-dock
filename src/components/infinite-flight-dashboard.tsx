@@ -197,7 +197,7 @@ export function InfiniteFlightDashboard(){
     for(const aircraftItem of aircraft){
       const position=positions[aircraftItem.aircraftId];
       if(!position||!Number.isFinite(position.latitude)||!Number.isFinite(position.longitude))continue;
-      const color=position.state===2?"#16a36a":position.state===1?"#2475d0":position.state===5?"#d18a27":position.state===4?"#64748b":position.state===3?"#d14c4c":"#8a94a6";
+      const color=position.state===2?"#111111":position.state===1?"#444444":position.state===5?"#777777":position.state===4?"#999999":position.state===3?"#555555":"#bbbbbb";
       const element=document.createElement("button");
       element.type="button";element.className="aircraft-map-marker";element.title=aircraftItem.registration;
       element.style.setProperty("--marker-color",color);
