@@ -335,3 +335,15 @@ html,body{background:var(--bg);color:var(--ink)}
 @media(prefers-reduced-motion:reduce){
   .theme-switch,.theme-switch-track,.theme-switch-thumb{transition:none}
 }
+
+
+/* Compact account identity directly beneath the Virtual Blue brand */
+.app-frame .sidebar-account{
+  margin:0 0 27px;
+  padding:12px 2px 0;
+  border-top:1px solid var(--line);
+  border-bottom:0;
+  flex-shrink:0;
+}
+.app-frame .sidebar-account .signout-button{flex-shrink:0}
+.app-frame .sidebar-account .avatar{width:30px;height:30px}
