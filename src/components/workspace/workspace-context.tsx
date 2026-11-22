@@ -2,6 +2,7 @@
 
 import { createContext, useContext, type Dispatch, type ReactNode, type RefObject, type SetStateAction, type FormEvent } from "react";
 
+type WorkspacePageKey="Home"|"Schedules"|"My Flights"|"Organisation Dock"|"Admin Schedules"|"Integrations"|"Applications"|"User Management"|"Feature Selection"|"History";
 type Organization={id:string;name:string;role:number;description?:string|null;worldType:number;operationType:number};
 type Aircraft={id:string;aircraftId:string;organizationId:string;registration:string;status:number;visibility:number;fleetPriority:number|null;fleetRank:number;isFleetActiveSlot:boolean};
 type Member={userId:string;username:string|null;role:number;joinedAt:string;activeLifts:number};
@@ -38,7 +39,7 @@ export interface WorkspaceContextValue {
   visibleAircraft:Aircraft[];
   mapContainer:RefObject<HTMLDivElement|null>;
   setSelectedAircraft:Dispatch<SetStateAction<Aircraft|null>>;
-  navigatePage:(page:string)=>void;
+  navigatePage:(page:WorkspacePageKey)=>void;
   statusName:(status:number)=>string;
   dateTime:(value:string|undefined,timeless?:boolean)=>string;
   aircraftCategory:(code:string)=>string;
