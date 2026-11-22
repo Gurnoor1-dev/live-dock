@@ -17,7 +17,7 @@ export async function GET() {
   const startedAt = performance.now();
 
   try {
-    await getDb().execute(sql`select 1 as connected`);
+    await getDb().execute(sql`select "key" from "app_settings" limit 1`);
     const databaseResponseTimeMs = Number((performance.now() - startedAt).toFixed(2));
 
     return NextResponse.json(
