@@ -148,3 +148,64 @@ tbody tr:hover{background:#fafcff}
 @media(max-width:980px){.landing-hero{grid-template-columns:minmax(0,1fr) minmax(280px,.8fr);gap:20px}.landing-copy h1{font-size:clamp(52px,7.5vw,76px);letter-spacing:-3px}.landing-art{min-height:440px}.landing-highlights{grid-template-columns:1fr;gap:12px}.landing-divider{margin:30px 0 20px}}
 @media(max-width:680px){.landing-page{padding:0 21px}.landing-header{height:72px}.landing-brand img{width:37px;height:37px}.landing-header-right{gap:0}.landing-version{font-size:8px}.landing-secure{display:none}.landing-hero{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-height:unset;padding:66px 0 35px}.landing-copy h1{font-size:clamp(53px,13vw,78px);letter-spacing:-3px;margin-bottom:20px}.landing-kicker{font-size:8px;letter-spacing:1px;margin-bottom:24px}.landing-description{font-size:13px;line-height:1.8;margin-bottom:25px}.landing-signin{width:100%;justify-content:flex-start;min-height:58px;font-size:13px}.landing-signin-arrow{margin-left:auto}.landing-divider{margin:31px 0 20px}.landing-highlights{grid-template-columns:1fr 1fr;gap:17px 10px}.landing-highlights>div:last-child{grid-column:1/-1}.landing-art{min-height:300px;margin:0 -20px -8px}.landing-globe{width:110%;right:-5%;top:50%}.landing-yoke{width:76%;right:8%;top:3%}.landing-art-caption{right:7%;bottom:0}.landing-footer{min-height:60px;flex-wrap:wrap;padding:13px 0;font-size:8px}.landing-footer>span:nth-child(2){display:none}}
 @media(prefers-reduced-motion:reduce){.landing-signin{transition:none}.landing-signin:hover{transform:none}}
+
+
+/* 2026 monochrome visual system: black, white and neutral greys only */
+:root{
+  color-scheme:light;
+  --bg:#f3f3f3;--surface:#fff;--surface-2:#f7f7f7;--line:#dedede;
+  --ink:#111;--muted:#707070;--blue:#171717;--blue-dark:#000;
+  --blue-soft:#ededed;--green:#303030;--green-soft:#ededed;
+  --amber:#555;--amber-soft:#ededed;--red:#333;--shadow:0 8px 28px rgba(0,0,0,.045)
+}
+.app-frame[data-theme=dark]{
+  color-scheme:dark;--bg:#090909;--surface:#111;--surface-2:#191919;
+  --line:#303030;--ink:#f5f5f5;--muted:#a0a0a0;--blue:#f0f0f0;
+  --blue-dark:#fff;--blue-soft:#252525;--green-soft:#252525;
+  --amber-soft:#252525;--red:#d0d0d0;--shadow:0 8px 30px rgba(0,0,0,.24)
+}
+.brand-mark,.workspace-icon,.stat-icon,.avatar,.fleet-row-icon,.landing-highlight-icon{
+  background:#ededed!important;color:#111!important
+}
+.brand-mark{background:#111!important;color:#fff!important;border:1px solid #111}
+.nav-item:hover,.nav-item.active{background:var(--blue-soft)!important;color:var(--ink)!important}
+.nav-item i{background:#222!important;color:#fff!important}
+.eyebrow,.top-login,.stat-icon,.fleet-row-icon{color:var(--ink)!important}
+.primary-button,.landing-signin{
+  background:#111!important;color:#fff!important;border:1px solid #111!important;
+  box-shadow:none!important
+}
+.primary-button:hover,.landing-signin:hover{background:#333!important;color:#fff!important}
+.app-frame[data-theme=dark] .primary-button,
+.app-frame[data-theme=dark] .landing-signin{background:#f4f4f4!important;color:#111!important;border-color:#f4f4f4!important}
+.outline-button:hover,.icon-button:hover,.fleet-aircraft-row:hover,.fleet-aircraft-row.selected{
+  border-color:var(--line)!important;background:var(--surface-2)!important;color:var(--ink)!important
+}
+.live-indicator i,.landing-secure i,.landing-footer i{background:#777!important;box-shadow:none!important}
+.status,.count-pill,.date-chip,.form-success,.form-error{filter:grayscale(1)}
+.legend-flight,.legend-ground,.legend-maintenance,.legend-stopped,.legend-unknown{background:#777!important}
+.aircraft-map-marker{filter:grayscale(1)}
+.maplibregl-map{filter:grayscale(1)}
+.brand-logo,.workspace-logo,.landing-brand img,.landing-globe,.landing-yoke,
+.aircraft-photo-frame img,.gallery-admin-photo img{filter:grayscale(1)}
+.vb-hub-marker{filter:grayscale(1);background-color:#fff!important;border-color:#fff!important}
+.landing-page{
+  --lp-bg:#080808;--lp-line:rgba(255,255,255,.15);--lp-gold:#eee;--lp-cyan:#bbb;
+  background:#080808!important;color:#f5f5f5!important
+}
+.landing-glow-one,.landing-glow-two{background:#777!important;opacity:.08!important}
+.landing-kicker,.landing-version,.landing-art-caption>span{color:#eee!important}
+.landing-copy h1 em{background:none!important;color:#fff!important}
+.landing-description,.landing-brand small,.landing-secure,.landing-version,
+.landing-auth-note,.landing-highlights small,.landing-footer,.landing-art-caption small{color:#aaa!important}
+.landing-kicker>span,.landing-divider{background:#555!important}
+.landing-signin{background:#f2f2f2!important;color:#111!important;border-color:#f2f2f2!important}
+.landing-signin:hover{background:#ddd!important;color:#111!important}
+.landing-signin-icon,.landing-highlight-icon{background:#222!important;color:#fff!important;border-color:#444!important}
+.landing-art-caption{background:rgba(12,12,12,.88)!important;border-color:#444!important}
+.landing-art-caption>span{background:#eee!important;color:#111!important}
+.landing-orbit,.landing-orbit-two{border-color:rgba(255,255,255,.12)!important}
+.auth-page{background:#f2f2f2!important}
+.auth-card{background:#fff!important;border:1px solid #dedede!important;box-shadow:0 16px 50px rgba(0,0,0,.06)!important}
+.brand-mark{background:#111!important}
+@media(max-width:720px){.sidebar{background:var(--surface)}}
