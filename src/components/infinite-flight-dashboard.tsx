@@ -411,7 +411,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
   }
 
   const workspaceValue={
-    active,organization,aircraft,aircraftTypes,members,schedules,positions,selectedAircraft,
+    active,organization,aircraft,aircraftTypes,members,schedules,liveSchedules,positions,selectedAircraft,
     selectedPosition,selectedActiveSchedule,selectedNextSchedule,selectedPhotos,photoIndex,
     routeProgress,parkedAirport,flightHistory,canManage,query,setQuery,visibleAircraft,
     mapContainer,setSelectedAircraft,navigatePage,statusName,dateTime,aircraftCategory,
