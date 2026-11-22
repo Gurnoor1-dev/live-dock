@@ -465,7 +465,6 @@ export function InfiniteFlightDashboard(){
             <div className="gallery-admin-list">{Object.entries(gallery?.aircraft||{}).map(([registration,entry])=><div className="gallery-admin-entry" key={registration}><b>{registration}</b><div className="gallery-admin-photos">{entry.photos.map(photo=><div className="gallery-admin-photo" key={photo.id}><img src={photo.url} alt={photo.altText}/><span>{photo.credit?.displayText||"No photo credit"}</span><button className="row-action danger" disabled={galleryLoading} onClick={()=>void deleteAircraftPhoto(registration,photo.id)}>Delete</button></div>)}</div></div>)}</div>
             <p className="fine-print">Manual Vercel upload: put images in <code>aircraft-gallery/images/</code>, then edit <code>aircraft-gallery/manifest.json</code>. Add the image URL and pathname to the matching registration’s <code>photos</code> array. Keep the array at four or fewer entries.</p>
           </section></>:<section className="section-card"><Empty title="Administrator access required" body="Only Infinite Flight organisation owners and admins can publish schedules or manage schedule crew."/></section>)}
-        </>}
         <footer className="footer"><span>© {new Date().getFullYear()} Virtual Blue</span><span>Powered by Infinite Flight PublicApi v3</span><span>Live data · No permanent API data storage</span></footer>
       </div>
     </main>
