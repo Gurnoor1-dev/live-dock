@@ -1,6 +1,6 @@
 "use client";
 
-/* eslint-disable @typescript-eslint/no-unused-vars, no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { CalendarDays, Users, ArrowUpRight } from "lucide-react";
 import { Empty } from "@/components/workspace/shared-ui";

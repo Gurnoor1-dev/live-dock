@@ -1,6 +1,6 @@
 "use client";
 
-/* eslint-disable @typescript-eslint/no-unused-vars, no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { Plane, CalendarDays, Users, RadioTower, X } from "lucide-react";
 import { Stat } from "@/components/workspace/shared-ui";

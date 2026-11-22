@@ -61,7 +61,6 @@ async function api(path:string,init:RequestInit={}) {
 }
 function roleName(role:number){return role===2?"Owner":role===1?"Admin":"Member";}
 function statusName(status:number){return ({0:"Unknown",1:"Scheduled",2:"Boarding",3:"Boarded",4:"Taxiing to runway",6:"In flight",7:"Diverted",8:"Delayed",9:"Cancelled",10:"Taxiing to parking",11:"Arrived"} as Record<number,string>)[status]??"Unknown";}
-function visibilityName(value:number){return value===1?"Visible":value===2?"Hangared":"Unknown";}
 function dateTime(value:string|undefined,timeless=false){return timeless?"Timeless":value?.startsWith("0001-")?"—":value?new Date(value).toLocaleString():"—";}
 function aircraftCategory(code:string){const value=code.toUpperCase();if(/(A33|A34|A35|A38|B74|B76|B77|B78|B79|777|787|330|340|350|380|747|767|MD1|DC1)/.test(value))return "Wide-body";if(/(A19|A20|A21|B70|B71|B72|B73|B75|737|319|320|321|220|E17|E19|CRJ)/.test(value))return "Narrow-body";if(/(C17|C13|C30|C5|AN2|AN7|DH8)/.test(value))return "Regional / cargo";return "Unknown";}
 function haversineKm(a:{latitude:number;longitude:number},b:{latitude:number;longitude:number}){const rad=(n:number)=>n*Math.PI/180;const dLat=rad(b.latitude-a.latitude),dLon=rad(b.longitude-a.longitude);const value=Math.sin(dLat/2)**2+Math.cos(rad(a.latitude))*Math.cos(rad(b.latitude))*Math.sin(dLon/2)**2;return 6371*2*Math.atan2(Math.sqrt(value),Math.sqrt(1-value));}
@@ -403,13 +402,6 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     }catch(e){setError(e instanceof Error?e.message:"Could not assign crew.");}
     finally{setBusy(false);}
   }
-  async function removeCrew(scheduleId:string,userId:string){
-    setBusy(true);setError("");setNotice("");
-    try{await api(`/live/schedules/${scheduleId}/crew/${userId}`,{method:"DELETE"});setNotice("Crew member removed from the Infinite Flight schedule.");await refresh();}
-    catch(e){setError(e instanceof Error?e.message:"Could not remove crew member.");}
-    finally{setBusy(false);}
-  }
-
   const workspaceValue={
     active,organization,aircraft,aircraftTypes,members,schedules,liveSchedules,positions,selectedAircraft,
     selectedPosition,selectedActiveSchedule,selectedNextSchedule,selectedPhotos,photoIndex,

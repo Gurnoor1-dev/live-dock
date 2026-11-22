@@ -1,6 +1,6 @@
 "use client";
 
-/* eslint-disable @typescript-eslint/no-unused-vars, no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { Empty } from "@/components/workspace/shared-ui";
 import { useWorkspace } from "../workspace-context";
