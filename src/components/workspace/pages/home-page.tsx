@@ -1,12 +1,14 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-unused-vars, no-unused-vars */
+
 import { Plane, CalendarDays, Users, RadioTower, X } from "lucide-react";
-import { Empty, Stat } from "@/components/workspace/shared-ui";
+import { Stat } from "@/components/workspace/shared-ui";
 import { useWorkspace } from "../workspace-context";
 
 export function HomePage(){
   const {
- active,organization,aircraft,aircraftTypes,members,schedules,positions,selectedAircraft,
+ active,organization,aircraft,aircraftTypes,members,schedules,liveSchedules,positions,selectedAircraft,
  selectedPosition,selectedActiveSchedule,selectedNextSchedule,selectedPhotos,photoIndex,
  routeProgress,parkedAirport,flightHistory,canManage,query,setQuery,visibleAircraft,
  mapContainer,setSelectedAircraft,navigatePage,statusName,dateTime,aircraftCategory,
@@ -17,7 +19,7 @@ export function HomePage(){
  setGalleryCredit,galleryCreditUrl,setGalleryCreditUrl,galleryCaption,setGalleryCaption,
  galleryFile,setGalleryFile,uploadAircraftPhoto,deleteAircraftPhoto,roleName
 }=useWorkspace();
-  return <>{{active==="Home"&&<div className="stat-grid"><Stat label="Fleet aircraft" value={aircraft.length} icon={<Plane/>} note="From Live organisation"/><Stat label="Live schedules" value={schedules.length} icon={<CalendarDays/>} note="Open fleet schedules"/><Stat label="Organisation members" value={members.length} icon={<Users/>} note="Current membership"/><Stat label="Active legs" value={liveSchedules.length} icon={<RadioTower/>} note="Boarding through in-flight"/></div>}
+  return <>{active==="Home"&&<div className="stat-grid"><Stat label="Fleet aircraft" value={aircraft.length} icon={<Plane/>} note="From Live organisation"/><Stat label="Live schedules" value={schedules.length} icon={<CalendarDays/>} note="Open fleet schedules"/><Stat label="Organisation members" value={members.length} icon={<Users/>} note="Current membership"/><Stat label="Active legs" value={liveSchedules.length} icon={<RadioTower/>} note="Boarding through in-flight"/></div>}
         {active==="Home"&&<div className="fleet-layout">
           <section className="section-card fleet-map-card">
             <div className="section-head"><div><h2>Live fleet map</h2><p>Aircraft positions refresh every 15 seconds. Heading follows the Infinite Flight true-heading value.</p></div><span className="count-pill">{Object.keys(positions).length} live positions</span></div>
@@ -35,5 +37,5 @@ export function HomePage(){
             <div className="aircraft-route-card"><div><small>{selectedPosition?.state===2?"Current flight":"Next flight"}</small><b>{selectedActiveSchedule?.callsign||selectedNextSchedule?.callsign||"No scheduled flight"}</b></div><strong>{selectedActiveSchedule?selectedActiveSchedule.originIcao+" → "+selectedActiveSchedule.destinationIcao:selectedNextSchedule?selectedNextSchedule.originIcao+" → "+selectedNextSchedule.destinationIcao:"Route not scheduled"}</strong><span>{selectedActiveSchedule?"In progress":selectedNextSchedule?(selectedNextSchedule.crew?.length?"Crew assigned":"Ready to fly"):selectedPosition?.state===1?"Ready to fly":"No upcoming leg"}</span></div><div className="aircraft-facts"><div><small>Aircraft type</small><b>{aircraftTypes.find(type=>type.id===selectedAircraft.aircraftId)?.name||"Unknown"}</b></div><div><small>Aircraft ICAO</small><b>{"Not supplied by Infinite Flight API"}</b></div><div><small>Aircraft category</small><b>{aircraftCategory(aircraftTypes.find(type=>type.id===selectedAircraft.aircraftId)?.name||"")}</b></div><div><small>Flight number</small><b>{selectedActiveSchedule?.callsign||"Unknown"}</b></div><div><small>Estimated route progress</small><b>{routeProgress===null?"Unknown":routeProgress+"%"}</b></div><div><small>Departure / scheduled ETA</small><b>{selectedActiveSchedule?dateTime(selectedActiveSchedule.scheduledDepartureUtc)+" / "+dateTime(selectedActiveSchedule.scheduledArrivalUtc):selectedNextSchedule?dateTime(selectedNextSchedule.scheduledDepartureUtc):"Unknown"}</b></div><div><small>Heading</small><b>{selectedPosition?Math.round(selectedPosition.heading)+"°":"Unknown"}</b></div><div><small>Last pilot</small><b>{selectedPosition?.lastPilotUsername||"Unknown"}</b></div><div><small>Altitude</small><b>{selectedPosition?Math.round(selectedPosition.altitude).toLocaleString()+" ft":"Unknown"}</b></div><div><small>Ground speed</small><b>{selectedPosition?Math.round(selectedPosition.speed)+" kt":"Unknown"}</b></div><div><small>Vertical speed</small><b>{selectedPosition?Math.round(selectedPosition.verticalSpeed)+" ft/min":"Unknown"}</b></div><div><small>Last update</small><b>{selectedPosition?.updatedAt?dateTime(selectedPosition.updatedAt):"Unknown"}</b></div><div><small>Last flown</small><b>{flightHistory[0]?.actualArrivalUtc?dateTime(flightHistory[0].actualArrivalUtc):flightHistory[0]?.actualDepartureUtc?dateTime(flightHistory[0].actualDepartureUtc):"Unknown"}</b></div><div><small>Parked at</small><b>{selectedPosition?.state===1?parkedAirport:"—"}</b></div><div><small>Last movement</small><b>{selectedPosition?.updatedAt?dateTime(selectedPosition.updatedAt):"Unknown"}</b></div><div><small>Schedules</small><b>{schedules.filter(item=>item.aircraftId===selectedAircraft.aircraftId).length}</b></div></div>
             <div className="aircraft-detail-actions"><button className="outline-button" onClick={()=>navigatePage("History")}>View flight history</button><button className="outline-button" onClick={()=>{setQuery(selectedAircraft.registration);navigatePage("Schedules");}}>View schedules</button></div>
           </section>}
-        </div>}}</>;
+        </div>}</>;
 }
