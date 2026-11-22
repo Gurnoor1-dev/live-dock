@@ -195,20 +195,38 @@ The original Fleet Mode assets and `example/fleet.html` remain under `example/` 
 
 ## 8. Neon Postgres with Drizzle
 
-The application uses Neon Postgres through a single server-side `DATABASE_URL` and Drizzle ORM. It does not require Neon Auth, AI Gateway, Functions, or Realtime services.
+The application uses Neon Postgres through a server-side pooled `DATABASE_URL` and Drizzle ORM. It does not require Neon Auth, AI Gateway, Functions, or Realtime services.
 
-1. Create or select a Neon Postgres database and copy its pooled connection string.
-2. Add `DATABASE_URL` to `.env.local` for local development and to Vercel → Project Settings → Environment Variables for Production and Preview. Keep it server-only; never prefix it with `NEXT_PUBLIC_`.
-3. Install dependencies with `npm install`.
-4. Generate and apply the initial schema:
+### Connection variables
+
+- `DATABASE_URL`: pooled connection for application requests (hostname contains `-pooler`).
+- `DATABASE_URL_UNPOOLED`: direct, non-pooled connection used only by Drizzle migrations.
+
+Both variables are stored as sensitive Vercel environment variables for Production, Preview and Development. For local work, put both in `.env.local`. Never expose either through a `NEXT_PUBLIC_*` variable or commit them.
+
+### Schema and migrations
+
+The initial migration is committed at `drizzle/0000_initial_app_settings.sql`, with its journal at `drizzle/meta/_journal.json`. It creates `public.app_settings` with:
+
+- `key` — text primary key
+- `value` — non-null JSONB, default `{}`
+- `updated_at` — non-null timestamptz, default `now()`
+
+Run schema changes through Drizzle:
 
 ```bash
 npm run db:generate
 npm run db:migrate
 ```
 
-5. Verify the connection locally at `http://localhost:3000/api/health/database` or on the deployed site at `/api/health/database`. A healthy response is `{ "ok": true, "service": "neon-postgres" }`.
+`drizzle.config.ts` prefers `DATABASE_URL_UNPOOLED` and rejects a pooled hostname, so migrations cannot accidentally run through PgBouncer. Application queries continue to use pooled `DATABASE_URL`.
 
-The initial app-owned table is `app_settings`, reserved for small application configuration. Infinite Flight remains the source of truth for live organisation, aircraft, members, schedules and flight records. Live positions, telemetry, and raw Infinite Flight API responses are deliberately not copied into Postgres. Existing OAuth2 authentication and encrypted session cookies remain in Next.js; Neon Auth is not required.
+### Application data boundaries
 
-The database driver is `@neondatabase/serverless` with Drizzle's `neon-http` adapter, which is suitable for stateless Next.js serverless route handlers. The connection is created lazily per request so a missing local environment variable does not break static compilation.
+Use `src/lib/db/app-settings.ts` for app-owned settings CRUD (`getAppSetting`, `setAppSetting`, `deleteAppSetting`). This is a small configuration store, not a mirror of Infinite Flight.
+
+Infinite Flight remains the source of truth for live organisation, aircraft, members, schedules and flight records. Do not copy API responses, positions, telemetry, or derived live data into Postgres. Existing OAuth2 authentication and encrypted HTTP-only session cookies remain in Next.js; Neon Auth is not used. Vercel Blob continues to hold aircraft gallery files and its existing gallery manifest.
+
+### Health check
+
+`/api/health/database` executes a query against `public.app_settings` and returns `databaseResponseTimeMs` plus a `Server-Timing` header. This measures the database query round trip, not total browser-to-function latency. Compare it with the previously observed Supabase baseline of 150 ms.
