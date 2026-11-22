@@ -209,3 +209,129 @@ tbody tr:hover{background:#fafcff}
 .auth-card{background:#fff!important;border:1px solid #dedede!important;box-shadow:0 16px 50px rgba(0,0,0,.06)!important}
 .brand-mark{background:#111!important}
 @media(max-width:720px){.sidebar{background:var(--surface)}}
+
+
+/* Cohesive light + dark workspace themes */
+:root{
+  color-scheme:light;
+  --bg:#f3f4f6;
+  --surface:#ffffff;
+  --surface-2:#f8f9fa;
+  --line:#e3e6e9;
+  --ink:#17191c;
+  --muted:#707780;
+  --blue:#17191c;
+  --blue-dark:#000000;
+  --blue-soft:#eef0f2;
+  --green:#343a40;
+  --green-soft:#edf0f1;
+  --amber:#555b62;
+  --amber-soft:#f0f1f2;
+  --red:#555b62;
+  --shadow:0 5px 22px rgba(17,24,32,.045);
+  --focus-ring:0 0 0 3px rgba(20,24,29,.12);
+}
+.app-frame[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0d0f11;
+  --surface:#15181b;
+  --surface-2:#1c2024;
+  --line:#2b3036;
+  --ink:#f1f3f5;
+  --muted:#a0a7af;
+  --blue:#f1f3f5;
+  --blue-dark:#ffffff;
+  --blue-soft:#252a30;
+  --green:#c4cbd2;
+  --green-soft:#242a2f;
+  --amber:#d0c8b8;
+  --amber-soft:#302d28;
+  --red:#e0d6d6;
+  --shadow:0 8px 28px rgba(0,0,0,.22);
+  --focus-ring:0 0 0 3px rgba(235,239,243,.15);
+}
+html,body{background:var(--bg);color:var(--ink)}
+.app-frame,.main-area{background:var(--bg);color:var(--ink)}
+.app-frame *{border-color:var(--line)}
+.app-frame .sidebar,.app-frame .topbar{background:var(--surface);border-color:var(--line)}
+.app-frame .workspace,.app-frame .help-card{background:var(--surface-2);border-color:var(--line)}
+.app-frame .stat-card,.app-frame .section-card,.app-frame .auth-card{background:var(--surface);border-color:var(--line);box-shadow:var(--shadow)}
+.app-frame .date-chip,.app-frame .outline-button,.app-frame .search-field,.app-frame .filter-select,.app-frame .org-select{background:var(--surface-2);color:var(--ink);border-color:var(--line)}
+.app-frame .search-field input,.app-frame input,.app-frame select,.app-frame textarea{color:var(--ink)}
+.app-frame input,.app-frame select,.app-frame textarea{background:var(--surface-2);border-color:var(--line)}
+.app-frame input:focus,.app-frame select:focus,.app-frame textarea:focus{outline:none;box-shadow:var(--focus-ring);border-color:var(--muted)}
+.app-frame th,.app-frame .nav-caption{color:var(--muted)}
+.app-frame td,.app-frame .muted,.app-frame .breadcrumb,.app-frame .footer{color:var(--muted)}
+.app-frame .nav-item{color:var(--muted)}
+.app-frame .nav-item:hover,.app-frame .nav-item.active{background:var(--blue-soft);color:var(--ink)}
+.app-frame .nav-item i{background:var(--ink);color:var(--surface)}
+.app-frame .avatar,.app-frame .workspace-icon,.app-frame .stat-icon,.app-frame .fleet-row-icon{background:var(--blue-soft)!important;color:var(--ink)!important}
+.app-frame .brand-mark{background:var(--ink)!important;color:var(--surface)!important;border-color:var(--ink)}
+.app-frame .primary-button{background:var(--ink)!important;color:var(--surface)!important;border-color:var(--ink)!important;box-shadow:none}
+.app-frame .primary-button:hover{opacity:.86}
+.app-frame .status,.app-frame .count-pill{background:var(--surface-2);color:var(--muted);border-color:var(--line)}
+.app-frame .status.available,.app-frame .status.airborne,.app-frame .status.landed,
+.app-frame .status.in_flight,.app-frame .status.boarding,.app-frame .status.taxiing,
+.app-frame .status.maintenance,.app-frame .status.diverted,.app-frame .status.cancelled{background:var(--blue-soft);color:var(--ink)}
+.app-frame .status i{background:var(--muted)}
+.app-frame .form-error,.app-frame .form-success{background:var(--surface-2);color:var(--ink);border:1px solid var(--line)}
+.app-frame .welcome-banner,.app-frame .setup-banner{background:var(--blue-soft);border-color:var(--line)}
+.app-frame .fleet-map{background:var(--surface-2);border-color:var(--line)}
+.app-frame .fleet-aircraft-row:hover,.app-frame .fleet-aircraft-row.selected{background:var(--blue-soft);border-color:var(--line)}
+.app-frame .aircraft-facts{background:var(--line);border-color:var(--line)}
+.app-frame .aircraft-facts>div{background:var(--surface)}
+.app-frame .gallery-admin-entry{background:var(--surface-2);border-color:var(--line)}
+.app-frame .empty-icon{background:var(--surface-2);border-color:var(--line)}
+.app-frame .mobile-scrim{background:rgba(0,0,0,.56)}
+.app-frame .signout-button{background:var(--surface-2);border-color:var(--line);color:var(--muted)}
+.app-frame .signout-button:hover{background:var(--surface);color:var(--ink);border-color:var(--muted)}
+.app-frame .live-indicator i{background:var(--ink);box-shadow:0 0 0 3px var(--blue-soft)}
+.app-frame .fleet-map .maplibregl-ctrl-group{background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+.app-frame .fleet-map .maplibregl-ctrl-group button{filter:grayscale(1)}
+.app-frame .fleet-map .maplibregl-ctrl-attrib{background:var(--surface);color:var(--muted)}
+.app-frame .fleet-map .maplibregl-ctrl-attrib a{color:var(--ink)}
+.app-frame[data-theme="dark"] .brand-logo,.app-frame[data-theme="dark"] .workspace-logo{filter:grayscale(1) brightness(1.5)}
+.app-frame[data-theme="dark"] .aircraft-map-marker{filter:grayscale(1) invert(1)}
+.app-frame[data-theme="dark"] .fleet-map{background:#111417}
+.app-frame[data-theme="dark"] .aircraft-photo-frame,.app-frame[data-theme="dark"] .gallery-admin-photo img{background:var(--surface-2)}
+.app-frame[data-theme="dark"] .photo-credit,.app-frame[data-theme="dark"] .photo-caption{color:#fff}
+.app-frame[data-theme="dark"] .topbar{background:rgba(21,24,27,.92);backdrop-filter:blur(16px)}
+.app-frame[data-theme="dark"] .sidebar{background:var(--surface)}
+.app-frame[data-theme="dark"] .auth-card{background:var(--surface)!important;border-color:var(--line)!important}
+.app-frame .icon-button{color:var(--muted);border:1px solid transparent}
+.app-frame .icon-button:hover{background:var(--surface-2);color:var(--ink);border-color:var(--line)}
+.app-frame .icon-button:focus-visible,.app-frame button:focus-visible,.app-frame a:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+/* Compact, tactile theme control */
+.theme-switch{
+  min-height:38px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:11px;
+  padding:4px 7px 4px 10px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  background:var(--surface-2);
+  color:var(--ink);
+  box-shadow:0 1px 2px rgba(0,0,0,.035);
+  transition:background .2s ease,border-color .2s ease,box-shadow .2s ease;
+}
+.theme-switch:hover{border-color:var(--muted);box-shadow:0 3px 10px rgba(0,0,0,.07)}
+.theme-switch-copy{display:inline-flex;align-items:center;gap:7px;font-size:10px;font-weight:700;min-width:49px}
+.theme-switch-icon{width:22px;height:22px;display:grid;place-items:center;border-radius:50%;background:var(--surface);color:var(--ink)}
+.theme-switch-track{width:34px;height:20px;display:flex;align-items:center;padding:2px;border-radius:999px;background:#d5d9de;transition:background .2s ease}
+.theme-switch-thumb{width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transform:translateX(0);transition:transform .22s cubic-bezier(.2,.8,.2,1),background .2s ease}
+.theme-switch.dark .theme-switch-track{background:#555d66}
+.theme-switch.dark .theme-switch-thumb{transform:translateX(14px);background:#f5f6f7}
+.theme-switch:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+@media(max-width:720px){
+  .theme-switch{min-height:36px;gap:8px;padding-left:8px}
+  .theme-switch-copy{font-size:9px;min-width:43px}
+  .theme-switch-track{width:32px;height:19px}
+  .theme-switch-thumb{width:15px;height:15px}
+  .theme-switch.dark .theme-switch-thumb{transform:translateX(13px)}
+}
+@media(prefers-reduced-motion:reduce){
+  .theme-switch,.theme-switch-track,.theme-switch-thumb{transition:none}
+}
