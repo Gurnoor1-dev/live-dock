@@ -124,9 +124,9 @@ Read and follow the official [API usage and data rules](https://infiniteflight.c
 
 - Do not persist raw Live API responses, aircraft positions, telemetry, flight logs, pilot flight-time records, historical responses or statistics derived from those responses.
 - Infinite Flight explicitly permits keeping the IDs needed to make API requests, OAuth tokens, the link between a user's app account and Infinite Flight account, and user-entered app data. Neon stores those IDs plus app-generated request/approval/automation state; it does not store raw API snapshots.
-- The browser workspace uses a 90-second in-memory cache. It is not durable and is not shared across users or devices.
+- The browser workspace uses a 90-second in-memory cache scoped to the active browser runtime. It is not durable. The My Flights server cache is separately limited to one latest response per API request, refreshed on demand and discarded within one hour.
 - Dashboard polling pauses when the tab is hidden and after 15 minutes without user interaction.
-- My Flights fetches the signed-in user's online logbook when opened and pages it on demand. No flight history is persisted in Neon.
+- My Flights reads the current organisation aircraft flight-log pages on demand to identify the signed-in pilot's live, future and past crew records. The server keeps only the latest response per request in a short-lived in-memory cache (five minutes for flight-log pages, never longer than one hour); it does not build a durable logbook or persist flight history in Neon.
 - Organisation activity and hub counts are calculated from current API responses when the page is opened; they are not saved to the database.
 - Discord messages are event-time notifications. Do not read old Discord messages back as a data store, and do not post accumulated history or summaries.
 - Automation workers poll only the endpoints required for their event notices. Do not expand them into general-purpose background data collection.
@@ -183,7 +183,7 @@ After the Vercel project is connected to GitHub and the production environment v
 
 **Runtime setup still required:** add `DISCORD_BOT_TOKEN` and `DISCORD_PUBLIC_KEY` to Vercel, invite the bot with View Channels and Send Messages permissions, set the Discord application Interactions Endpoint URL to `https://virtual-blue-live.vercel.app/api/discord/interactions`, and configure channel/role IDs in Admin → Integrations. Add `Use Application Commands` only if you later add slash commands. The cron secret and admin credential encryption key are already configured in Vercel. Do not enable feature toggles until the bot and interaction endpoint have been configured and tested.
 
-**Verification:** the latest GitHub CI run completed lint, TypeScript and production build successfully. The Neon migration was tested on a temporary branch, applied to the production branch and the new tables/indexes were verified. No Vercel deployment was created; the production deployment remains unchanged.
+**Verification:** GitHub Actions CI runs lint, TypeScript and the production build on each commit. Check the repository's Actions tab for the current result on the latest commit. The Neon migration and schema were previously applied and verified; rerun the migration check if the database branch is changed. No Vercel deployment was created; the production deployment remains unchanged.
 
 **API policy:** Infinite Flight's current API rules explicitly permit retaining the IDs needed to make API requests, OAuth credentials, account links and user-entered app settings. Do not persist API response payloads, flight histories, telemetry or calculated historical statistics. Discord notifications must be event-time notices, not archives or historical summaries. The cron jobs are dormant until a deployment is made. Vercel deployment is intentionally disabled; no deployment is part of this implementation.
 
