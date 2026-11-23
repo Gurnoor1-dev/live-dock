@@ -233,3 +233,19 @@ Use `src/lib/db/app-settings.ts` for app-owned settings CRUD. The operations sch
 7. Auto-Crew and Schedule Reviser are disabled by default. Enable them individually in Feature Selection only after the bot, channels, connected operator account and interaction endpoint have been verified.
 
 **Crew safety:** crew assignment uses the documented PublicApi v3 `PUT /live/schedules/{scheduleId}/crew/{userId}` endpoint with role `0` for Captain and `1` for First Officer. Removal uses the documented `DELETE` endpoint. Schedule Reviser sorts `pilotFlightTimes` by `startSeconds` and will not offer a full-crew replacement unless the earliest takeoff pilot is verifiably one of the currently assigned crew. If replacing the other crew member fails and restoring the original assignment also fails, the alert is marked failed for manual administrator intervention.
+
+## 15. Free five-minute automation scheduler (Neon)
+
+LiveDock uses Neon Function Triggers instead of Vercel Cron. The scheduler runs in the same AWS region as the Neon project and calls the existing Next.js automation routes; Infinite Flight API access, rate-limit handling, and worker logic remain in Next.js.
+
+- Auto-Crew: every five minutes at minute 0, 5, 10, ...
+- Schedule Reviser: every five minutes offset by two minutes.
+- Notifier: every five minutes offset by four minutes.
+- Neon trigger schedules use UTC.
+- The Neon function requires `LIVE_DOCK_ORIGIN` and `NEON_CRON_SECRET`; the Vercel production environment needs the matching `NEON_CRON_SECRET`.
+- The Next.js cron routes accept either the legacy `CRON_SECRET` or `NEON_CRON_SECRET` during the transition.
+- `vercel.json` no longer declares Vercel Cron jobs, preventing duplicate scheduling after the replacement is activated.
+
+**Activation order:** deploy this application commit to Vercel first, verify all three authenticated routes, then enable the three Neon triggers on the production branch. Triggers are intentionally created disabled until that deployment is approved. Do not enable Neon triggers while the old Vercel Cron deployment is still active.
+
+The scheduler is designed for Neon Free usage, but actual function compute time depends on the response time of the automation routes. Monitor Neon function usage; Free-plan quotas are finite and exceeding them may require waiting for quota reset or upgrading. No production deployment is performed by this change.
