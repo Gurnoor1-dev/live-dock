@@ -131,9 +131,9 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
   useEffect(()=>{setActive(initialPage);},[initialPage]);
   const visibleAircraft=useMemo(()=>aircraft.filter(item=>item.registration.toLowerCase().includes(query.toLowerCase())),[aircraft,query]);
   const liveSchedules=schedules.filter(item=>[1,2,3,4,6].includes(item.status));
-  const selectedPosition=selectedAircraft?positions[selectedAircraft.aircraftId]:undefined;
-  const selectedActiveSchedule=selectedAircraft?schedules.find(item=>item.aircraftId===selectedAircraft.aircraftId&&[2,3,4,6].includes(item.status)):undefined;
-  const selectedNextSchedule=selectedAircraft?schedules.filter(item=>item.aircraftId===selectedAircraft.aircraftId&&item.status===1&&!item.isTimeless&&new Date(item.scheduledDepartureUtc).getTime()>Date.now()).sort((a,b)=>new Date(a.scheduledDepartureUtc).getTime()-new Date(b.scheduledDepartureUtc).getTime())[0]:undefined;
+  const selectedPosition=selectedAircraft?positions[selectedAircraft.id]:undefined;
+  const selectedActiveSchedule=selectedAircraft?schedules.find(item=>item.aircraftId===selectedAircraft.id&&[2,3,4,6].includes(item.status)):undefined;
+  const selectedNextSchedule=selectedAircraft?schedules.filter(item=>item.aircraftId===selectedAircraft.id&&item.status===1&&!item.isTimeless&&new Date(item.scheduledDepartureUtc).getTime()>Date.now()).sort((a,b)=>new Date(a.scheduledDepartureUtc).getTime()-new Date(b.scheduledDepartureUtc).getTime())[0]:undefined;
   const selectedPhotos=selectedAircraft?(gallery?.aircraft?.[selectedAircraft.registration]?.photos||[]).filter(photo=>photo.isVisible).sort((a,b)=>a.displayOrder-b.displayOrder):[];
 
   useEffect(()=>{
@@ -217,7 +217,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
       const entries=await Promise.all(aircraft.map(async item=>{
         try{
           const position=await api("/live/aircraft/"+item.id+"/position");
-          return [item.aircraftId,position] as const;
+          return [item.id,position] as const;
         }catch{return null;}
       }));
       if(!alive)return;
@@ -285,7 +285,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     markerRefs.current.forEach(marker=>marker.remove());
     markerRefs.current=[];
     for(const aircraftItem of aircraft){
-      const position=positions[aircraftItem.aircraftId];
+      const position=positions[aircraftItem.id];
       if(!position||!Number.isFinite(position.latitude)||!Number.isFinite(position.longitude))continue;
       const color=position.state===2?"#111111":position.state===1?"#444444":position.state===5?"#777777":position.state===4?"#999999":position.state===3?"#555555":"#bbbbbb";
       const element=document.createElement("button");
@@ -327,7 +327,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
   },[selectedActiveSchedule?.id,selectedPosition?.latitude,selectedPosition?.longitude]);
 
   useEffect(()=>{
-    if(!selectedAircraft||!selectedAircraft.aircraftId)return;
+    if(!selectedAircraft||!selectedAircraft.id)return;
     setFlightHistory([]);
     let alive=true;
     api("/live/aircraft/"+selectedAircraft.id+"/flights?page=1&pageSize=50").then(value=>{

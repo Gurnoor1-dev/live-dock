@@ -120,28 +120,30 @@ The proxy also allowlists the documented public sessions, flights, ATC, user, ai
 
 ## 7. Infinite Flight data rules — mandatory
 
-Read and follow the official [API usage and data rules](https://infiniteflight.com/guide/developer-reference/api-rules/usage-and-data-rules) before enabling this portal for pilots.
+Read and follow the official [API usage and data rules](https://infiniteflight.com/guide/developer-reference/api-rules/usage-and-data-rules) before enabling the portal for pilots.
 
-- Do not persist raw Live API responses, aircraft positions, telemetry, flight logs, pilot flight-time records or statistics derived from those responses.
-- The browser workspace uses a 90-second in-memory cache. It is not a durable database cache and is not shared across users or devices.
+- Do not persist raw Live API responses, aircraft positions, telemetry, flight logs, pilot flight-time records, historical responses or statistics derived from those responses.
+- Infinite Flight explicitly permits keeping the IDs needed to make API requests, OAuth tokens, the link between a user's app account and Infinite Flight account, and user-entered app data. Neon stores those IDs plus app-generated request/approval/automation state; it does not store raw API snapshots.
+- The browser workspace uses a 90-second in-memory cache. It is not durable and is not shared across users or devices.
 - Dashboard polling pauses when the tab is hidden and after 15 minutes without user interaction.
-- The operations workflow tables store application-owned actions (verification, a pilot's request, approval state, Discord message IDs and idempotency state). They also need references to Infinite Flight schedule/aircraft/user IDs to carry out those actions. The API rules may treat those references as Live API data; obtain written permission from Infinite Flight before production use if that interpretation is not explicitly covered by your approval.
-- Crew-request, Auto-Crew, Schedule Reviser and Notifier messages send Live organisation/flight details to Discord. This is data sharing. Do not enable these integrations or deploy the cron jobs until Infinite Flight has approved this use in writing.
+- My Flights fetches the signed-in user's online logbook when opened and pages it on demand. No flight history is persisted in Neon.
+- Organisation activity and hub counts are calculated from current API responses when the page is opened; they are not saved to the database.
+- Discord messages are event-time notifications. Do not read old Discord messages back as a data store, and do not post accumulated history or summaries.
+- Automation workers poll only the endpoints required for their event notices. Do not expand them into general-purpose background data collection.
 - Do not use Live API data to train, fine-tune, evaluate or improve AI/ML models. Use it only for simulated-flight features.
-
-The database intentionally does not store raw aircraft positions, telemetry or flight-log responses. Infinite Flight remains the source of truth for live schedules, fleet, crew and flight records. Neon stores app-owned onboarding and workflow state; it is not a mirror of the Live API.
 
 ## 8. Rate limits and refresh behaviour
 
-- User token: 5 requests/minute; 20/minute for a user with Infinite Flight Pro or an approved testing allowance.
+- User token: 5 requests/minute; 20/minute for a user with Infinite Flight Pro.
+- The API returns `X-User-Pro` and `X-Rate-Limit-Remaining`; automation workers use the remaining-request header to size rotating scan batches and leave room for the fleet/schedule requests.
 - `GET /sessions`: no more often than every 10 minutes.
 - Session flight lists, ATC and airport status: no more often than every 15 seconds.
 - User/profile-style endpoints: 5 minutes.
 - Aircraft/airport reference data: 60 minutes.
 - On HTTP 429, respect the upstream `Retry-After` header before retrying.
 - The shared dashboard refresh interval is 90 seconds while visible and active; polling stops after 15 minutes of inactivity and while the tab is hidden.
-- Server-side automation is configured for five-minute runs, staggered to avoid overlapping jobs. Each worker scans a rotating batch of up to eight aircraft. This batch size assumes the approved 20-requests/minute allowance; reduce it if the actual account quota is lower.
-- Vercel Cron frequency depends on the Vercel plan. The cron jobs do not run until a deployment containing `vercel.json` is made.
+- Server-side automation runs every five minutes, with Auto-Crew, Schedule Reviser and Notifier staggered at different minutes. Batch size adapts to the connected administrator's remaining request budget.
+- Vercel Cron jobs do not run until a production deployment containing `vercel.json` is made. Cron frequency also depends on the project's Vercel plan.
 
 ## 9. Supabase status
 

@@ -34,7 +34,7 @@ export function SchedulesPage(){
   <div className="page-intro-inline"><div><p className="eyebrow">FLIGHT OPERATIONS</p><h2>Fleet schedules</h2><p className="muted">Choose an aircraft to see its upcoming legs and available crew seats.</p></div><span className="count-pill">{fleet.length} flyable aircraft</span></div>
   {error&&<p className="form-error" role="alert">{error}</p>}{success&&<p className="form-success" role="status">{success}</p>}
   <section className="fleet-accordion-card">
-   {fleet.map(item=>{const pos=positions[item.aircraftId];const state=aircraftState(pos,item.aircraftId,schedules);const rows=schedules.filter(s=>s.aircraftId===item.aircraftId&&[1,2,3,4,6].includes(s.status)).sort((a,b)=>a.sequence-b.sequence);const open=expanded===item.id;
+   {fleet.map(item=>{const pos=positions[item.id];const state=aircraftState(pos,item.id,schedules);const rows=schedules.filter(s=>s.aircraftId===item.id&&[1,2,3,4,6].includes(s.status)).sort((a,b)=>a.sequence-b.sequence);const open=expanded===item.id;
     return <div className="fleet-accordion-item" key={item.id}>
      <button className="fleet-aircraft-trigger" aria-expanded={open} onClick={()=>setExpanded(open?null:item.id)}>
       <span className={"fleet-status-dot "+state.tone}/><span className="fleet-aircraft-identity"><b>{item.registration}</b><small>{typeName(item.aircraftId)}</small></span><span className={"fleet-status-pill "+state.tone}>{state.label}</span><span className="fleet-aircraft-context">{state.detail}</span><span className="fleet-row-count">{rows.length} legs</span><ChevronDown className={open?"rotated":""} size={17}/>
