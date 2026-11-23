@@ -157,7 +157,7 @@ export async function saveIFSession(session: IFSession, response?: NextResponse)
     else store!.set(name, value, options);
   };
   const sealed = encrypt(session);
-  const chunks = sealed.match(new RegExp("[\\\\s\\\\S]{1," + SESSION_CHUNK_SIZE + "}", "g")) ?? [];
+  const chunks = sealed.match(new RegExp("[\\s\\S]{1," + SESSION_CHUNK_SIZE + "}", "g")) ?? [];
   if (chunks.length > MAX_SESSION_CHUNKS) throw new Error("Encrypted session exceeds the supported cookie size.");
   const remaining = Math.max(60, Math.floor((session.expiresAt - Date.now()) / 1000));
   const options = cookieOptions(Math.min(COOKIE_MAX_AGE, session.refreshToken ? COOKIE_MAX_AGE : remaining));
