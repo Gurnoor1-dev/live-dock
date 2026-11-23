@@ -1,12 +1,12 @@
 import "server-only";
 import { getIFSession,type IFSession } from "@/lib/infinite-flight/session";
 export const ORGANIZATION_ID="d50dcc80-8dac-4608-970c-61d6a4739488";
-type Discovery={userinfo_endpoint:string};
+type Discovery={issuer?:string;userinfo_endpoint:string};
 type Identity={id:string;username:string|null;displayName:string|null};
 let discovery:Discovery|null=null;
 const rateLimits=new Map<string,{isPro:boolean;remaining:number;updatedAt:number}>();
 export function getIFRateLimit(session:IFSession){const value=rateLimits.get(session.accessToken);if(!value)return{isPro:false,remaining:4};if(Date.now()-value.updatedAt>60_000)return{isPro:value.isPro,remaining:value.isPro?19:4};return value;}
-async function getDiscovery(){if(discovery)return discovery;const response=await fetch("https://auth.infiniteflight.com/.well-known/openid-configuration",{cache:"force-cache"});if(!response.ok)throw new Error("Infinite Flight OpenID discovery is unavailable.");const value=await response.json() as Discovery;if(!value.userinfo_endpoint)throw new Error("Infinite Flight did not publish a user-info endpoint.");discovery=value;return value;}
+async function getDiscovery(){if(discovery)return discovery;let response:Response;try{response=await fetch("https://auth.infiniteflight.com/.well-known/openid-configuration",{headers:{Accept:"application/json"},cache:"no-store",signal:AbortSignal.timeout(10_000)});}catch(error){throw new Error("Could not reach Infinite Flight OpenID discovery. Check the auth.infiniteflight.com issuer and retry. "+(error instanceof Error?error.message:"Network request failed."));}if(!response.ok)throw new Error(`Infinite Flight OpenID discovery returned HTTP ${response.status}.`);const value=await response.json() as Discovery;if(value.issuer&&value.issuer.replace(/\\/$/,"")!=="https://auth.infiniteflight.com")throw new Error("Infinite Flight returned unexpected OpenID issuer metadata.");if(!value.userinfo_endpoint||!value.userinfo_endpoint.startsWith("https://"))throw new Error("Infinite Flight did not publish a valid HTTPS user-info endpoint.");discovery=value;return value;}
 export async function getIFIdentity(session:IFSession):Promise<Identity>{
  const config=await getDiscovery();const response=await fetch(config.userinfo_endpoint,{headers:{Authorization:"Bearer "+session.accessToken},cache:"no-store"});if(!response.ok)throw new Error("Infinite Flight could not verify the signed-in account.");const value=await response.json() as {sub?:string;preferred_username?:string;nickname?:string;name?:string};
  if(!value.sub||!/^[0-9a-f-]{36}$/i.test(value.sub))throw new Error("Infinite Flight returned an invalid account identifier.");
