@@ -2,7 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { and,eq,inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { adminOperatorCredentials,appSettings,appUsers,automationAlerts,crewRequests,discordIntegrations,featureSettings,notificationOutbox } from "@/lib/db/schema";
+import { adminOperatorCredentials,appSettings,automationAlerts,crewRequests,discordIntegrations,featureSettings,notificationOutbox } from "@/lib/db/schema";
 import { ifFetch,ORGANIZATION_ID,requireOrganizationAdmin } from "@/lib/infinite-flight/server";
 import type { IFSession } from "@/lib/infinite-flight/session";
 import { openSecret,sealSecret } from "@/lib/security/secret-box";
