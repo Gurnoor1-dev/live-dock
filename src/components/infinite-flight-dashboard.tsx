@@ -409,6 +409,8 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
   }
   async function createSchedule(event:FormEvent){
     event.preventDefault();if(!canManage||!aircraftId)return;
+    const selected=aircraft.find(item=>item.id===aircraftId);
+    if(!selected||selected.status!==0||selected.visibility===2||!selected.isFleetActiveSlot){setError("This aircraft is not currently in the active flyable fleet. Select an available aircraft; hangared, hidden or inactive aircraft cannot receive new schedules in Infinite Flight.");return;}
     setBusy(true);setError("");setNotice("");
     try{
       const payload={
