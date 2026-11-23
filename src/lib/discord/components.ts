@@ -15,7 +15,7 @@ export function autoCrewMessage(roleId:string,alertId:string,registration:string
  return{flags:32768,components:[textDisplay(roleId?`<@&${roleId}>`:"**Auto-Crew**"),textDisplay(`**${registration}** is parked for more than 12 hours and is free for anyone to fly.`),v2Container([textDisplay(details),separator(),{type:1,components:[actionButton("Assign to Yourself",`auto:claim:${alertId}`,3)]}])]};
 }
 export function reviserMessage(roleId:string,alertId:string,registration:string,arrival:string,details:string){
- return{flags:32768,components:[textDisplay(roleId?`<@&${roleId}>`:"**Waitlist**"),textDisplay(`**${registration}** is stopped for landing at **${arrival}** for more than 18 hours. Anyone may claim a seat to finish the flight.`),v2Container([textDisplay(details),separator(),{type:1,components:[actionButton("Claim Captain Seat",`reviser:captain:${alertId}`,1),actionButton("Claim First Officer Seat",`reviser:first_officer:${alertId}`,1)]}])]};
+ return{flags:32768,allowed_mentions:{parse:[],roles:roleId?[roleId]:[]},components:[textDisplay(roleId?`<@&${roleId}>`:"**Waitlist**"),textDisplay(`**${registration}** is stopped for landing at **${arrival}** for more than 18 hours. Anyone may claim a seat to finish the flight.`),v2Container([textDisplay(details),separator(),{type:1,components:[actionButton("Claim Captain Seat",`reviser:captain:${alertId}`,1),actionButton("Claim First Officer Seat",`reviser:first_officer:${alertId}`,1)]}])]};
 }
 export function notifierMessage(previous:string,registration:string,airport:string,origin:string,destination:string,discordUserId:string){
  return{content:`**${previous}** has landed **${registration}** at **${airport}**. You're on the next leg (${origin} → ${destination}), <@${discordUserId}>`};

@@ -181,11 +181,11 @@ After the Vercel project is connected to GitHub and the production environment v
 
 **Implemented in source:** Infinite Flight OAuth2 confidential-client login with PKCE, encrypted cookie session and refresh-token rotation; per-admin encrypted operator sessions; app verification with single-use application codes; fleet accordion schedules and seat requests; Discord Components V2 message builders and signed interaction handling; My Flights; Organisation Dock activity/hub estimates; admin schedule, application, user, integration and feature pages; 90-second shared workspace refresh; Auto-Crew, Schedule Reviser and Notifier workers; five-minute staggered cron configuration.
 
-**Runtime setup still required:** add `DISCORD_BOT_TOKEN` and `DISCORD_PUBLIC_KEY` to Vercel, invite/configure the bot, set the Discord interactions endpoint to `https://virtual-blue-live.vercel.app/api/discord/interactions`, and configure channel/role IDs in Admin → Integrations. The cron secret and admin credential encryption key are already configured in Vercel.
+**Runtime setup still required:** add `DISCORD_BOT_TOKEN` and `DISCORD_PUBLIC_KEY` to Vercel, invite the bot with View Channels and Send Messages permissions, set the Discord application Interactions Endpoint URL to `https://virtual-blue-live.vercel.app/api/discord/interactions`, and configure channel/role IDs in Admin → Integrations. Add `Use Application Commands` only if you later add slash commands. The cron secret and admin credential encryption key are already configured in Vercel. Do not enable feature toggles until the bot and interaction endpoint have been configured and tested.
 
 **Verification:** the latest GitHub CI run completed lint, TypeScript and production build successfully. The Neon migration was tested on a temporary branch, applied to the production branch and the new tables/indexes were verified. No Vercel deployment was created; the production deployment remains unchanged.
 
-**Important:** obtain Infinite Flight's written approval for storing Live API references and sending organisation/flight details to Discord before enabling these workflows for pilots. The cron jobs are dormant until a deployment is made.
+**API policy:** Infinite Flight's current API rules explicitly permit retaining the IDs needed to make API requests, OAuth credentials, account links and user-entered app settings. Do not persist API response payloads, flight histories, telemetry or calculated historical statistics. Discord notifications must be event-time notices, not archives or historical summaries. The cron jobs are dormant until a deployment is made. Vercel deployment is intentionally disabled; no deployment is part of this implementation.
 
 ## 13. Neon Postgres with Drizzle
 
@@ -215,8 +215,21 @@ npm run db:migrate
 
 ### Application data boundaries
 
-Use `src/lib/db/app-settings.ts` for app-owned settings CRUD. The operations schema stores onboarding and application workflow state; it does not store raw Live API responses, aircraft positions, telemetry or flight-log payloads. It does store schedule/aircraft/user references required to process pilot requests and automation. Confirm with Infinite Flight that retaining these references is permitted before production use, as described in section 7. OAuth2 authentication and encrypted HTTP-only sessions remain in Next.js; Neon Auth is not used.
+Use `src/lib/db/app-settings.ts` for app-owned settings CRUD. The operations schema stores onboarding and user-entered application workflow state. It may retain the IDs required to make Infinite Flight API requests, as expressly permitted by the current API rules. It does not store raw Live API responses, aircraft positions, telemetry or flight-log payloads. OAuth2 authentication and encrypted HTTP-only sessions remain in Next.js; Neon Auth is not used.
 
 ### Health check
 
 `/api/health/database` executes a query against `public.app_settings` and returns `databaseResponseTimeMs` plus a `Server-Timing` header. This measures the database query round trip, not total browser-to-function latency. Compare it with the previously observed Supabase baseline of 150 ms.
+
+
+## 14. Discord Components V2 and automation setup
+
+1. In the [Discord Developer Portal](https://discord.com/developers/applications), create/open the LiveDock application and add a Bot user.
+2. Copy the bot token into the server-only `DISCORD_BOT_TOKEN` environment variable. Copy the application public key from **General Information** into `DISCORD_PUBLIC_KEY`. Never expose either value in the browser or repository.
+3. Invite the bot to the Virtual Blue server with **View Channels** and **Send Messages** in the Crew Requests, Notifier, Auto-Crew and Schedule Reviser channels. Ensure the bot role can mention the configured Auto-Crew and Waitlist roles.
+4. Set **Interactions Endpoint URL** to `https://virtual-blue-live.vercel.app/api/discord/interactions`. Discord validates this endpoint with signed PING requests; the route verifies Ed25519 signatures using `DISCORD_PUBLIC_KEY`.
+5. Configure the Guild ID, Crew Requests channel, Notifier channel and optional automation channels/role IDs in Admin → Integrations. Snowflake IDs are numeric strings copied using Discord Developer Mode.
+6. Test one crew request end-to-end before enabling automated features. Approve/reject buttons are accepted only from the stored message ID and configured channel. Buttons are disabled after processing.
+7. Auto-Crew and Schedule Reviser are disabled by default. Enable them individually in Feature Selection only after the bot, channels, connected operator account and interaction endpoint have been verified.
+
+**Crew safety:** crew assignment uses the documented PublicApi v3 `PUT /live/schedules/{scheduleId}/crew/{userId}` endpoint with role `0` for Captain and `1` for First Officer. Removal uses the documented `DELETE` endpoint. Schedule Reviser sorts `pilotFlightTimes` by `startSeconds` and will not offer a full-crew replacement unless the earliest takeoff pilot is verifiably one of the currently assigned crew. If replacing the other crew member fails and restoring the original assignment also fails, the alert is marked failed for manual administrator intervention.
