@@ -1,16 +1,1 @@
-{
-  "crons": [
-    {
-      "path": "/api/cron/auto-crew",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/cron/schedule-reviser",
-      "schedule": "2-59/5 * * * *"
-    },
-    {
-      "path": "/api/cron/notifier",
-      "schedule": "4-59/5 * * * *"
-    }
-  ]
-}
+{}
