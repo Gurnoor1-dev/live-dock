@@ -1,23 +1,15 @@
 "use client";
-
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
-import { SlidersHorizontal } from "lucide-react";
-import { AdminGate, Empty } from "@/components/workspace/shared-ui";
+import { useEffect,useState } from "react";
+import { Bot,RefreshCw,SlidersHorizontal } from "lucide-react";
+import { AdminGate } from "@/components/workspace/shared-ui";
 import { useWorkspace } from "../workspace-context";
-
+type Feature={featureKey:string;enabled:boolean};
 export function FeatureSelectionPage(){
-  const {
- active,organization,aircraft,aircraftTypes,members,schedules,liveSchedules,positions,selectedAircraft,
- selectedPosition,selectedActiveSchedule,selectedNextSchedule,selectedPhotos,photoIndex,
- routeProgress,parkedAirport,flightHistory,canManage,query,setQuery,visibleAircraft,
- mapContainer,setSelectedAircraft,navigatePage,statusName,dateTime,aircraftCategory,
- busy,deleteSchedule,callsign,setCallsign,aircraftId,setAircraftId,origin,setOrigin,
- destination,setDestination,timeless,setTimeless,departure,setDeparture,arrival,setArrival,
- briefing,setBriefing,createSchedule,crewSelections,setCrewSelections,crewRoles,setCrewRoles,
- assignCrew,gallery,galleryLoading,galleryRegistration,setGalleryRegistration,galleryCredit,
- setGalleryCredit,galleryCreditUrl,setGalleryCreditUrl,galleryCaption,setGalleryCaption,
- galleryFile,setGalleryFile,uploadAircraftPhoto,deleteAircraftPhoto,roleName
-}=useWorkspace();
-  return <AdminGate>{active==="Feature Selection"&&<section className="section-card"><div className="section-head"><div><h2>Organisation features</h2><p>Choose which optional capabilities are enabled for Virtual Blue.</p></div><SlidersHorizontal size={18}/></div><div className="condition-row"><span><b>Auto-Crew</b><small className="member-sub">Automatically assist with schedule crew assignment.</small></span><span className="count-pill">Not configured</span></div><div className="condition-row"><span><b>Schedule Revisor</b><small className="member-sub">Review and revise schedule operations.</small></span><span className="count-pill">Not configured</span></div><Empty title="Feature controls are not active yet" body="These are structural placeholders only. Feature flags, permissions, persistence and the actual Auto-Crew / Schedule Revisor workflows will be implemented in a later step."/></section>}</AdminGate>;
+ const {active,navigatePage}=useWorkspace();const [features,setFeatures]=useState<Feature[]>([{featureKey:"auto_crew",enabled:false},{featureKey:"schedule_reviser",enabled:false}]);const [loading,setLoading]=useState(false);const [error,setError]=useState("");const [notice,setNotice]=useState("");
+ async function load(){const r=await fetch("/api/admin/features",{cache:"no-store"});const d=await r.json();if(!r.ok)throw new Error(d.error||"Could not load feature flags.");setFeatures(v=>v.map(f=>({...f,enabled:Boolean(d.features?.find((x:Feature)=>x.featureKey===f.featureKey)?.enabled)})))}
+ useEffect(()=>{if(active==="Feature Selection")void load().catch(e=>setError(e.message))},[active]);
+ async function toggle(featureKey:string,enabled:boolean){setLoading(true);setError("");setNotice("");try{const r=await fetch("/api/admin/features",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({featureKey,enabled})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Could not update feature.");setFeatures(v=>v.map(f=>f.featureKey===featureKey?{...f,enabled}:f));setNotice("Feature setting saved. Configure its Discord channel next.");}catch(e){setError(e instanceof Error?e.message:"Could not update feature.")}finally{setLoading(false)}}
+ if(active!=="Feature Selection")return null;
+ const options=[{key:"auto_crew",title:"Auto-Crew",description:"Find aircraft that have been parked for more than 12 hours and publish the next unbooked leg for self-assignment.",icon:<Bot size={20}/>,interval:"Every 5–15 minutes",threshold:"Parked for 12+ hours"},{key:"schedule_reviser",title:"Schedule Reviser",description:"Find aircraft stopped for more than 18 hours and allow a pilot to claim a seat to complete the landing.",icon:<SlidersHorizontal size={20}/>,interval:"Every 5–15 minutes",threshold:"Stopped for 18+ hours"}];
+ return <AdminGate><div className="admin-page"><div className="page-intro-inline"><div><p className="eyebrow">OPTIONAL AUTOMATION</p><h2>Feature selection</h2><p className="muted">Enable the capabilities that Virtual Blue wants to offer to its pilots.</p></div><span className="count-pill">2 features</span></div>{options.map(option=>{const enabled=Boolean(features.find(f=>f.featureKey===option.key)?.enabled);return <section className="section-card feature-card" key={option.key}><div className="feature-main"><span className="feature-icon">{option.icon}</span><div><h3>{option.title}</h3><p>{option.description}</p><div className="feature-meta"><span>{option.interval}</span><span>{option.threshold}</span></div></div><label className="switch-control"><input type="checkbox" checked={enabled} disabled={loading} onChange={e=>void toggle(option.key,e.target.checked)}/><span/></label></div>{enabled&&<div className="feature-enabled-note">Enabled · Add its Discord channel in <button onClick={()=>navigatePage("Integrations")}>Discord Integrations</button>.</div>}</section>})}{error&&<p className="form-error">{error}</p>}{notice&&<p className="form-success">{notice}</p>}<button className="outline-button" onClick={()=>void load()}><RefreshCw size={14}/> Refresh feature settings</button></div></AdminGate>;
 }

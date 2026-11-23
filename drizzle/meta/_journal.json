@@ -8,6 +8,13 @@
       "when": 1795350000000,
       "tag": "0000_initial_app_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795420800000,
+      "tag": "0001_virtual_blue_operations",
+      "breakpoints": true
     }
   ]
 }

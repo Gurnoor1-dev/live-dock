@@ -1,0 +1,7 @@
+import { NextRequest,NextResponse } from "next/server";
+import { getDb } from "@/lib/db";
+import { featureSettings } from "@/lib/db/schema";
+import { requireIFSession,requireOrganizationAdmin } from "@/lib/infinite-flight/server";
+export const runtime="nodejs";
+export async function GET(){try{const {session}=await requireIFSession();await requireOrganizationAdmin(session);return NextResponse.json({features:await getDb().select().from(featureSettings)})}catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Unable to load features."},{status:Number((error as {status?:number})?.status)||500})}}
+export async function PATCH(request:NextRequest){try{const {session,identity}=await requireIFSession();await requireOrganizationAdmin(session);const body=await request.json().catch(()=>({})) as {featureKey?:string;enabled?:boolean};if(!["auto_crew","schedule_reviser"].includes(String(body.featureKey))||typeof body.enabled!=="boolean")return NextResponse.json({error:"Invalid feature setting."},{status:400});await getDb().insert(featureSettings).values({featureKey:body.featureKey!,enabled:body.enabled,updatedByIfcUserId:identity.id}).onConflictDoUpdate({target:featureSettings.featureKey,set:{enabled:body.enabled,updatedByIfcUserId:identity.id,updatedAt:new Date()}});return NextResponse.json({success:true})}catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Unable to update feature."},{status:Number((error as {status?:number})?.status)||500})}}

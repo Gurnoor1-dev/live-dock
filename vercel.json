@@ -1,0 +1,7 @@
+{
+  "crons": [
+    { "path": "/api/cron/auto-crew", "schedule": "*/10 * * * *" },
+    { "path": "/api/cron/schedule-reviser", "schedule": "*/10 * * * *" },
+    { "path": "/api/cron/notifier", "schedule": "*/10 * * * *" }
+  ]
+}

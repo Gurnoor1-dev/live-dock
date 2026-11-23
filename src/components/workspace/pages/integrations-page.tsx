@@ -1,23 +1,14 @@
 "use client";
-
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
-import { Plug } from "lucide-react";
-import { AdminGate, Empty } from "@/components/workspace/shared-ui";
+import { useEffect,useState } from "react";
+import { Plug,Save } from "lucide-react";
+import { AdminGate } from "@/components/workspace/shared-ui";
 import { useWorkspace } from "../workspace-context";
-
+type Settings={guildId?:string;crewRequestsChannelId?:string;notifierChannelId?:string;autoCrewChannelId?:string;scheduleReviserChannelId?:string;autoCrewRoleId?:string;waitlistRoleId?:string};
 export function IntegrationsPage(){
-  const {
- active,organization,aircraft,aircraftTypes,members,schedules,liveSchedules,positions,selectedAircraft,
- selectedPosition,selectedActiveSchedule,selectedNextSchedule,selectedPhotos,photoIndex,
- routeProgress,parkedAirport,flightHistory,canManage,query,setQuery,visibleAircraft,
- mapContainer,setSelectedAircraft,navigatePage,statusName,dateTime,aircraftCategory,
- busy,deleteSchedule,callsign,setCallsign,aircraftId,setAircraftId,origin,setOrigin,
- destination,setDestination,timeless,setTimeless,departure,setDeparture,arrival,setArrival,
- briefing,setBriefing,createSchedule,crewSelections,setCrewSelections,crewRoles,setCrewRoles,
- assignCrew,gallery,galleryLoading,galleryRegistration,setGalleryRegistration,galleryCredit,
- setGalleryCredit,galleryCreditUrl,setGalleryCreditUrl,galleryCaption,setGalleryCaption,
- galleryFile,setGalleryFile,uploadAircraftPhoto,deleteAircraftPhoto,roleName
-}=useWorkspace();
-  return <AdminGate>{active==="Integrations"&&<section className="section-card"><div className="section-head"><div><h2>Discord integrations</h2><p>Manage connected Discord services and automated organisation updates.</p></div><Plug size={18}/></div><Empty title="Integration controls coming next" body="This page is reserved for Discord connection settings, embed destinations, channel selection, message content, formatting and delivery preferences."/></section>}</AdminGate>;
+ const {active}=useWorkspace();const [settings,setSettings]=useState<Settings>({});const [features,setFeatures]=useState<{featureKey:string;enabled:boolean}[]>([]);const [loading,setLoading]=useState(false);const [error,setError]=useState("");const [success,setSuccess]=useState("");
+ useEffect(()=>{if(active!=="Integrations")return;fetch("/api/admin/integrations",{cache:"no-store"}).then(async r=>{const d=await r.json();if(!r.ok)throw new Error(d.error||"Could not load Discord settings.");setSettings(d.settings||{});setFeatures(d.features||[])}).catch(e=>setError(e.message))},[active]);
+ function field(key:keyof Settings,label:string,required=false){return <label>{label}{required&&<em>Required</em>}<input inputMode="numeric" value={settings[key]||""} onChange={e=>setSettings(v=>({...v,[key]:e.target.value}))} placeholder="Discord snowflake ID"/></label>}
+ async function save(){setLoading(true);setError("");setSuccess("");try{const r=await fetch("/api/admin/integrations",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(settings)});const d=await r.json();if(!r.ok)throw new Error(d.error||"Could not save integrations.");setSuccess("Discord integration settings saved.");}catch(e){setError(e instanceof Error?e.message:"Could not save settings.")}finally{setLoading(false)}}
+ if(active!=="Integrations")return null;
+ return <AdminGate><div className="admin-page"><div className="page-intro-inline"><div><p className="eyebrow">CONNECTED SERVICES</p><h2>Discord integrations</h2><p className="muted">Configure where crew requests and operational notifications are delivered.</p></div><Plug size={20}/></div><section className="section-card"><div className="section-head"><div><h2>Required channels</h2><p>Both channels must be configured for the integration to save.</p></div><span className="count-pill">Mandatory</span></div><div className="admin-form"><div className="form-two">{field("crewRequestsChannelId","Crew Requests channel ID",true)}{field("notifierChannelId","Notifier channel ID",true)}</div>{field("guildId","Discord server (guild) ID")}</div></section>{features.some(f=>f.featureKey==="auto_crew"&&f.enabled)&&<section className="section-card"><div className="section-head"><div><h2>Auto-Crew destination</h2><p>Visible because Auto-Crew is enabled.</p></div></div><div className="form-two">{field("autoCrewChannelId","Auto-Crew channel ID",true)}{field("autoCrewRoleId","Auto-Crew role ID")}</div></section>}{features.some(f=>f.featureKey==="schedule_reviser"&&f.enabled)&&<section className="section-card"><div className="section-head"><div><h2>Schedule Reviser destination</h2><p>Visible because Schedule Reviser is enabled.</p></div></div><div className="form-two">{field("scheduleReviserChannelId","Schedule Reviser channel ID",true)}{field("waitlistRoleId","Waitlist role ID")}</div></section>}<section className="section-card"><div className="section-head"><div><h2>Delivery</h2><p>Discord bot credentials stay server-side and are never displayed here.</p></div></div>{error&&<p className="form-error">{error}</p>}{success&&<p className="form-success">{success}</p>}<button className="primary-button" disabled={loading} onClick={()=>void save()}><Save size={14}/>{loading?"Saving…":"Save Discord settings"}</button></section></div></AdminGate>;
 }

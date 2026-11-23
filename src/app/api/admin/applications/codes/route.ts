@@ -1,0 +1,10 @@
+import { createHash,randomBytes,randomUUID } from "node:crypto";
+import { NextRequest,NextResponse } from "next/server";
+import { getDb } from "@/lib/db";
+import { applicationCodes } from "@/lib/db/schema";
+import { requireIFSession,requireOrganizationAdmin } from "@/lib/infinite-flight/server";
+export const runtime="nodejs";
+const alphabet="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+function generate(){let out="";while(out.length<10)for(const b of randomBytes(16)){if(b<224&&out.length<10)out+=alphabet[b%alphabet.length]}return out}
+export async function GET(){try{const {session}=await requireIFSession();await requireOrganizationAdmin(session);const rows=await getDb().select({id:applicationCodes.id,issuedToIfcUserId:applicationCodes.issuedToIfcUserId,createdAt:applicationCodes.createdAt,expiresAt:applicationCodes.expiresAt,usedAt:applicationCodes.usedAt,usedByIfcUserId:applicationCodes.usedByIfcUserId,revokedAt:applicationCodes.revokedAt}).from(applicationCodes).orderBy(applicationCodes.createdAt);return NextResponse.json({codes:rows})}catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Unable to load codes."},{status:Number((error as {status?:number})?.status)||500})}}
+export async function POST(request:NextRequest){try{const {session,identity}=await requireIFSession();await requireOrganizationAdmin(session);const body=await request.json().catch(()=>({})) as {issuedToIfcUserId?:string;expiresInDays?:number};const code=generate(),days=Math.max(1,Math.min(90,Number(body.expiresInDays)||30));await getDb().insert(applicationCodes).values({id:randomUUID(),codeHash:createHash("sha256").update(code).digest("hex"),issuedToIfcUserId:body.issuedToIfcUserId?.trim()||null,createdByIfcUserId:identity.id,expiresAt:new Date(Date.now()+days*86400000)});return NextResponse.json({code,expiresInDays:days},{status:201})}catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Could not generate code."},{status:Number((error as {status?:number})?.status)||500})}}

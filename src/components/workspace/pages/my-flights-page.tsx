@@ -1,23 +1,10 @@
 "use client";
-
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
-import { PlaneTakeoff } from "lucide-react";
+import { useEffect,useState,type ReactNode } from "react";
+import { CalendarDays,History,Radio } from "lucide-react";
 import { Empty } from "@/components/workspace/shared-ui";
 import { useWorkspace } from "../workspace-context";
-
-export function MyFlightsPage(){
-  const {
- active,organization,aircraft,aircraftTypes,members,schedules,liveSchedules,positions,selectedAircraft,
- selectedPosition,selectedActiveSchedule,selectedNextSchedule,selectedPhotos,photoIndex,
- routeProgress,parkedAirport,flightHistory,canManage,query,setQuery,visibleAircraft,
- mapContainer,setSelectedAircraft,navigatePage,statusName,dateTime,aircraftCategory,
- busy,deleteSchedule,callsign,setCallsign,aircraftId,setAircraftId,origin,setOrigin,
- destination,setDestination,timeless,setTimeless,departure,setDeparture,arrival,setArrival,
- briefing,setBriefing,createSchedule,crewSelections,setCrewSelections,crewRoles,setCrewRoles,
- assignCrew,gallery,galleryLoading,galleryRegistration,setGalleryRegistration,galleryCredit,
- setGalleryCredit,galleryCreditUrl,setGalleryCreditUrl,galleryCaption,setGalleryCaption,
- galleryFile,setGalleryFile,uploadAircraftPhoto,deleteAircraftPhoto,roleName
-}=useWorkspace();
-  return <>{active==="My Flights"&&<section className="section-card"><div className="section-head"><div><h2>My flight activity</h2><p>One place for flights you have flown, are currently operating as crew, or have booked for the future.</p></div><PlaneTakeoff size={18}/></div><Empty title="Your flight timeline is being prepared" body="This page will combine your personal Infinite Flight flight history, current crew assignments and future booked legs. It will use your authenticated pilot identity and live organisation data."/></section>}</>;
-}
+type Flight={id:string;callsign?:string;originIcao?:string;destinationIcao?:string;aircraftRegistration?:string;scheduledDepartureUtc?:string;actualDepartureUtc?:string;actualArrivalUtc?:string;isTimeless?:boolean;flightTimeMinutes?:number};
+function Group({title,description,icon,flights,empty}:{title:string;description:string;icon:ReactNode;flights:Flight[];empty:string}){return <section className="section-card"><div className="section-head"><div className="flight-group-title">{icon}<span><h2>{title}</h2><p>{description}</p></span></div><span className="count-pill">{flights.length}</span></div>{flights.length?<div className="personal-flight-list">{flights.map((f,i)=><div className="personal-flight-row" key={f.id||i}><span><b>{f.callsign||"Flight"}</b><small>{f.aircraftRegistration||"Virtual Blue aircraft"}</small></span><span className="personal-flight-route"><b>{f.originIcao||"—"} → {f.destinationIcao||"—"}</b><small>ROUTE</small></span><time>{f.isTimeless?"Anytime":f.actualDepartureUtc?new Date(f.actualDepartureUtc).toLocaleString():f.scheduledDepartureUtc?new Date(f.scheduledDepartureUtc).toLocaleString():"Time not available"}{f.flightTimeMinutes?" · "+f.flightTimeMinutes+" min":""}</time></div>)}</div>:<Empty title={empty} body="Flights appear here when Infinite Flight confirms your crew assignment or completed flight."/ >}</section>}
+export function MyFlightsPage(){const {active}=useWorkspace();const [data,setData]=useState<{live:Flight[];future:Flight[];past:Flight[]}>({live:[],future:[],past:[]});const [loading,setLoading]=useState(false);const [error,setError]=useState("");
+ useEffect(()=>{if(active!=="My Flights")return;let alive=true;setLoading(true);fetch("/api/my-flights",{cache:"no-store"}).then(async r=>{const d=await r.json();if(!r.ok)throw new Error(d.error||"Could not load your flights.");return d}).then(d=>{if(alive)setData({live:d.live||[],future:d.future||[],past:d.past||[]})}).catch(e=>{if(alive)setError(e instanceof Error?e.message:"Could not load your flights.")}).finally(()=>{if(alive)setLoading(false)});return()=>{alive=false}},[active]);
+ if(active!=="My Flights")return null;return <div className="my-flights-page"><div className="page-intro-inline"><div><p className="eyebrow">PILOT LOGBOOK</p><h2>My flights</h2><p className="muted">Your live operations, approved upcoming legs and completed Virtual Blue flights.</p></div><span className="count-pill">{loading?"Refreshing":"Personal logbook"}</span></div>{error&&<p className="form-error">{error}</p>}<Group title="Live Flights" description="Flights you are operating right now." icon={<Radio size={17}/>} flights={data.live} empty="No live flights right now"/><Group title="Future Flights" description="Approved crew assignments that have not started." icon={<CalendarDays size={17}/>} flights={data.future} empty="No future flights assigned"/><Group title="Past Flights" description="Completed flights in your organisation logbook." icon={<History size={17}/>} flights={data.past} empty="No completed flights found"/></div>}

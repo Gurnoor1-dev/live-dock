@@ -1,23 +1,14 @@
 "use client";
-
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
-import { ClipboardList } from "lucide-react";
-import { AdminGate, Empty } from "@/components/workspace/shared-ui";
+import { useEffect,useState } from "react";
+import { Copy,KeyRound,RefreshCw,ShieldCheck } from "lucide-react";
+import { AdminGate,Empty } from "@/components/workspace/shared-ui";
 import { useWorkspace } from "../workspace-context";
-
+type Code={id:string;issuedToIfcUserId:string|null;createdAt:string;expiresAt:string|null;usedAt:string|null;usedByIfcUserId:string|null;revokedAt:string|null};
 export function ApplicationsPage(){
-  const {
- active,organization,aircraft,aircraftTypes,members,schedules,liveSchedules,positions,selectedAircraft,
- selectedPosition,selectedActiveSchedule,selectedNextSchedule,selectedPhotos,photoIndex,
- routeProgress,parkedAirport,flightHistory,canManage,query,setQuery,visibleAircraft,
- mapContainer,setSelectedAircraft,navigatePage,statusName,dateTime,aircraftCategory,
- busy,deleteSchedule,callsign,setCallsign,aircraftId,setAircraftId,origin,setOrigin,
- destination,setDestination,timeless,setTimeless,departure,setDeparture,arrival,setArrival,
- briefing,setBriefing,createSchedule,crewSelections,setCrewSelections,crewRoles,setCrewRoles,
- assignCrew,gallery,galleryLoading,galleryRegistration,setGalleryRegistration,galleryCredit,
- setGalleryCredit,galleryCreditUrl,setGalleryCreditUrl,galleryCaption,setGalleryCaption,
- galleryFile,setGalleryFile,uploadAircraftPhoto,deleteAircraftPhoto,roleName
-}=useWorkspace();
-  return <AdminGate>{active==="Applications"&&<section className="section-card"><div className="section-head"><div><h2>Pilot applications</h2><p>Review requests to access the Virtual Blue flight deck.</p></div><ClipboardList size={18}/></div><Empty title="Application review workspace" body="The planned access flow will require an approved Infinite Flight Community username before a pilot can use the app. Applications, review decisions and approval status will be managed here."/></section>}</AdminGate>;
+ const {active}=useWorkspace();const [codes,setCodes]=useState<Code[]>([]);const [code,setCode]=useState("");const [loading,setLoading]=useState(false);const [error,setError]=useState("");const [copied,setCopied]=useState(false);
+ async function load(){const r=await fetch("/api/admin/applications/codes",{cache:"no-store"});const d=await r.json();if(!r.ok)throw new Error(d.error||"Could not load application codes.");setCodes(d.codes||[])}
+ useEffect(()=>{if(active==="Applications")void load().catch(e=>setError(e.message))},[active]);
+ async function generate(){setLoading(true);setError("");setCode("");try{const r=await fetch("/api/admin/applications/codes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({expiresInDays:30})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Could not generate code.");setCode(d.code);await load()}catch(e){setError(e instanceof Error?e.message:"Could not generate code.")}finally{setLoading(false)}}
+ if(active!=="Applications")return null;
+ return <AdminGate><div className="admin-page"><div className="page-intro-inline"><div><p className="eyebrow">ACCESS CONTROL</p><h2>Pilot applications</h2><p className="muted">Issue one-time verification codes to approved organisation members.</p></div><span className="count-pill">{codes.filter(c=>!c.usedAt&&!c.revokedAt).length} available</span></div><section className="section-card"><div className="section-head"><div><h2><KeyRound size={16}/> Generate an application code</h2><p>10-character uppercase alphanumeric code · single use · expires in 30 days</p></div><ShieldCheck size={18}/></div><button className="primary-button" disabled={loading} onClick={()=>void generate()}>{loading?"Generating…":"Generate new code"}</button>{code&&<div className="generated-code"><div><small>SHOW THIS CODE TO THE PILOT — IT WILL NOT BE SHOWN AGAIN</small><strong>{code}</strong></div><button className="outline-button" onClick={()=>{void navigator.clipboard.writeText(code);setCopied(true)}}><Copy size={14}/>{copied?"Copied":"Copy code"}</button></div>}{error&&<p className="form-error">{error}</p>}</section><section className="section-card"><div className="section-head"><div><h2>Issued codes</h2><p>Only status and metadata are stored; raw codes are never stored.</p></div><button className="icon-button" onClick={()=>void load()}><RefreshCw size={15}/></button></div>{codes.length?<div className="code-list">{codes.map(c=><div className="code-row" key={c.id}><span><b>{c.issuedToIfcUserId||"Unassigned pilot"}</b><small>Created {new Date(c.createdAt).toLocaleString()}</small></span><span className={"status "+(c.usedAt?"landed":c.revokedAt?"cancelled":"available")}><i/>{c.usedAt?"Used":c.revokedAt?"Revoked":"Available"}</span></div>)}</div>:<Empty title="No application codes yet" body="Generate a code when a new pilot is ready to join."/ >}</section></div></AdminGate>;
 }

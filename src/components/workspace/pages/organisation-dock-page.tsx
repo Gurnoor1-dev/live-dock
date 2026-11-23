@@ -1,43 +1,23 @@
 "use client";
-
-import { Building2, CalendarDays, Plane, Users } from "lucide-react";
-import { Stat } from "@/components/workspace/shared-ui";
+import { useEffect,useMemo,useState } from "react";
+import { Building2,Plane,ArrowDownToLine,ArrowUpFromLine,Users,Activity } from "lucide-react";
+import { Stat,Empty } from "@/components/workspace/shared-ui";
 import { useWorkspace } from "../workspace-context";
-
+type ActivityFlight={id:string;originIcao?:string;destinationIcao?:string;actualDepartureUtc?:string;crew?:Array<{username?:string|null}>;pilotFlightTimes?:Array<{username?:string|null}>;aircraftRegistration?:string};
+type Point={latitude:number;longitude:number};
 export function OrganisationDockPage(){
-  const {active,organization,aircraft,aircraftTypes,members,schedules,roleName,dateTime}=useWorkspace();
-  if(!organization)return null;
-  return <>{active==="Organisation Dock"&&<>
-    <section className="section-card">
-      <div className="section-head">
-        <div><p className="eyebrow">ORGANISATION PROFILE</p><h2>{organization.name}</h2><p>{organization.description||"Virtual Blue organisation profile and operational reference."}</p></div>
-        <span className="count-pill">{roleName(organization.role)}</span>
-      </div>
-      <div className="stat-grid">
-        <Stat label="Fleet aircraft" value={aircraft.length} note="Live organisation fleet" icon={<Plane size={17}/>}/>
-        <Stat label="Organisation members" value={members.length} note="Current Infinite Flight membership" icon={<Users size={17}/>}/>
-        <Stat label="Schedules" value={schedules.length} note="Published in Infinite Flight" icon={<CalendarDays size={17}/>}/>
-        <Stat label="Active aircraft" value={aircraft.filter(item=>item.isFleetActiveSlot).length} note="Active fleet slots" icon={<Building2 size={17}/>}/>
-      </div>
-    </section>
-    <div className="lower-grid">
-      <section className="section-card">
-        <div className="section-head"><div><h2>Organisation details</h2><p>Values returned by Infinite Flight PublicApi v3</p></div></div>
-        <div className="aircraft-facts">
-          <div><small>Organisation ID</small><b className="mono">{organization.id}</b></div>
-          <div><small>Your organisation role</small><b>{roleName(organization.role)}</b></div>
-          <div><small>World type</small><b>{organization.worldType}</b></div>
-          <div><small>Operation type</small><b>{organization.operationType}</b></div>
-        </div>
-      </section>
-      <section className="section-card">
-        <div className="section-head"><div><h2>Fleet overview</h2><p>Aircraft records supplied by Infinite Flight</p></div><span className="count-pill">{aircraft.length}</span></div>
-        {aircraft.length?<div className="table-wrap"><table><thead><tr><th>Registration</th><th>Aircraft type</th><th>Fleet rank</th><th>Slot</th></tr></thead><tbody>{aircraft.map(item=><tr key={item.id}><td className="mono"><b>{item.registration}</b></td><td>{aircraftTypes.find(type=>type.id===item.aircraftId)?.name||"Unknown"}</td><td>#{item.fleetRank}</td><td>{item.isFleetActiveSlot?"Active":"Inactive"}</td></tr>)}</tbody></table></div>:<p className="muted">No aircraft are attached to this organisation.</p>}
-      </section>
-    </div>
-    <section className="section-card">
-      <div className="section-head"><div><h2>Organisation members</h2><p>Membership and activity are read live from Infinite Flight</p></div><span className="count-pill">{members.length} pilots</span></div>
-      {members.length?<div className="table-wrap"><table><thead><tr><th>Pilot</th><th>Role</th><th>Joined</th><th>Active lifts</th></tr></thead><tbody>{members.map(member=><tr key={member.userId}><td><b>{member.username||"Unknown pilot"}</b><small className="member-sub mono">{member.userId}</small></td><td>{roleName(member.role)}</td><td>{dateTime(member.joinedAt)}</td><td>{member.activeLifts}</td></tr>)}</tbody></table></div>:<p className="muted">No organisation members were returned.</p>}
-    </section>
-  </>}</>;
+ const {active,organization,aircraft,aircraftTypes,members,schedules,positions,roleName,dateTime}=useWorkspace();
+ const [activity,setActivity]=useState<ActivityFlight[]>([]);
+ const [airportPoints,setAirportPoints]=useState<Record<string,Point>>({});
+ useEffect(()=>{if(active!=="Organisation Dock")return;let alive=true;fetch("/api/organisation-dock/activity",{cache:"no-store"}).then(async r=>{const d=await r.json();if(r.ok&&alive)setActivity(d.activity||[])}).catch(()=>{});return()=>{alive=false}},[active]);
+ const hubCodes=useMemo(()=>[...new Set(schedules.flatMap(s=>[s.originIcao,s.destinationIcao]).filter(Boolean))].slice(0,3),[schedules]);
+ useEffect(()=>{if(active!=="Organisation Dock"||!hubCodes.length)return;let alive=true;Promise.all(hubCodes.map(async code=>{try{const r=await fetch("/api/if/airport/"+code,{cache:"force-cache"});const d=await r.json();const a=d.result||d;const point={latitude:Number(a.latitude??a.location?.latitude),longitude:Number(a.longitude??a.location?.longitude)};return [code,point] as const}catch{return null}})).then(rows=>{if(!alive)return;const next:Record<string,Point>={};for(const row of rows)if(row&&Number.isFinite(row[1].latitude)&&Number.isFinite(row[1].longitude))next[row[0]]=row[1];setAirportPoints(next)});return()=>{alive=false}},[active,hubCodes]);
+ const hubs=useMemo(()=>{const map=new Map<string,{departures:number;inbounds:number;parked:number}>();for(const s of schedules){for(const [icao,key] of [[s.originIcao,"departures"],[s.destinationIcao,"inbounds"]] as const){const row=map.get(icao)||{departures:0,inbounds:0,parked:0};row[key]++;map.set(icao,row)}}for(const a of aircraft){const p=positions[a.aircraftId];if(!p?.isOnGround)continue;for(const [icao,point] of Object.entries(airportPoints)){const lat=(p.latitude-point.latitude)*Math.PI/180,lon=(p.longitude-point.longitude)*Math.PI/180;const h=Math.sin(lat/2)**2+Math.cos(point.latitude*Math.PI/180)*Math.cos(p.latitude*Math.PI/180)*Math.sin(lon/2)**2;const km=6371*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));if(km<=15){const row=map.get(icao)||{departures:0,inbounds:0,parked:0};row.parked++;map.set(icao,row);break}}}return [...map.entries()].sort((a,b)=>(b[1].parked+b[1].departures+b[1].inbounds)-(a[1].parked+a[1].departures+a[1].inbounds))},[schedules,aircraft,positions,airportPoints]);
+ if(active!=="Organisation Dock"||!organization)return null;
+ const flyable=aircraft.filter(a=>a.status===0&&a.visibility!==2&&a.isFleetActiveSlot);
+ return <div className="org-dock-page"><div className="page-intro-inline"><div><p className="eyebrow">VIRTUAL BLUE</p><h2>{organization.name} Dock</h2><p className="muted">Your organisation at a glance, backed by live Infinite Flight data.</p></div><span className="count-pill">{roleName(organization.role)}</span></div>
+ <section className="section-card"><div className="section-head"><div><h2>Organisation overview</h2><p>One connected operational picture</p></div><Building2 size={18}/></div><div className="stat-grid unified-stats"><Stat label="Fleet aircraft" value={aircraft.length} note="Organisation fleet" icon={<Plane size={17}/>}/><Stat label="Flyable" value={flyable.length} note="Active fleet slots" icon={<Activity size={17}/>}/><Stat label="Members" value={members.length} note="Infinite Flight members" icon={<Users size={17}/>}/><Stat label="Published legs" value={schedules.length} note="Current schedules" icon={<ArrowUpFromLine size={17}/>}/></div></section>
+ <section className="section-card"><div className="section-head"><div><h2>Hub operations</h2><p>Schedule movements and aircraft parked within 15 km of a published hub</p></div><span className="count-pill">{hubs.length} hubs</span></div>{hubs.length?<div className="hub-list">{hubs.map(([icao,data])=><div className="hub-row" key={icao}><div className="hub-icao">{icao}</div><div className="hub-metric"><Plane size={14}/><b>{data.parked}</b><small>Parked</small></div><div className="hub-metric"><ArrowUpFromLine size={14}/><b>{data.departures}</b><small>Departures</small></div><div className="hub-metric"><ArrowDownToLine size={14}/><b>{data.inbounds}</b><small>Inbounds</small></div></div>)}</div>:<Empty title="No hub activity yet" body="Hub activity appears when schedules are available."/ >}</section>
+ <section className="section-card"><div className="section-head"><div><h2>Recent fleet activity</h2><p>Latest flight records returned by Infinite Flight for the fleet sample</p></div><Activity size={18}/></div>{activity.length?<div className="activity-list">{activity.map((f,i)=><div className="activity-row" key={f.id||i}><span className="activity-mark"><Plane size={14}/></span><span><b>{f.crew?.map(c=>c.username).filter(Boolean).join(", ")||f.pilotFlightTimes?.at(-1)?.username||"Crew not reported"}</b><small>{f.originIcao||"—"} → {f.destinationIcao||"—"} · {f.aircraftRegistration||"Fleet aircraft"}</small></span><time>{dateTime(f.actualDepartureUtc)}</time></div>)}</div>:<Empty title="No recent activity available" body="Recent flight records will appear here when returned by Infinite Flight."/ >}</section>
+ </div>;
 }

@@ -15,7 +15,7 @@ import { IntegrationsPage } from "@/components/workspace/pages/integrations-page
 import { ApplicationsPage } from "@/components/workspace/pages/applications-page";
 import { UserManagementPage } from "@/components/workspace/pages/user-management-page";
 import { FeatureSelectionPage } from "@/components/workspace/pages/feature-selection-page";
-import { WorkspaceProvider } from "@/components/workspace/workspace-context";
+import { WorkspaceProvider } from "@/components/workspace/workspace-context";\nimport { OnboardingGate } from "@/components/workspace/onboarding-gate";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -466,7 +466,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     <footer className="landing-footer"><span>© {new Date().getFullYear()} Virtual Blue</span><span>AN INFINITE FLIGHT VIRTUAL AIRLINE</span><span><i/> SYSTEM READY</span></footer>
   </main>;
 
-  return <div className="app-frame" data-theme={theme}>
+  return <div className="app-frame" data-theme={theme}>\n    <OnboardingGate/>
     <aside className={`sidebar ${mobileNav?"open":""}`}>
       <div className="brand"><Image src={vbLogo} alt="Virtual Blue" className="brand-logo" priority/><span>VIRTUAL BLUE<small>FLEET OPERATIONS</small></span><button className="icon-button mobile-close" onClick={()=>setMobileNav(false)} aria-label="Close menu"><X size={18}/></button></div>
       <div className="user-row sidebar-account"><div className="avatar">IF</div><span><b>Infinite Flight pilot</b><small>{organization?roleName(organization.role):"Signed in"}</small></span><button className="signout-button" onClick={signOut} disabled={busy} title="Sign out of Infinite Flight"><LogOut size={15}/><span>Sign out</span></button></div>
