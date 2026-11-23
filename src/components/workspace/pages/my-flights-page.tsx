@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect,useState,type ReactNode } from "react";
 import { CalendarDays,History,Radio } from "lucide-react";
 import { Empty } from "@/components/workspace/shared-ui";

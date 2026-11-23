@@ -6,7 +6,7 @@ import { useWorkspace } from "../workspace-context";
 type ActivityFlight={id:string;originIcao?:string;destinationIcao?:string;actualDepartureUtc?:string;crew?:Array<{username?:string|null}>;pilotFlightTimes?:Array<{username?:string|null}>;aircraftRegistration?:string};
 type Point={latitude:number;longitude:number};
 export function OrganisationDockPage(){
- const {active,organization,aircraft,aircraftTypes,members,schedules,positions,roleName,dateTime}=useWorkspace();
+ const {active,organization,aircraft,members,schedules,positions,roleName,dateTime}=useWorkspace();
  const [activity,setActivity]=useState<ActivityFlight[]>([]);
  const [airportPoints,setAirportPoints]=useState<Record<string,Point>>({});
  useEffect(()=>{if(active!=="Organisation Dock")return;let alive=true;fetch("/api/organisation-dock/activity",{cache:"no-store"}).then(async r=>{const d=await r.json();if(r.ok&&alive)setActivity(d.activity||[])}).catch(()=>{});return()=>{alive=false}},[active]);

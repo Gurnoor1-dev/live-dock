@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest,NextResponse } from "next/server";
-import { and,eq,inArray } from "drizzle-orm";
+import { eq,inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { appUsers,crewRequests,discordIntegrations } from "@/lib/db/schema";
 import { crewRequestMessage,sendDiscordMessage } from "@/lib/discord/components";

@@ -2,7 +2,7 @@ import { NextRequest,NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { appUsers } from "@/lib/db/schema";
-import { getIFIdentity,ifFetch,ORGANIZATION_ID,requireIFSession } from "@/lib/infinite-flight/server";
+import { ifFetch,ORGANIZATION_ID,requireIFSession } from "@/lib/infinite-flight/server";
 export const runtime="nodejs";
 export async function GET(){
  try{const {session,identity}=await requireIFSession();const db=getDb();await ifFetch(`/live/organizations/${ORGANIZATION_ID}`,session);await db.insert(appUsers).values({ifcUserId:identity.id,ifcUsername:identity.username}).onConflictDoUpdate({target:appUsers.ifcUserId,set:{ifcUsername:identity.username,updatedAt:new Date()}});const [user]=await db.select().from(appUsers).where(eq(appUsers.ifcUserId,identity.id)).limit(1);return NextResponse.json({onboardingRequired:!user?.onboardingCompletedAt,discordUserId:user?.discordUserId??null,discordUsername:user?.discordUsername??null,username:identity.username},{headers:{"Cache-Control":"no-store"}})}

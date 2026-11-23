@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect,useState } from "react";
 import { UserRound,ShieldCheck,X } from "lucide-react";
 type Profile={onboardingRequired:boolean;discordUserId:string|null;discordUsername:string|null;username:string|null};

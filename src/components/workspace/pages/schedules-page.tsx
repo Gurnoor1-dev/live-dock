@@ -4,7 +4,9 @@ import { ChevronDown,Users,ArrowRight } from "lucide-react";
 import { Empty } from "@/components/workspace/shared-ui";
 import { useWorkspace } from "../workspace-context";
 type SeatRequest={scheduleId:string;seat:"captain"|"first_officer";status:"pending"|"processing"|"approved"|"rejected"|"failed"};
-function aircraftState(position:any,aircraftId:string,schedules:any[]){
+type PositionLike={state:number;isOnGround:boolean;airportIcao?:string;lastPilotUsername?:string};
+type ScheduleLike={aircraftId:string;status:number;sequence:number;callsign:string;originIcao:string;destinationIcao:string};
+function aircraftState(position:PositionLike|undefined,aircraftId:string,schedules:ScheduleLike[]){
  const active=schedules.find(s=>s.aircraftId===aircraftId&&[2,3,4,6].includes(s.status));
  const arrived=schedules.filter(s=>s.aircraftId===aircraftId&&s.status===11).sort((a,b)=>b.sequence-a.sequence)[0];
  const next=schedules.filter(s=>s.aircraftId===aircraftId&&s.status===1).sort((a,b)=>a.sequence-b.sequence)[0];
