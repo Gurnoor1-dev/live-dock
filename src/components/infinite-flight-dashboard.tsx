@@ -38,7 +38,7 @@ type GalleryPhoto={id:string;url:string;altText:string;caption:string;credit:{na
 type GalleryManifest={settings:{maxPhotosPerAircraft:number;slideshowIntervalMs:number};aircraft:Record<string,{photos:GalleryPhoto[]}>};
 type WorkspaceSnapshot={organization:Organization|null;aircraft:Aircraft[];members:Member[];schedules:Schedule[];refreshedAt:number};
 let sharedWorkspaceSnapshot:WorkspaceSnapshot|null=null;
-let sharedPositions:Record<string,Position>={};
+const sharedPositions:Record<string,Position>={};
 let positionsRefreshedAt=0;
 let supportingDataLoaded=false;
 let sharedAircraftTypes:AircraftType[]=[];
@@ -201,7 +201,9 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
   useEffect(()=>{
     if(auth!=="signed-in"||!aircraft.length)return;
     let alive=true;
+    if(Object.keys(sharedPositions).length&&Date.now()-positionsRefreshedAt<WORKSPACE_REFRESH_MS)setPositions(sharedPositions);
     const refreshPositions=async()=>{
+      if(Object.keys(sharedPositions).length&&Date.now()-positionsRefreshedAt<WORKSPACE_REFRESH_MS)return;
       const entries=await Promise.all(aircraft.map(async item=>{
         try{
           const position=await api("/live/aircraft/"+item.id+"/position");
@@ -209,14 +211,15 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
         }catch{return null;}
       }));
       if(!alive)return;
-      setPositions(()=>{
-        const next:Record<string,Position>={};
-        for(const entry of entries)if(entry&&entry[1]&&Number.isFinite(entry[1].latitude)&&Number.isFinite(entry[1].longitude))next[entry[0]]=entry[1] as Position;
-        return next;
-      });
+      const updated:Record<string,Position>={};
+      for(const entry of entries)if(entry&&entry[1]&&Number.isFinite(entry[1].latitude)&&Number.isFinite(entry[1].longitude))updated[entry[0]]=entry[1] as Position;
+      for(const key of Object.keys(sharedPositions))delete sharedPositions[key];
+      Object.assign(sharedPositions,updated);
+      positionsRefreshedAt=Date.now();
+      setPositions(updated);
     };
     void refreshPositions();
-    const timer=window.setInterval(refreshPositions,WORKSPACE_REFRESH_MS);
+    const timer=window.setInterval(()=>{if(Date.now()-positionsRefreshedAt>=WORKSPACE_REFRESH_MS)void refreshPositions();},WORKSPACE_REFRESH_MS);
     return()=>{alive=false;window.clearInterval(timer);};
   },[auth,aircraft]);
 
