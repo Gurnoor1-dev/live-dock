@@ -26,7 +26,7 @@ export function SchedulesPage(){
  const [choice,setChoice]=useState<{scheduleId:string;seat:"captain"|"first_officer"}|null>(null);
  const [loading,setLoading]=useState(false),[error,setError]=useState(""),[success,setSuccess]=useState("");
  useEffect(()=>{if(active!=="Schedules")return;let alive=true;const load=()=>fetch("/api/schedules/requests",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(d=>{if(alive&&d?.requests)setRequests(d.requests)}).catch(()=>{});void load();const timer=window.setInterval(load,30000);return()=>{alive=false;window.clearInterval(timer)}},[active]);
- const fleet=useMemo(()=>aircraft.filter(a=>a.status===0&&a.visibility!==2&&a.isFleetActiveSlot),[aircraft]);
+ const fleet=useMemo(()=>aircraft.filter(item=>schedules.some(schedule=>schedule.aircraftId===item.id&&schedule.status!==9)),[aircraft,schedules]);
  const typeName=(id:string)=>aircraftTypes.find(t=>t.id===id)?.name||id;
  async function submitRequest(){if(!choice)return;setLoading(true);setError("");setSuccess("");try{const r=await fetch("/api/schedules/requests",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(choice)});const d=await r.json();if(!r.ok)throw new Error(d.error||"Could not send request.");setRequests(v=>[...v,{...choice,status:"pending"}]);setSuccess("Your seat request was sent to the organisation administrators.");setChoice(null)}catch(e){setError(e instanceof Error?e.message:"Could not send request.")}finally{setLoading(false)}}
  if(active!=="Schedules")return null;
@@ -34,7 +34,7 @@ export function SchedulesPage(){
   <div className="page-intro-inline"><div><p className="eyebrow">FLIGHT OPERATIONS</p><h2>Fleet schedules</h2><p className="muted">Choose an aircraft to see its upcoming legs and available crew seats.</p></div><span className="count-pill">{fleet.length} flyable aircraft</span></div>
   {error&&<p className="form-error" role="alert">{error}</p>}{success&&<p className="form-success" role="status">{success}</p>}
   <section className="fleet-accordion-card">
-   {fleet.map(item=>{const pos=positions[item.id];const state=aircraftState(pos,item.id,schedules);const rows=schedules.filter(s=>s.aircraftId===item.id&&[1,2,3,4,6,7,8,10].includes(s.status)).sort((a,b)=>a.sequence-b.sequence);const open=expanded===item.id;
+   {fleet.map(item=>{const pos=positions[item.id];const state=aircraftState(pos,item.id,schedules);const rows=schedules.filter(s=>s.aircraftId===item.id&&s.status!==9).sort((a,b)=>a.sequence-b.sequence);const open=expanded===item.id;
     return <div className="fleet-accordion-item" key={item.id}>
      <button className="fleet-aircraft-trigger" aria-expanded={open} onClick={()=>setExpanded(open?null:item.id)}>
       <span className={"fleet-status-dot "+state.tone}/><span className="fleet-aircraft-identity"><b>{item.registration}</b><small>{typeName(item.aircraftId)}</small></span><span className={"fleet-status-pill "+state.tone}>{state.label}</span><span className="fleet-aircraft-context">{state.detail}</span><span className="fleet-row-count">{rows.length} legs</span><ChevronDown className={open?"rotated":""} size={17}/>
@@ -45,7 +45,7 @@ export function SchedulesPage(){
        <div className="schedule-seat-actions">{requestable&&!captain&&!captainPending?<button className="outline-button" onClick={()=>setChoice({scheduleId:schedule.id,seat:"captain"})}>Request Captain</button>:<span className="seat-locked">{captain?"Captain assigned":captainPending?"Captain requested":"Captain unavailable"}</span>}{requestable&&!fo&&!foPending?<button className="outline-button" onClick={()=>setChoice({scheduleId:schedule.id,seat:"first_officer"})}>Request First Officer</button>:<span className="seat-locked">{fo?"First Officer assigned":foPending?"First Officer requested":"First Officer unavailable"}</span>}</div>
       </article>}) : <Empty title="No schedules for this aircraft" body="Newly published legs will appear here automatically."/>}</div>}
     </div>})}
-   {!fleet.length&&<Empty title="No flyable aircraft found" body="Aircraft marked as inactive or in the hangar are excluded from this list."/>}
+   {!fleet.length&&<Empty title="No flyable aircraft found" body="Aircraft appear here whenever Infinite Flight returns a non-cancelled schedule for them, including hangared aircraft."/>}
   </section>
   {choice&&<div className="modal-scrim" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setChoice(null)}}><section className="modal-card" role="dialog" aria-modal="true" aria-labelledby="request-title"><button className="modal-close" onClick={()=>setChoice(null)}>×</button><p className="eyebrow">CREW REQUEST</p><h2 id="request-title">Request this seat?</h2><p className="muted">You are requesting the <b>{choice.seat==="captain"?"Captain":"First Officer"}</b> position. An administrator will review your request in Discord.</p><div className="modal-actions"><button className="outline-button" onClick={()=>setChoice(null)}>Cancel</button><button className="primary-button" disabled={loading} onClick={()=>void submitRequest()}>{loading?"Sending…":"Confirm request"}</button></div></section></div>}
  </div>;
