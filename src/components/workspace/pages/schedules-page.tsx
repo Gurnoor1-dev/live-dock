@@ -13,6 +13,7 @@ function aircraftState(position:PositionLike|undefined,aircraftId:string,schedul
  const flight=active?active.callsign+" · "+active.originIcao+" → "+active.destinationIcao:"active flight not identified";
  if(!position)return{label:"Status unavailable",tone:"unknown",detail:"Live position is not available"};
  if(position.state===1||position.isOnGround)return{label:"On Ground",tone:"ground",detail:"Parked at "+(position.airportIcao||arrived?.destinationIcao||next?.originIcao||"airport not identified")};
+ if(position.state===3)return{label:"Cancelled",tone:"unknown",detail:"Last flight was cancelled"};
  if(position.state===4)return{label:"Stopped",tone:"stopped",detail:"Stopped · "+flight};
  if(position.state===2)return{label:"In Flight",tone:"flight",detail:"Flying · "+flight};
  if(position.state===5)return{label:"Maintenance",tone:"maintenance",detail:"Aircraft in maintenance"};
