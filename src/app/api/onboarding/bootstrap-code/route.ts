@@ -33,7 +33,7 @@ export async function POST(){
     const rows=await sql`
       WITH bootstrap AS (
         INSERT INTO public.app_settings (key,value,updated_at)
-        VALUES ('initial_admin_bootstrap_used',jsonb_build_object('ifcUserId',${identity.id},'usedAt',now()),now())
+        VALUES ('initial_admin_bootstrap_used',jsonb_build_object('ifcUserId',${identity.id}::text,'usedAt',now()),now())
         ON CONFLICT (key) DO NOTHING
         RETURNING key
       ),
