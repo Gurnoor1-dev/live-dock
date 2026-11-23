@@ -409,8 +409,25 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
   }
   async function createSchedule(event:FormEvent){
     event.preventDefault();if(!canManage||!aircraftId)return;
-    const selected=aircraft.find(item=>item.id===aircraftId);
-    if(!selected||selected.status!==0||selected.visibility===2||!selected.isFleetActiveSlot){setError("This aircraft is not currently in the active flyable fleet. Select an available aircraft; hangared, hidden or inactive aircraft cannot receive new schedules in Infinite Flight.");return;}
+    let selected=aircraft.find(item=>item.id===aircraftId);
+    try{
+      // The organization aircraft list can change while this page is open.
+      // Re-read it immediately before publishing so a stale fleet slot cannot be selected.
+      const latestAircraft=await api("/live/organizations/"+ORGANIZATION_ID+"/aircraft") as Aircraft[];
+      if(Array.isArray(latestAircraft)){
+        selected=latestAircraft.find(item=>item.id===aircraftId);
+        setAircraft(latestAircraft);
+        if(sharedWorkspaceSnapshot)sharedWorkspaceSnapshot={...sharedWorkspaceSnapshot,aircraft:latestAircraft,refreshedAt:Date.now()};
+      }
+    }catch{
+      setError("Could not refresh the current Infinite Flight fleet. Refresh the workspace and try again.");
+      return;
+    }
+    if(!selected||selected.status!==0||selected.visibility!==1||selected.isFleetActiveSlot!==true){
+      const reason=!selected?"This aircraft is no longer listed in the organisation fleet.":selected.visibility===2?"This aircraft is hangared.":selected.visibility!==1?"This aircraft is not marked visible.":selected.status!==0?"This aircraft record is inactive.":"This aircraft is outside the active fleet slots.";
+      setError(reason+" Infinite Flight only accepts new schedules for active, visible aircraft inside the current active fleet. Refresh the fleet and select another aircraft.");
+      return;
+    }
     setBusy(true);setError("");setNotice("");
     try{
       const payload={
