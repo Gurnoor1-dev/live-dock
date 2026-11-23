@@ -1,4 +1,4 @@
-import { NextRequest,NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { appUsers } from "@/lib/db/schema";
@@ -11,16 +11,25 @@ type AircraftFlight={id:string;aircraftId:string;callsign:string;originIcao:stri
 type Page<T>={items:T[];page:number;pageSize:number;totalCount:number;totalPages:number};
 
 export const runtime="nodejs";
-export async function GET(_request:NextRequest){
+const responseCache=new Map<string,{value:unknown;fetchedAt:number}>();
+const ORG_CACHE_TTL=90_000;
+const FLIGHT_LOG_CACHE_TTL=5*60_000;
+function readCache<T>(key:string,ttl:number):T|null{const entry=responseCache.get(key);if(!entry)return null;if(Date.now()-entry.fetchedAt>=ttl){responseCache.delete(key);return null;}return entry.value as T;}
+function writeCache<T>(key:string,value:T){const now=Date.now();for(const [cacheKey,entry] of responseCache)if(now-entry.fetchedAt>60*60_000)responseCache.delete(cacheKey);responseCache.set(key,{value,fetchedAt:now});}
+export async function GET(){
  try{
   const {session,identity}=await requireIFSession();
   const [user]=await getDb().select({onboardingCompletedAt:appUsers.onboardingCompletedAt}).from(appUsers).where(eq(appUsers.ifcUserId,identity.id)).limit(1);
   if(!user?.onboardingCompletedAt)return NextResponse.json({error:"Complete pilot verification to view your logbook."},{status:403});
 
   // Run the two base Live requests sequentially so the remaining quota header is current.
-  const aircraftRaw=await ifFetch<Aircraft[]>(`/live/organizations/${ORGANIZATION_ID}/aircraft`,session);
+  const aircraftKey=`org-aircraft:${ORGANIZATION_ID}`;
+  let aircraftRaw=readCache<Aircraft[]>(aircraftKey,ORG_CACHE_TTL);
+  if(!aircraftRaw){aircraftRaw=await ifFetch<Aircraft[]>(`/live/organizations/${ORGANIZATION_ID}/aircraft`,session);writeCache(aircraftKey,aircraftRaw);}
   const aircraft=(aircraftRaw||[]).filter(a=>a.status===0&&a.visibility!==2&&a.isFleetActiveSlot);
-  const scheduleRaw=await ifFetch<Schedule[]|{items?:Schedule[]}>(`/live/organizations/${ORGANIZATION_ID}/schedules?page=1&pageSize=100`,session);
+  const schedulesKey=`org-schedules:${ORGANIZATION_ID}`;
+  let scheduleRaw=readCache<Schedule[]|{items?:Schedule[]}>(schedulesKey,ORG_CACHE_TTL);
+  if(!scheduleRaw){scheduleRaw=await ifFetch<Schedule[]|{items?:Schedule[]}>(`/live/organizations/${ORGANIZATION_ID}/schedules?page=1&pageSize=100`,session);writeCache(schedulesKey,scheduleRaw);}
   const schedules=Array.isArray(scheduleRaw)?scheduleRaw:scheduleRaw.items||[];
   const registration=new Map(aircraft.map(a=>[a.id,a.registration]));
   const isCrew=(s:Schedule)=>(s.crew||[]).some(c=>c.userId===identity.id);
@@ -30,12 +39,16 @@ export async function GET(_request:NextRequest){
   // Aircraft flight logs are the authoritative source for completed organisation legs
   // and identify the pilots who actually flew each aircraft.
   const quota=getIFRateLimit(session);
-  const maxLogs=Math.max(0,Math.min(quota.remaining-1,quota.isPro?15:2));
+  const requestBudget=Math.max(0,Math.min(quota.remaining-1,quota.isPro?15:2));
   const past: Array<{id:string;callsign:string;aircraftRegistration:string;originIcao:string|null;destinationIcao:string|null;actualDepartureUtc:string|null;actualArrivalUtc:string|null;flightTimeMinutes:number}>=[];
   let checked=0,limited=false;
-  for(const aircraftItem of aircraft.slice(0,maxLogs)){
+  let usedRequests=0;
+  for(const aircraftItem of aircraft){
+   const logKey=`aircraft-flight-log:${aircraftItem.id}:page:1:size:100`;
+   let page=readCache<Page<AircraftFlight>>(logKey,FLIGHT_LOG_CACHE_TTL);
+   if(!page&&usedRequests>=requestBudget){limited=true;break;}
    try{
-    const page=await ifFetch<Page<AircraftFlight>>(`/live/aircraft/${aircraftItem.id}/flights?page=1&pageSize=100`,session);
+    if(!page){page=await ifFetch<Page<AircraftFlight>>(`/live/aircraft/${aircraftItem.id}/flights?page=1&pageSize=100`,session);usedRequests++;writeCache(logKey,page);}
     checked++;
     for(const flight of page.items||[]){
      const flew=(flight.pilotFlightTimes||[]).some(p=>p.userId===identity.id)||(flight.crew||[]).some(p=>p.userId===identity.id);
