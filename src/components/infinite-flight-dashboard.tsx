@@ -35,6 +35,15 @@ type Position={id:string;state:number;isOnGround:boolean;latitude:number;longitu
 type AircraftType={id:string;name:string};
 type GalleryPhoto={id:string;url:string;altText:string;caption:string;credit:{name:string;url:string;displayText:string};displayOrder:number;isVisible:boolean};
 type GalleryManifest={settings:{maxPhotosPerAircraft:number;slideshowIntervalMs:number};aircraft:Record<string,{photos:GalleryPhoto[]}>};
+type WorkspaceSnapshot={organization:Organization|null;aircraft:Aircraft[];members:Member[];schedules:Schedule[];refreshedAt:number};
+let sharedWorkspaceSnapshot:WorkspaceSnapshot|null=null;
+let sharedPositions:Record<string,Position>={};
+let positionsRefreshedAt=0;
+let supportingDataLoaded=false;
+let sharedAircraftTypes:AircraftType[]=[];
+let sharedGallery:GalleryManifest|null=null;
+const WORKSPACE_REFRESH_MS=90_000;
+
 const ORGANIZATION_ID="d50dcc80-8dac-4608-970c-61d6a4739488";
 const PAGE_ROUTES:Record<Tab,string>={
   "Home":"/home",
@@ -68,11 +77,11 @@ function haversineKm(a:{latitude:number;longitude:number},b:{latitude:number;lon
 export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}={}){
   const router=useRouter();
   const [auth,setAuth]=useState<"checking"|"signed-out"|"signed-in">("checking");
-  const [organization,setOrganization]=useState<Organization|null>(null);
-  const [aircraft,setAircraft]=useState<Aircraft[]>([]);
-  const [aircraftTypes,setAircraftTypes]=useState<AircraftType[]>([]);
-  const [members,setMembers]=useState<Member[]>([]);
-  const [schedules,setSchedules]=useState<Schedule[]>([]);
+  const [organization,setOrganization]=useState<Organization|null>(sharedWorkspaceSnapshot?.organization??null);
+  const [aircraft,setAircraft]=useState<Aircraft[]>(sharedWorkspaceSnapshot?.aircraft??[]);
+  const [aircraftTypes,setAircraftTypes]=useState<AircraftType[]>(sharedAircraftTypes);
+  const [members,setMembers]=useState<Member[]>(sharedWorkspaceSnapshot?.members??[]);
+  const [schedules,setSchedules]=useState<Schedule[]>(sharedWorkspaceSnapshot?.schedules??[]);
   const [active,setActive]=useState<Tab>(initialPage);
   const [theme,setTheme]=useState<"light"|"dark">("light");
   const [themeReady,setThemeReady]=useState(false);
@@ -96,9 +105,9 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
   const markerRefs=useRef<maplibregl.Marker[]>([]);
   const hubMarkerRefs=useRef<maplibregl.Marker[]>([]);
   const mapHasFitted=useRef(false);
-  const [positions,setPositions]=useState<Record<string,Position>>({});
+  const [positions,setPositions]=useState<Record<string,Position>>(sharedPositions);
   const [selectedAircraft,setSelectedAircraft]=useState<Aircraft|null>(null);
-  const [gallery,setGallery]=useState<GalleryManifest|null>(null);
+  const [gallery,setGallery]=useState<GalleryManifest|null>(sharedGallery);
   const [flightHistory,setFlightHistory]=useState<FlightHistoryRecord[]>([]);
   const [photoIndex,setPhotoIndex]=useState(0);
   const [routeProgress,setRouteProgress]=useState<number|null>(null);
@@ -139,7 +148,14 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     try{window.localStorage.setItem("vb-theme",theme);}catch{}
   },[theme,themeReady]);
 
-  const loadOrganization=useCallback(async()=>{
+  const loadOrganization=useCallback(async(force=false)=>{
+    if(!force&&sharedWorkspaceSnapshot&&Date.now()-sharedWorkspaceSnapshot.refreshedAt<WORKSPACE_REFRESH_MS){
+      setOrganization(sharedWorkspaceSnapshot.organization);
+      setAircraft(sharedWorkspaceSnapshot.aircraft);
+      setMembers(sharedWorkspaceSnapshot.members);
+      setSchedules(sharedWorkspaceSnapshot.schedules);
+      return;
+    }
     setBusy(true);setError("");setNotice("");
     try{
       const [organizationResult,aircraftResult,membersResult,scheduleResult]=await Promise.all([
@@ -148,13 +164,12 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
         api("/live/organizations/"+ORGANIZATION_ID+"/members"),
         api("/live/organizations/"+ORGANIZATION_ID+"/schedules?page=1&pageSize=100")
       ]);
-      setOrganization(organizationResult as Organization);
-      setAircraft(Array.isArray(aircraftResult)?aircraftResult:[]);
-      setMembers(Array.isArray(membersResult)?membersResult:[]);
-      setSchedules(Array.isArray(scheduleResult)?scheduleResult:(scheduleResult?.items||[]));
+      const next={organization:organizationResult as Organization,aircraft:Array.isArray(aircraftResult)?aircraftResult:[],members:Array.isArray(membersResult)?membersResult:[],schedules:Array.isArray(scheduleResult)?scheduleResult:(scheduleResult?.items||[]),refreshedAt:Date.now()};
+      sharedWorkspaceSnapshot=next;
+      setOrganization(next.organization);setAircraft(next.aircraft);setMembers(next.members);setSchedules(next.schedules);
     }catch(e){
-      setOrganization(null);setAircraft([]);setMembers([]);setSchedules([]);
-      setError(e instanceof Error?e.message:"Unable to load the Virtual Blue workspace.");
+      setError(e instanceof Error?e.message:"Unable to refresh the Virtual Blue workspace.");
+      if(!sharedWorkspaceSnapshot){setOrganization(null);setAircraft([]);setMembers([]);setSchedules([]);}
     }finally{setBusy(false);}
   },[]);
 
@@ -194,14 +209,15 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
       });
     };
     void refreshPositions();
-    const timer=window.setInterval(refreshPositions,15000);
+    const timer=window.setInterval(refreshPositions,WORKSPACE_REFRESH_MS);
     return()=>{alive=false;window.clearInterval(timer);};
   },[auth,aircraft]);
 
   useEffect(()=>{
-    if(auth!=="signed-in")return;
-    api("/aircraft").then(value=>setAircraftTypes(Array.isArray(value)?value:[])).catch(()=>setAircraftTypes([]));
-    fetch("/api/if/gallery",{cache:"no-store"}).then(response=>response.ok?response.json():null).then(data=>{if(data?.aircraft)setGallery(data);}).catch(()=>{});
+    if(auth!=="signed-in"||supportingDataLoaded)return;
+    supportingDataLoaded=true;
+    api("/aircraft").then(value=>{const next=Array.isArray(value)?value:[];sharedAircraftTypes=next;setAircraftTypes(next);}).catch(()=>{supportingDataLoaded=false;});
+    fetch("/api/if/gallery",{cache:"no-store"}).then(response=>response.ok?response.json():null).then(data=>{if(data?.aircraft){sharedGallery=data;setGallery(data);}}).catch(()=>{});
   },[auth]);
 
   useEffect(()=>{
@@ -358,7 +374,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     finally{setGalleryLoading(false);}
   }
 
-  async function refresh(){await loadOrganization();}
+  async function refresh(){await loadOrganization(true);}
   async function signOut(){
     setBusy(true);setError("");
     try{
