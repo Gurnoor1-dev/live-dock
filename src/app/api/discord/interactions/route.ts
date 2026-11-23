@@ -9,7 +9,7 @@ import { openSecret,sealSecret } from "@/lib/security/secret-box";
 import { editDiscordMessage } from "@/lib/discord/components";
 export const runtime="nodejs";
 type Crew={userId:string;username?:string|null;role:number};
-type Schedule={id:string;crew?:Crew[]};
+type Schedule={id:string;status:number;crew?:Crew[]};
 type PilotTime={userId:string;username?:string;startSeconds:number};
 type Flight={pilotFlightTimes?:PilotTime[]};
 type Interaction={type:number;application_id?:string;token?:string;data?:{custom_id?:string};member?:{user?:{id?:string}};user?:{id?:string};message?:{id?:string;channel_id?:string;components?:Array<Record<string,unknown>>}};
