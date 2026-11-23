@@ -1,11 +1,20 @@
 import { NextResponse } from "next/server";
-import { getIFSession } from "@/lib/infinite-flight/session";
+import { requireIFSession } from "@/lib/infinite-flight/server";
 
 export async function GET() {
   try {
-    const session = await getIFSession();
-    return NextResponse.json({ authenticated: Boolean(session) }, { headers: { "Cache-Control": "no-store" } });
+    const { identity } = await requireIFSession();
+    return NextResponse.json({
+      authenticated: true,
+      profile: {
+        userId: identity.id,
+        username: identity.username,
+        displayName: identity.displayName
+      }
+    }, { headers: { "Cache-Control": "no-store" } });
   } catch {
-    return NextResponse.json({ authenticated: false }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ authenticated: false }, {
+      headers: { "Cache-Control": "no-store" }
+    });
   }
 }
