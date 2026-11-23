@@ -1,5 +1,6 @@
 import { createHash,randomBytes,randomUUID } from "node:crypto";
 import { NextRequest,NextResponse } from "next/server";
+import { and,eq,isNull } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { applicationCodes } from "@/lib/db/schema";
 import { requireIFSession,requireOrganizationAdmin } from "@/lib/infinite-flight/server";
@@ -8,3 +9,17 @@ const alphabet="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 function generate(){let out="";while(out.length<10)for(const b of randomBytes(16)){if(b<224&&out.length<10)out+=alphabet[b%alphabet.length]}return out}
 export async function GET(){try{const {session}=await requireIFSession();await requireOrganizationAdmin(session);const rows=await getDb().select({id:applicationCodes.id,issuedToIfcUserId:applicationCodes.issuedToIfcUserId,createdAt:applicationCodes.createdAt,expiresAt:applicationCodes.expiresAt,usedAt:applicationCodes.usedAt,usedByIfcUserId:applicationCodes.usedByIfcUserId,revokedAt:applicationCodes.revokedAt}).from(applicationCodes).orderBy(applicationCodes.createdAt);return NextResponse.json({codes:rows})}catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Unable to load codes."},{status:Number((error as {status?:number})?.status)||500})}}
 export async function POST(request:NextRequest){try{const {session,identity}=await requireIFSession();await requireOrganizationAdmin(session);const body=await request.json().catch(()=>({})) as {issuedToIfcUserId?:string;expiresInDays?:number};const code=generate(),days=Math.max(1,Math.min(90,Number(body.expiresInDays)||30));await getDb().insert(applicationCodes).values({id:randomUUID(),codeHash:createHash("sha256").update(code).digest("hex"),issuedToIfcUserId:body.issuedToIfcUserId?.trim()||null,createdByIfcUserId:identity.id,expiresAt:new Date(Date.now()+days*86400000)});return NextResponse.json({code,expiresInDays:days},{status:201})}catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Could not generate code."},{status:Number((error as {status?:number})?.status)||500})}}
+
+export async function PATCH(request:NextRequest){
+ try{
+  const {session}=await requireIFSession();
+  await requireOrganizationAdmin(session);
+  const body=await request.json().catch(()=>({})) as {id?:string;action?:string};
+  if(!body.id||body.action!=="revoke")return NextResponse.json({error:"Provide a code ID and revoke action."},{status:400});
+  const [revoked]=await getDb().update(applicationCodes).set({revokedAt:new Date()}).where(and(eq(applicationCodes.id,body.id),isNull(applicationCodes.usedAt),isNull(applicationCodes.revokedAt))).returning({id:applicationCodes.id});
+  if(!revoked)return NextResponse.json({error:"This code is already used, revoked, or does not exist."},{status:409});
+  return NextResponse.json({success:true,id:revoked.id});
+ }catch(error){
+  return NextResponse.json({error:error instanceof Error?error.message:"Could not revoke code."},{status:Number((error as {status?:number})?.status)||500});
+ }
+}
