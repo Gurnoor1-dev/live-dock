@@ -412,7 +412,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     let selected=aircraft.find(item=>item.id===aircraftId);
     try{
       // The organization aircraft list can change while this page is open.
-      // Re-read it immediately before publishing so a stale fleet slot cannot be selected.
+      // Re-read it immediately before publishing so the selected organisation aircraft still exists. Hangar visibility is intentionally not used as a blocker.
       const latestAircraft=await api("/live/organizations/"+ORGANIZATION_ID+"/aircraft") as Aircraft[];
       if(Array.isArray(latestAircraft)){
         selected=latestAircraft.find(item=>item.id===aircraftId);
@@ -423,9 +423,8 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
       setError("Could not refresh the current Infinite Flight fleet. Refresh the workspace and try again.");
       return;
     }
-    if(!selected||selected.status!==0||selected.visibility!==1||selected.isFleetActiveSlot!==true){
-      const reason=!selected?"This aircraft is no longer listed in the organisation fleet.":selected.visibility===2?"This aircraft is hangared.":selected.visibility!==1?"This aircraft is not marked visible.":selected.status!==0?"This aircraft record is inactive.":"This aircraft is outside the active fleet slots.";
-      setError(reason+" Infinite Flight only accepts new schedules for active, visible aircraft inside the current active fleet. Refresh the fleet and select another aircraft.");
+    if(!selected){
+      setError("This aircraft is no longer listed in the organisation fleet. Refresh the fleet and select an aircraft that is still listed.");
       return;
     }
     setBusy(true);setError("");setNotice("");
