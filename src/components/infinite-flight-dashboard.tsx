@@ -194,15 +194,25 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
 
   useEffect(()=>{
     if(auth!=="signed-in")return;
-    const timer=window.setInterval(()=>{void loadOrganization(true);},WORKSPACE_REFRESH_MS);
-    return()=>window.clearInterval(timer);
+    let lastActivityAt=Date.now();
+    const markActivity=()=>{lastActivityAt=Date.now();};
+    const refreshIfActive=()=>{if(document.visibilityState==="visible"&&Date.now()-lastActivityAt<15*60_000)void loadOrganization(true);};
+    window.addEventListener("pointerdown",markActivity,{passive:true});
+    window.addEventListener("keydown",markActivity);
+    window.addEventListener("touchstart",markActivity,{passive:true});
+    document.addEventListener("visibilitychange",refreshIfActive);
+    const timer=window.setInterval(refreshIfActive,WORKSPACE_REFRESH_MS);
+    return()=>{window.clearInterval(timer);window.removeEventListener("pointerdown",markActivity);window.removeEventListener("keydown",markActivity);window.removeEventListener("touchstart",markActivity);document.removeEventListener("visibilitychange",refreshIfActive);};
   },[auth,loadOrganization]);
 
   useEffect(()=>{
     if(auth!=="signed-in"||!aircraft.length)return;
     let alive=true;
     if(Object.keys(sharedPositions).length&&Date.now()-positionsRefreshedAt<WORKSPACE_REFRESH_MS)setPositions(sharedPositions);
+    let lastActivityAt=Date.now();
+    const markActivity=()=>{lastActivityAt=Date.now();};
     const refreshPositions=async()=>{
+      if(document.visibilityState!=="visible"||Date.now()-lastActivityAt>=15*60_000)return;
       if(Object.keys(sharedPositions).length&&Date.now()-positionsRefreshedAt<WORKSPACE_REFRESH_MS)return;
       const entries=await Promise.all(aircraft.map(async item=>{
         try{
@@ -219,8 +229,11 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
       setPositions(updated);
     };
     void refreshPositions();
+    window.addEventListener("pointerdown",markActivity,{passive:true});
+    window.addEventListener("keydown",markActivity);
+    window.addEventListener("touchstart",markActivity,{passive:true});
     const timer=window.setInterval(()=>{if(Date.now()-positionsRefreshedAt>=WORKSPACE_REFRESH_MS)void refreshPositions();},WORKSPACE_REFRESH_MS);
-    return()=>{alive=false;window.clearInterval(timer);};
+    return()=>{alive=false;window.clearInterval(timer);window.removeEventListener("pointerdown",markActivity);window.removeEventListener("keydown",markActivity);window.removeEventListener("touchstart",markActivity);};
   },[auth,aircraft]);
 
   useEffect(()=>{

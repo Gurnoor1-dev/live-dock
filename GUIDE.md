@@ -41,30 +41,25 @@ IF_OAUTH_CLIENT_ID=your_confidential_client_id
 IF_OAUTH_CLIENT_SECRET=your_confidential_client_secret
 IF_OAUTH_REDIRECT_URI=http://localhost:3000/api/auth/if/callback
 IF_SESSION_SECRET=base64_encoded_32_byte_secret
+ADMIN_CREDENTIALS_SECRET=separate_base64_encoded_32_byte_secret
+DISCORD_BOT_TOKEN=your_discord_bot_token
+DISCORD_PUBLIC_KEY=your_discord_application_public_key
+CRON_SECRET=strong_random_bearer_secret
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-Generate the session encryption key with:
-
-```bash
-openssl rand -base64 32
-```
-
-Use a different strong secret in each environment. Never commit `.env.local`, publish the client secret, or put server secrets in `NEXT_PUBLIC_*` variables.
+Generate independent AES-256-GCM secrets with `openssl rand -base64 32`. Generate a separate high-entropy `CRON_SECRET`. Never commit `.env.local`, publish the client/bot secret, or put server secrets in `NEXT_PUBLIC_*` variables.
 
 ### Vercel production variables
 
-In Vercel → `virtual-blue-live` → Settings → Environment Variables, add the following for **Production** (and Preview if needed):
+The Vercel project `virtual-blue-live` already has the Infinite Flight OAuth values, `IF_SESSION_SECRET`, `ADMIN_CREDENTIALS_SECRET`, `DATABASE_URL`, `DATABASE_URL_UNPOOLED` and `CRON_SECRET` configured. Before enabling Discord, add:
 
 | Name | Value |
 | --- | --- |
-| `IF_OAUTH_CLIENT_ID` | Client ID from Infinite Flight |
-| `IF_OAUTH_CLIENT_SECRET` | Client secret from Infinite Flight |
-| `IF_OAUTH_REDIRECT_URI` | `https://virtual-blue-live.vercel.app/api/auth/if/callback` |
-| `IF_SESSION_SECRET` | A unique output from `openssl rand -base64 32` |
-| `NEXT_PUBLIC_APP_URL` | `https://virtual-blue-live.vercel.app` |
+| `DISCORD_BOT_TOKEN` | Discord bot token |
+| `DISCORD_PUBLIC_KEY` | Discord application public key |
 
-Redeploy after adding or changing environment variables. Do not send the client secret or session secret in chat or commit them to GitHub.
+The Discord bot token and public key are not currently configured. Do not send them in chat; add them as server-only Vercel environment variables. The interactions endpoint is `https://virtual-blue-live.vercel.app/api/discord/interactions`.
 
 ## 4. Local development
 
@@ -125,30 +120,28 @@ The proxy also allowlists the documented public sessions, flights, ATC, user, ai
 
 ## 7. Infinite Flight data rules — mandatory
 
-The Infinite Flight API owns its returned data. This app must follow the official [API usage and data rules](https://infiniteflight.com/guide/developer-reference/api-rules/usage-and-data-rules):
+Read and follow the official [API usage and data rules](https://infiniteflight.com/guide/developer-reference/api-rules/usage-and-data-rules) before enabling this portal for pilots.
 
-- Do not write API responses or derived API data to Supabase/Postgres, files, logs, exports or analytics storage.
-- Do not accumulate historical responses, tracks, replays, flight logs, statistics, scores or leaderboards.
-- A cache may keep only the latest response per request. Replace it on refresh.
-- Cache at least the documented minimum polling interval and discard live/user data no later than one hour after fetching.
-- Stop polling after 15 minutes without user activity.
-- Do not share user-specific Live data between users or devices.
-- Do not use API data to train, fine-tune, evaluate or improve AI/ML models.
-- Use API data only for simulated-flight features, not real-world aviation.
+- Do not persist raw Live API responses, aircraft positions, telemetry, flight logs, pilot flight-time records or statistics derived from those responses.
+- The browser workspace uses a 90-second in-memory cache. It is not a durable database cache and is not shared across users or devices.
+- Dashboard polling pauses when the tab is hidden and after 15 minutes without user interaction.
+- The operations workflow tables store application-owned actions (verification, a pilot's request, approval state, Discord message IDs and idempotency state). They also need references to Infinite Flight schedule/aircraft/user IDs to carry out those actions. The API rules may treat those references as Live API data; obtain written permission from Infinite Flight before production use if that interpretation is not explicitly covered by your approval.
+- Crew-request, Auto-Crew, Schedule Reviser and Notifier messages send Live organisation/flight details to Discord. This is data sharing. Do not enable these integrations or deploy the cron jobs until Infinite Flight has approved this use in writing.
+- Do not use Live API data to train, fine-tune, evaluate or improve AI/ML models. Use it only for simulated-flight features.
 
-The Next.js proxy uses process-memory TTL caching only. Cache keys are scoped by a one-way hash of the signed-in access token plus a random HTTP-only device identifier, so cached Live data is not shared across a user's devices. They are not written to a database or logs, and are invalidated after schedule mutations. The current dashboard refreshes on user action and does not run a background polling loop.
-
-The app keeps only OAuth tokens in an encrypted, HTTP-only cookie. It does not persist Infinite Flight API responses in backend tables. User-entered preferences can be added later, provided they are not copies or derived records of API data.
+The database intentionally does not store raw aircraft positions, telemetry or flight-log responses. Infinite Flight remains the source of truth for live schedules, fleet, crew and flight records. Neon stores app-owned onboarding and workflow state; it is not a mirror of the Live API.
 
 ## 8. Rate limits and refresh behaviour
 
-- User token: 5 requests/minute; 20/minute for a user with Infinite Flight Pro.
+- User token: 5 requests/minute; 20/minute for a user with Infinite Flight Pro or an approved testing allowance.
 - `GET /sessions`: no more often than every 10 minutes.
 - Session flight lists, ATC and airport status: no more often than every 15 seconds.
 - User/profile-style endpoints: 5 minutes.
 - Aircraft/airport reference data: 60 minutes.
 - On HTTP 429, respect the upstream `Retry-After` header before retrying.
-- Do not poll while the portal is idle or hidden. The current implementation is manual-refresh only.
+- The shared dashboard refresh interval is 90 seconds while visible and active; polling stops after 15 minutes of inactivity and while the tab is hidden.
+- Server-side automation is configured for five-minute runs, staggered to avoid overlapping jobs. Each worker scans a rotating batch of up to eight aircraft. This batch size assumes the approved 20-requests/minute allowance; reduce it if the actual account quota is lower.
+- Vercel Cron frequency depends on the Vercel plan. The cron jobs do not run until a deployment containing `vercel.json` is made.
 
 ## 9. Supabase status
 
@@ -184,33 +177,30 @@ After the Vercel project is connected to GitHub and the production environment v
 
 ## 12. Implementation status
 
-**Implemented:** Infinite Flight OAuth2 confidential-client login with PKCE, encrypted cookie session, refresh-token rotation, sign-out, Next.js-only API proxy, method/path allowlist, in-memory TTL cache, organisation list, fleet read view, member list, schedule read view, schedule creation/deletion and crew assignment UI.
+**Implemented in source:** Infinite Flight OAuth2 confidential-client login with PKCE, encrypted cookie session and refresh-token rotation; per-admin encrypted operator sessions; app verification with single-use application codes; fleet accordion schedules and seat requests; Discord Components V2 message builders and signed interaction handling; My Flights; Organisation Dock activity/hub estimates; admin schedule, application, user, integration and feature pages; 90-second shared workspace refresh; Auto-Crew, Schedule Reviser and Notifier workers; five-minute staggered cron configuration.
 
-**Available through the API proxy but not yet surfaced in the UI:** public live sessions/flight tracker views, individual aircraft position/flight logs, schedule editing, flight-plan updates, crew reordering and schedule reordering.
+**Runtime setup still required:** add `DISCORD_BOT_TOKEN` and `DISCORD_PUBLIC_KEY` to Vercel, invite/configure the bot, set the Discord interactions endpoint to `https://virtual-blue-live.vercel.app/api/discord/interactions`, and configure channel/role IDs in Admin → Integrations. The cron secret and admin credential encryption key are already configured in Vercel.
 
-**Not provided by PublicApi v3:** organisation aircraft creation/deletion. Manage those in Infinite Flight.
+**Verification:** the latest GitHub CI run completed lint, TypeScript and production build successfully. The Neon migration was tested on a temporary branch, applied to the production branch and the new tables/indexes were verified. No Vercel deployment was created; the production deployment remains unchanged.
 
-The original Fleet Mode assets and `example/fleet.html` remain under `example/` as a visual/behaviour reference.
+**Important:** obtain Infinite Flight's written approval for storing Live API references and sending organisation/flight details to Discord before enabling these workflows for pilots. The cron jobs are dormant until a deployment is made.
 
-
-## 8. Neon Postgres with Drizzle
+## 13. Neon Postgres with Drizzle
 
 The application uses Neon Postgres through a server-side pooled `DATABASE_URL` and Drizzle ORM. It does not require Neon Auth, AI Gateway, Functions, or Realtime services.
 
 ### Connection variables
 
 - `DATABASE_URL`: pooled connection for application requests (hostname contains `-pooler`).
-- `DATABASE_URL_UNPOOLED`: direct, non-pooled connection used only by Drizzle migrations.
+- `DATABASE_URL_UNPOOLED`: direct, non-pooled connection used only for Drizzle migrations.
 
-Both variables are stored as sensitive Vercel environment variables for Production, Preview and Development. For local work, put both in `.env.local`. Never expose either through a `NEXT_PUBLIC_*` variable or commit them.
+Both are sensitive Vercel environment variables. Never expose either through a `NEXT_PUBLIC_*` variable or commit them.
 
 ### Schema and migrations
 
-The initial migration is committed at `drizzle/0000_initial_app_settings.sql`, with its journal at `drizzle/meta/_journal.json`. It creates `public.app_settings` with:
+Migrations are committed under `drizzle/` with the journal at `drizzle/meta/_journal.json`. `0000_initial_app_settings.sql` creates `public.app_settings`; `0001_virtual_blue_operations.sql` adds application codes, user verification, Discord settings, crew requests, active crew assignments, per-admin operator sessions, automation alerts, audit logs and the notification outbox.
 
-- `key` — text primary key
-- `value` — non-null JSONB, default `{}`
-- `updated_at` — non-null timestamptz, default `now()`
+The `app_settings` columns are `key` (text primary key), `value` (JSONB, default `{}`) and `updated_at` (timestamptz).
 
 Run schema changes through Drizzle:
 
@@ -219,13 +209,11 @@ npm run db:generate
 npm run db:migrate
 ```
 
-`drizzle.config.ts` prefers `DATABASE_URL_UNPOOLED` and rejects a pooled hostname, so migrations cannot accidentally run through PgBouncer. Application queries continue to use pooled `DATABASE_URL`.
+`drizzle.config.ts` prefers `DATABASE_URL_UNPOOLED` and rejects a pooled hostname. Application queries use pooled `DATABASE_URL`.
 
 ### Application data boundaries
 
-Use `src/lib/db/app-settings.ts` for app-owned settings CRUD (`getAppSetting`, `setAppSetting`, `deleteAppSetting`). This is a small configuration store, not a mirror of Infinite Flight.
-
-Infinite Flight remains the source of truth for live organisation, aircraft, members, schedules and flight records. Do not copy API responses, positions, telemetry, or derived live data into Postgres. Existing OAuth2 authentication and encrypted HTTP-only session cookies remain in Next.js; Neon Auth is not used. Vercel Blob continues to hold aircraft gallery files and its existing gallery manifest.
+Use `src/lib/db/app-settings.ts` for app-owned settings CRUD. The operations schema stores onboarding and application workflow state; it does not store raw Live API responses, aircraft positions, telemetry or flight-log payloads. It does store schedule/aircraft/user references required to process pilot requests and automation. Confirm with Infinite Flight that retaining these references is permitted before production use, as described in section 7. OAuth2 authentication and encrypted HTTP-only sessions remain in Next.js; Neon Auth is not used.
 
 ### Health check
 
