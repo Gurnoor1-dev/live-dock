@@ -16,18 +16,24 @@ const REQUESTABLE=[1,2,3,4];
 const hasOpenSeat=(schedule:Schedule)=>!(schedule.crew||[]).some(c=>c.role===0)||!(schedule.crew||[]).some(c=>c.role===1);
 export type StickyPanelResult={exists:boolean;created?:boolean;updated?:boolean;messageId?:string;aircraftCount?:number;scheduleCount?:number;reason?:string};
 export function stickyPanelPayload(aircraft:Aircraft[],schedules:Schedule[]){
- const grouped=aircraft.map(a=>({aircraft:a,legs:schedules.filter(s=>s.aircraftId===a.id&&REQUESTABLE.includes(s.status)&&hasOpenSeat(s)).sort((x,y)=>x.sequence-y.sequence)})).filter(x=>x.legs.length);
- const options=grouped.slice(0,25).map(({aircraft:a,legs})=>({label:a.registration.slice(0,100),value:a.id,description:(legs.length+" available schedule"+(legs.length===1?"":"s")).slice(0,100)}));
- const total=grouped.reduce((n,x)=>n+x.legs.length,0);
- const lines=grouped.slice(0,12).map(({aircraft:a,legs})=>`• **${a.registration}** — ${legs.length} live schedule${legs.length===1?"":"s"}`);
- const text=grouped.length?lines.join("\n")+(grouped.length>12?"\n…and more aircraft available in the selector.":""):"No aircraft currently have requestable live schedules.";
+ const requestable=schedules.filter(s=>REQUESTABLE.includes(s.status));
+ const grouped=aircraft.map(a=>({aircraft:a,legs:requestable.filter(s=>s.aircraftId===a.id).sort((x,y)=>x.sequence-y.sequence)})).filter(x=>x.legs.length);
+ const bookable=grouped.filter(({legs})=>legs.some(hasOpenSeat));
+ const options=bookable.slice(0,25).map(({aircraft:a,legs})=>({label:a.registration.slice(0,100),value:a.id,description:(legs.filter(hasOpenSeat).length+" open schedule"+(legs.filter(hasOpenSeat).length===1?"":"s")).slice(0,100)}));
+ const total=requestable.length;
+ const lines=grouped.flatMap(({aircraft:a,legs})=>legs.map(leg=>{
+  const occupied=(leg.crew||[]).filter(c=>c.role===0||c.role===1).length;
+  const seats=occupied===2?"FULL":occupied+"/2 crew";
+  return `• **${a.registration} · ${leg.callsign}** — ${leg.originIcao} → ${leg.destinationIcao} · ${seats}`;
+ })).slice(0,18);
+ const summary=lines.length?lines.join("\\n")+(total>18?"\\n…and more live schedules are available in the selector.":""):"No requestable live schedules are currently published.";
  return {flags:32768,allowed_mentions:{parse:[]},components:[
-  {type:10,content:"# ✈️ STICKY CREW\n**Virtual Blue · Crew booking desk**\nSelect one or more aircraft below to explore their published Infinite Flight schedules and request an open crew seat."},
+  {type:10,content:"# ✈️ STICKY CREW\\n**Virtual Blue · Crew booking desk**\\nSelect an aircraft below to view its published Infinite Flight schedules and request an open crew seat."},
   {type:14,divider:true,spacing:1},
-  {type:10,content:`**${grouped.length} aircraft** · **${total} live schedules**\n${text}`},
+  {type:10,content:`**${grouped.length} aircraft** · **${total} live schedules**\\n${summary}`},
   {type:14,divider:true,spacing:1},
   {type:1,components:[{type:3,custom_id:"sticky:aircraft",placeholder:"Select aircraft to view schedules…",min_values:1,max_values:Math.max(1,Math.min(25,options.length)),options:options.length?options:[{label:"No scheduled aircraft available",value:"none",description:"Publish a live schedule in Infinite Flight first"}],disabled:!options.length}]},
-  {type:10,content:"*Only live, requestable schedules are listed. Crew requests are reviewed by organisation administrators.*"}
+  {type:10,content:"*Live crew occupancy refreshes automatically. Only schedules with an open seat can be requested.*"}
  ]};
 }
 async function storedPanel(){const [row]=await getDb().select().from(appSettings).where(eq(appSettings.key,PANEL_KEY)).limit(1);return (row?.value||{}) as {channelId?:string;messageId?:string};}
