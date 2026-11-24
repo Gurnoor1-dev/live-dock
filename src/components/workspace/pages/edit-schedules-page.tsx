@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState, type DragEvent } from "react";
+/* The editor draft is intentionally reset when the selected live record changes. */
+/* eslint-disable react-hooks/set-state-in-effect */
+
+import { useCallback, useEffect, useMemo, useState, type DragEvent } from "react";
 import {
   AlertTriangle, ArrowDown, ArrowUp, Check, CheckCircle2, ChevronRight, ClipboardCopy, Clock3,
   Code2, FileJson, GripVertical, Layers3, Plane, RefreshCw, Save, Search,
@@ -78,16 +81,16 @@ export function EditSchedulesPage() {
 
   const records = schedules as Schedule[];
   const selected = records.find(item => item.id === selectedId) || null;
-  const aircraftName = (id: string) => {
+  const aircraftName = useCallback((id: string) => {
     const item = aircraft.find(value => value.id === id);
     return item ? item.registration + " · " + (aircraftTypes.find(t => t.id === item.aircraftId)?.name || "Aircraft") : "Aircraft unavailable";
-  };
+  }, [aircraft, aircraftTypes]);
   const filtered = useMemo(() => records.filter(item => {
     const text = (item.callsign + " " + item.originIcao + " " + item.destinationIcao + " " + aircraftName(item.aircraftId)).toLowerCase();
     return (!search || text.includes(search.toLowerCase())) &&
       (aircraftFilter === "all" || item.aircraftId === aircraftFilter) &&
       (statusFilter === "all" || String(item.status) === statusFilter);
-  }), [records, search, aircraftFilter, statusFilter, aircraft, aircraftTypes]);
+  }), [records, search, aircraftFilter, statusFilter, aircraftName]);
 
   useEffect(() => {
     if (!selectedId && records.length) setSelectedId(records[0].id);
@@ -152,10 +155,11 @@ export function EditSchedulesPage() {
     } catch { return { valid: false, value: null, message: "JSON is invalid. Check commas, braces and quotation marks." }; }
   }, [flightPlanText]);
 
+  const selectedAircraftId = selected?.aircraftId;
   const groupSchedules = useMemo(() => {
-    if (!selected) return [];
-    return records.filter(item => item.aircraftId === selected.aircraftId).sort((a,b) => a.sequence - b.sequence);
-  }, [records, selected?.aircraftId]);
+    if (!selectedAircraftId) return [];
+    return records.filter(item => item.aircraftId === selectedAircraftId).sort((a,b) => a.sequence - b.sequence);
+  }, [records, selectedAircraftId]);
 
   const queueAction = (action: PendingAction) => { setError(""); setNotice(""); setPending(action); };
   const selectSchedule = (item: Schedule) => {
@@ -408,7 +412,7 @@ export function EditSchedulesPage() {
               <label className={styles.field}>Origin ICAO<input maxLength={8} value={draft.originIcao} onChange={e=>setDraft({...draft,originIcao:e.target.value.toUpperCase()})}/><small>1–8 alphanumeric characters.</small></label>
               <label className={styles.field}>Destination ICAO<input maxLength={8} value={draft.destinationIcao} onChange={e=>setDraft({...draft,destinationIcao:e.target.value.toUpperCase()})}/><small>1–8 alphanumeric characters.</small></label>
             </div>
-            <div className={styles.planInfo}><Plane size={18}/><div><b>Aircraft assignment · {aircraftName(selected.aircraftId)}</b><p>Read-only: Infinite Flight's Update Schedule endpoint does not accept an aircraftId. Moving a leg to another aircraft requires a separate recreate workflow.</p></div></div>
+            <div className={styles.planInfo}><Plane size={18}/><div><b>Aircraft assignment · {aircraftName(selected.aircraftId)}</b><p>Read-only: Infinite Flight&apos;s Update Schedule endpoint does not accept an aircraftId. Moving a leg to another aircraft requires a separate recreate workflow.</p></div></div>
             {selected.flightPlan && !flightPlanText.trim().startsWith("{") && <p className={styles.footnote}>This schedule has a legacy or unrecognized flight-plan value. The details update will leave it out of the ScheduleRequest; use the dedicated Flight Plan tab to replace it with a structured FlightPlanInfo object.</p>}
             <div className={styles.scheduleMode}><div><b>Timeless schedule</b><small>Allow the pilot to fly this leg at any time without scheduled departure or arrival values.</small></div><button type="button" role="switch" aria-checked={draft.isTimeless} className={draft.isTimeless?styles.switchOn:styles.switchOff} onClick={()=>setDraft({...draft,isTimeless:!draft.isTimeless})}><span/></button></div>
             {!draft.isTimeless&&<div className={styles.formGrid}><label className={styles.field}>Departure date & time<input type="datetime-local" value={draft.departure} onChange={e=>setDraft({...draft,departure:e.target.value})}/><small>Entered in your local timezone; sent to Infinite Flight in UTC.</small></label><label className={styles.field}>Arrival date & time<input type="datetime-local" value={draft.arrival} onChange={e=>setDraft({...draft,arrival:e.target.value})}/><small>Must be later than departure.</small></label></div>}
@@ -421,7 +425,7 @@ export function EditSchedulesPage() {
           </div>}
 
           {section==="flightplan"&&<div className={styles.formArea}>
-            <div className={styles.sectionIntro}><div><h4>Stored flight plan</h4><p>Update the structured flight plan independently from the schedule's callsign and timings.</p></div><span className={styles.readonlyPill}>Dedicated API operation</span></div>
+            <div className={styles.sectionIntro}><div><h4>Stored flight plan</h4><p>Update the structured flight plan independently from the schedule&apos;s callsign and timings.</p></div><span className={styles.readonlyPill}>Dedicated API operation</span></div>
             <div className={styles.planInfo}><Code2 size={18}/><div><b>FlightPlanInfo JSON</b><p>Infinite Flight expects a JSON object containing 1–500 flightPlanItems. Each top-level waypoint needs a name or identifier and a valid location. Procedures may contain child waypoints.</p></div></div>
             <div className={styles.planToolbar}><span>ADVANCED JSON EDITOR</span><button className={styles.textButton} onClick={()=>{setFlightPlanText(parseFlightPlan(selected.flightPlan));setDirtyFlightPlan(false);}}><Undo2 size={14}/> Restore current plan</button><button className={styles.textButton} onClick={()=>{try{setFlightPlanText(JSON.stringify(JSON.parse(flightPlanText),null,2));}catch{}}}>Format JSON</button></div>
             <textarea className={styles.jsonEditor} spellCheck={false} value={flightPlanText} onChange={e=>{setFlightPlanText(e.target.value);setDirtyFlightPlan(true);}} placeholder={'{\n  "flightPlanItems": [\n    {\n      "name": "VIDP",\n      "identifier": "VIDP",\n      "location": { "latitude": 28.5562, "longitude": 77.1000 }\n    }\n  ]\n}'}/>
@@ -431,9 +435,9 @@ export function EditSchedulesPage() {
           </div>}
 
           {section==="crew"&&<div className={styles.formArea}>
-            <div className={styles.sectionIntro}><div><h4>Crew & schedule sequence</h4><p>Review assigned crew and adjust this aircraft's schedule order.</p></div><span className={styles.readonlyPill}>{groupSchedules.length} aircraft schedules</span></div>
+            <div className={styles.sectionIntro}><div><h4>Crew & schedule sequence</h4><p>Review assigned crew and adjust this aircraft&apos;s schedule order.</p></div><span className={styles.readonlyPill}>{groupSchedules.length} aircraft schedules</span></div>
             <div className={styles.crewSummary}><div><span>Captain</span><b>{selected.crew?.find(c=>c.role===0)?.username||"Unassigned"}</b></div><div><span>First officer</span><b>{selected.crew?.find(c=>c.role===1)?.username||"Unassigned"}</b></div><div><span>Crew total</span><b>{selected.crew?.length||0}/2</b></div></div>
-            <p className={styles.footnote}>Direct crew changes are written to Infinite Flight. If a pilot's assignment is tied to a pending LiveDock approval request, use the approval workflow so its internal request records remain consistent.</p>
+            <p className={styles.footnote}>Direct crew changes are written to Infinite Flight. If a pilot&apos;s assignment is tied to a pending LiveDock approval request, use the approval workflow so its internal request records remain consistent.</p>
             <div className={styles.crewManager}>
               <div className={styles.sequenceHeader}><div><h4>Manage assigned crew</h4><p>Assign a pilot, change their seat or remove an existing assignment. Infinite Flight validates the final crew state.</p></div><span>CREW WRITE ACCESS</span></div>
               {(selected.crew||[]).map(crew=><div className={styles.crewMemberRow} key={crew.userId}><div><b>{crew.username||"Unknown pilot"}</b><span>{crew.role===0?"Captain":"First Officer"} · {crew.userId}</span></div><button className={styles.dangerButton} onClick={()=>removeCrewMember(crew)}><Trash2 size={13}/> Remove</button></div>)}
