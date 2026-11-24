@@ -13,7 +13,9 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "prebuild": "node scripts/generate-aircraft-images.mjs",
+    "predev": "node scripts/generate-aircraft-images.mjs"
   },
   "dependencies": {
     "lucide-react": "0.468.0",
