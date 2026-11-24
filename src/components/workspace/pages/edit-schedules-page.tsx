@@ -126,7 +126,7 @@ export function EditSchedulesPage() {
         if (!item || typeof item !== "object" || Array.isArray(item)) return "Every flight-plan item must be an object.";
         const point = item as Record<string, unknown>;
         const label = typeof point.name === "string" && point.name.trim() ? point.name : point.identifier;
-        if (typeof label !== "string" || !label.trim() || label.length > 32 || /[\\u0000-\\u001f]/.test(label)) return "Each waypoint needs a 1–32 character name or identifier without control characters.";
+        if (typeof label !== "string" || !label.trim() || label.length > 32 || /[\u0000-\u001f]/.test(label)) return "Each waypoint needs a 1–32 character name or identifier without control characters.";
         if (Array.isArray(point.children)) {
           if (!point.children.length) return "Procedure items must contain child waypoints.";
           for (const child of point.children) {
@@ -201,7 +201,7 @@ export function EditSchedulesPage() {
     if (!draft.isTimeless && (!draft.departure || !draft.arrival || Number.isNaN(departureDate?.getTime()) || Number.isNaN(arrivalDate?.getTime()) || arrivalDate!.getTime() <= departureDate!.getTime())) {
       setError("Arrival must be later than departure. Choose valid local date and times."); return;
     }
-    if (!draft.callsign.trim() || /[\\u0000-\\u001f]/.test(draft.callsign) || !/^[A-Za-z0-9]{1,8}$/.test(draft.originIcao.trim()) || !/^[A-Za-z0-9]{1,8}$/.test(draft.destinationIcao.trim())) {
+    if (!draft.callsign.trim() || /[\u0000-\u001f]/.test(draft.callsign) || !/^[A-Za-z0-9]{1,8}$/.test(draft.originIcao.trim()) || !/^[A-Za-z0-9]{1,8}$/.test(draft.destinationIcao.trim())) {
       setError("Enter a callsign and 1–8 character alphanumeric airport codes. Control characters are not allowed."); return;
     }
     if (!Number.isInteger(Number(draft.flightType)) || Number(draft.flightType) < 0 || Number(draft.flightType) > 12) {
