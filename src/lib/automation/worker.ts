@@ -33,7 +33,7 @@ export async function runAutoCrew(){
   const [locked]=await getDb().select({id:crewRequests.id}).from(crewRequests).where(and(eq(crewRequests.scheduleId,next.id),inArray(crewRequests.status,["pending","processing","approved"]))).limit(1);if(locked){results.push({registration:item.registration,eligible:false,reason:"crew_request_exists"});continue}
   const opened=await openAlert(`auto:${item.id}:${next.id}`,"auto_crew",item.id,next.id);if(!opened){results.push({registration:item.registration,duplicate:true});continue}alertId=opened
   const sent=await sendDiscordMessage(cfg.autoCrewChannelId,autoCrewMessage(cfg.autoCrewRoleId||"",alertId,item.registration,scheduleInfo(next,item.registration)));await getDb().update(automationAlerts).set({discordMessageId:sent.id}).where(eq(automationAlerts.id,alertId));results.push({registration:item.registration,alertId});
- }catch(error){if(alertId)await getDb().update(automationAlerts).set({status:"failed"}).where(eq(automationAlerts.id,alertId));results.push({registration:item.registration,error:error instanceof Error?error.message:"scan_failed"})}}
+ }catch(error){if(alertId)await getDb().update(automationAlerts).set({status:"failed"}).where(eq(automationAlerts.id,alertId));results.push({registration:item.registration,error:error instanceof Error?error.message:"scan_failed"});if((error as {status?:number})?.status===429)break}}
  return{scanned:batch.length,results};
 }
 export async function runScheduleReviser(){
@@ -48,7 +48,7 @@ export async function runScheduleReviser(){
   const currentCrew=current.crew||[];const bothSeatsFilled=currentCrew.some(c=>c.role===0)&&currentCrew.some(c=>c.role===1);let latest:Flight|undefined;if(bothSeatsFilled){try{const history=await ifFetch<Flight[]|{items?:Flight[]}>(`/live/aircraft/${item.id}/flights?page=1&pageSize=1`,operator.session);latest=Array.isArray(history)?history[0]:(history.items||[])[0]}catch(error){if((error as {errorCode?:number})?.errorCode!==6)throw error}}const verified=bothSeatsFilled?takeoffPilot(latest,currentCrew):null;if(bothSeatsFilled&&!verified){results.push({registration:item.registration,eligible:false,reason:"takeoff_pilot_unverified"});continue}const takeoff=verified?.username||"Not required — an open seat is available";
   const opened=await openAlert(`reviser:${item.id}:${current.id}`,"schedule_reviser",item.id,current.id);if(!opened){results.push({registration:item.registration,duplicate:true});continue}alertId=opened
   const sent=await sendDiscordMessage(cfg.scheduleReviserChannelId,reviserMessage(cfg.waitlistRoleId||"",alertId,item.registration,current.destinationIcao,scheduleInfo(current,item.registration)+`\n**Takeoff Pilot:** ${takeoff}`));await getDb().update(automationAlerts).set({discordMessageId:sent.id}).where(eq(automationAlerts.id,alertId));results.push({registration:item.registration,alertId});
- }catch(error){if(alertId)await getDb().update(automationAlerts).set({status:"failed"}).where(eq(automationAlerts.id,alertId));results.push({registration:item.registration,error:error instanceof Error?error.message:"reviser_failed"})}}
+ }catch(error){if(alertId)await getDb().update(automationAlerts).set({status:"failed"}).where(eq(automationAlerts.id,alertId));results.push({registration:item.registration,error:error instanceof Error?error.message:"reviser_failed"});if((error as {status?:number})?.status===429)break}}
  return{scanned:batch.length,results};
 }
 export async function runNotifier(){
