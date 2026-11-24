@@ -73,6 +73,10 @@ export async function publishStickyCrewPanel(session:IFSession):Promise<StickyPa
  await savePanel(channelId,sent.id);
  return{exists:true,created:true,messageId:sent.id,aircraftCount:aircraft.filter(a=>schedules.some(s=>s.aircraftId===a.id&&REQUESTABLE.includes(s.status))).length,scheduleCount:schedules.filter(s=>REQUESTABLE.includes(s.status)).length};
 }
+async function refreshStoredPanelFromData(aircraft:Aircraft[],schedules:Schedule[]){
+ const stored=await storedPanel();if(!stored.channelId||!stored.messageId)return;
+ try{await editDiscordMessage(stored.channelId,stored.messageId,stickyPanelPayload(aircraft,schedules));}catch{}
+}
 export async function stickyCrewAircraftSelection(discordId:string,values:string[],session:IFSession){
  if(!values.length||values.includes("none"))throw new Error("Choose at least one aircraft with a live schedule.");
  const [raw,aircraftRaw]=await Promise.all([
@@ -80,6 +84,7 @@ export async function stickyCrewAircraftSelection(discordId:string,values:string
   ifFetch<Aircraft[]>(`/live/organizations/${ORGANIZATION_ID}/aircraft`,session)
  ]);
  const schedules=Array.isArray(raw)?raw:raw.items||[];
+ await refreshStoredPanelFromData(aircraftRaw||[],schedules);
  const selected=new Set(values);
  const aircraft=(aircraftRaw||[]).filter(a=>selected.has(a.id));
  const legs=schedules.filter(s=>selected.has(s.aircraftId)&&REQUESTABLE.includes(s.status)).sort((a,b)=>a.sequence-b.sequence);
