@@ -572,3 +572,17 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
  .home-dashboard-layout .map-aircraft-popup{position:relative!important;inset:auto!important;grid-column:1!important;width:100%!important;max-height:72vh!important;margin:0!important;overflow-y:auto!important;border-radius:16px!important}
  .home-dashboard-layout .aircraft-popup-grabber{display:block!important}
 }
+
+
+/* Admin schedule manual automation controls */
+.admin-automation-section{margin-top:18px}
+.admin-automation-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.admin-automation-card{display:flex;flex-direction:column;align-items:flex-start;gap:12px;min-width:0;padding:18px;border:1px solid var(--border,rgba(128,128,128,.22));border-radius:14px;background:var(--surface,transparent)}
+.admin-automation-card h3{margin:0 0 5px;font-size:15px;font-weight:650}
+.admin-automation-card p{margin:0;color:var(--muted);font-size:13px;line-height:1.55}
+.admin-automation-card .primary-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:auto}
+.admin-automation-icon{display:grid;place-items:center;width:36px;height:36px;border:1px solid var(--border);border-radius:10px}
+.admin-automation-card .form-error,.admin-automation-card .form-success{width:100%;margin:0;font-size:12px;overflow-wrap:anywhere}
+.admin-automation-card .form-error small,.admin-automation-card .form-success small{display:block;margin-top:5px}
+.admin-automation-note{margin:14px 0 0;font-size:12px;line-height:1.55}
+@media(max-width:720px){.admin-automation-grid{grid-template-columns:1fr}.admin-automation-card{padding:15px}}
