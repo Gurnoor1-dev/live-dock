@@ -23,7 +23,8 @@ function aircraftState(position:PositionLike|undefined,aircraftId:string,schedul
 }
 export function SchedulesPage(){
  const {active,aircraft,aircraftTypes,schedules,positions,dateTime}=useWorkspace();
- const [airports,setAirports]=useState<Airport[]>([]);\n useEffect(()=>{if(active!=="Schedules")return;let alive=true;fetch("/api/if/airports",{cache:"force-cache"}).then(async r=>{const d=await r.json();if(alive&&r.ok)setAirports(Array.isArray(d.result)?d.result:Array.isArray(d)?d:[])}).catch(()=>{});return()=>{alive=false};},[active]);
+ const [airports,setAirports]=useState<Airport[]>([]);
+ useEffect(()=>{if(active!=="Schedules")return;let alive=true;fetch("/api/if/airports",{cache:"force-cache"}).then(async r=>{const d=await r.json();if(alive&&r.ok)setAirports(Array.isArray(d.result)?d.result:Array.isArray(d)?d:[])}).catch(()=>{});return()=>{alive=false};},[active]);
  const [expanded,setExpanded]=useState<string|null>(null);
  const [requests,setRequests]=useState<SeatRequest[]>([]);
  const [choice,setChoice]=useState<{scheduleId:string;seat:"captain"|"first_officer"}|null>(null);
