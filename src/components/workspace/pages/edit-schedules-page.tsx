@@ -262,7 +262,8 @@ export function EditSchedulesPage() {
     if (![1,6].includes(schedule.status)) {
       setError("Infinite Flight only allows reordering schedules with Scheduled or InFlight status."); return;
     }
-    if (schedule.id === afterId) return;
+    const currentIndex = groupSchedules.findIndex(item => item.id === schedule.id);
+    if (schedule.id === afterId || (!afterId && currentIndex === 0) || (afterId && groupSchedules[currentIndex - 1]?.id === afterId)) return;
     const after = afterId ? groupSchedules.find(item => item.id === afterId) : null;
     if (after && after.aircraftId !== schedule.aircraftId) return;
     queueAction({
