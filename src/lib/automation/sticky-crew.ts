@@ -12,7 +12,8 @@ type Crew={userId:string;username?:string|null;role:number};
 type Schedule={id:string;aircraftId:string;callsign:string;flightType:number;originIcao:string;destinationIcao:string;status:number;sequence:number;isTimeless:boolean;scheduledDepartureUtc?:string;crew:Crew[]};
 const PANEL_KEY="sticky_crew_panel";
 const CONFIG_KEY="sticky_crew_config";
-const REQUESTABLE=[1,2,3,4];\nconst hasOpenSeat=(schedule:Schedule)=>!(schedule.crew||[]).some(c=>c.role===0)||!(schedule.crew||[]).some(c=>c.role===1);
+const REQUESTABLE=[1,2,3,4];
+const hasOpenSeat=(schedule:Schedule)=>!(schedule.crew||[]).some(c=>c.role===0)||!(schedule.crew||[]).some(c=>c.role===1);
 export type StickyPanelResult={exists:boolean;created?:boolean;updated?:boolean;messageId?:string;aircraftCount?:number;scheduleCount?:number;reason?:string};
 export function stickyPanelPayload(aircraft:Aircraft[],schedules:Schedule[]){
  const grouped=aircraft.map(a=>({aircraft:a,legs:schedules.filter(s=>s.aircraftId===a.id&&REQUESTABLE.includes(s.status)&&hasOpenSeat(s)).sort((x,y)=>x.sequence-y.sequence)})).filter(x=>x.legs.length);
