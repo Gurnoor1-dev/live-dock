@@ -72,6 +72,7 @@ export function EditSchedulesPage() {
   const [error, setError] = useState("");
   const [draggedId, setDraggedId] = useState("");
   const [dragOverId, setDragOverId] = useState("");
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [crewUserId, setCrewUserId] = useState("");
   const [crewRole, setCrewRole] = useState(0);
 
@@ -258,6 +259,7 @@ export function EditSchedulesPage() {
 
   const deleteSelected = () => {
     if (!selected) return;
+    setDeleteConfirmation("");
     queueAction({
       title: "Permanently delete schedule",
       description: `Delete ${selected.callsign} · ${selected.originIcao} → ${selected.destinationIcao} from Infinite Flight?`,
@@ -467,8 +469,9 @@ export function EditSchedulesPage() {
         {(pending.title==="Update schedule details"||pending.title==="Update flight plan")&&<button className={styles.textButton} onClick={()=>void copyRecoverySnapshot()}><ClipboardCopy size={14}/> Copy full original schedule snapshot</button>}
         {pending.title==="Update flight plan"&&<div className={styles.backupPreview}><b>Current flight plan · manual recovery snapshot</b><pre>{parseFlightPlan(selected?.flightPlan||null)||"No existing flight plan is stored."}</pre></div>}
         {pending.title==="Permanently delete schedule"&&selected&&<div className={styles.backupPreview}><b>Schedule details · record these before deletion</b><pre>{JSON.stringify({callsign:selected.callsign,aircraft:aircraftName(selected.aircraftId),flightType:selected.flightType,originIcao:selected.originIcao,destinationIcao:selected.destinationIcao,isTimeless:selected.isTimeless,scheduledDepartureUtc:selected.scheduledDepartureUtc,scheduledArrivalUtc:selected.scheduledArrivalUtc,briefing:selected.briefing,flightPlan:selected.flightPlan,crew:selected.crew},null,2)}</pre></div>}
+        {pending.title==="Permanently delete schedule"&&selected&&<label className={styles.field}>Type <b>{selected.callsign}</b> to confirm deletion<input autoFocus value={deleteConfirmation} onChange={e=>setDeleteConfirmation(e.target.value)} placeholder={selected.callsign}/></label>}
         <div className={styles.warningBox}><ShieldAlert size={17}/><span>{pending.warning}</span></div>
-        <div className={styles.modalActions}><button className={styles.secondaryButton} onClick={()=>setPending(null)} disabled={busy}>Cancel</button><button className={pending.danger?styles.dangerConfirm:styles.primaryButton} onClick={()=>void executePending()} disabled={busy}>{busy?<RefreshCw size={15} className={styles.spinning}/>:<Check size={15}/>} {busy?"Applying…":pending.confirmLabel}</button></div>
+        <div className={styles.modalActions}><button className={styles.secondaryButton} onClick={()=>setPending(null)} disabled={busy}>Cancel</button><button className={pending.danger?styles.dangerConfirm:styles.primaryButton} onClick={()=>void executePending()} disabled={busy||(pending.title==="Permanently delete schedule"&&deleteConfirmation.trim().toUpperCase()!==selected?.callsign.toUpperCase())}>{busy?<RefreshCw size={15} className={styles.spinning}/>:<Check size={15}/>} {busy?"Applying…":pending.confirmLabel}</button></div>
       </section>
     </div>}
   </div>;
