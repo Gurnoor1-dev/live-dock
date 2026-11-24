@@ -1,14 +1,19 @@
 "use client";
 
+/* The clock is synchronized on the client to keep render calculations pure. */
+
+import { useEffect, useState } from "react";
 import { Plane, CalendarDays, Users, RadioTower, X, ArrowRight, Clock3, Gauge, Navigation, Activity } from "lucide-react";
 import { Stat } from "@/components/workspace/shared-ui";
 import { useWorkspace } from "../workspace-context";
 import { aircraftImages } from "@/lib/aircraft-images.generated";
 
-function aircraftStatus(item:any,pos:any){
+type AircraftStatusInput={visibility:number};
+type PositionStatusInput={state:number;updatedAt?:string};
+function aircraftStatus(item:AircraftStatusInput,pos:PositionStatusInput|undefined,now:number){
   if(item.visibility===2)return {label:"Hangared",tone:"hangared"};
   if(!pos)return {label:"Position unavailable",tone:"offline"};
-  const age=pos.updatedAt?Date.now()-new Date(pos.updatedAt).getTime():0;
+  const age=pos.updatedAt&&now?now-new Date(pos.updatedAt).getTime():0;
   if((pos.state===1||pos.state===4)&&age>18*60*60*1000)return {label:"Inactive · 18h+",tone:"inactive"};
   if(pos.state===2)return {label:"In flight",tone:"flight"};
   if(pos.state===4)return {label:"Stopped",tone:"stopped"};
@@ -16,13 +21,19 @@ function aircraftStatus(item:any,pos:any){
   return {label:"Position unavailable",tone:"offline"};
 }
 export function HomePage(){
+ const [clockNow,setClockNow]=useState(0);
+ useEffect(()=>{
+  const initial=window.setTimeout(()=>setClockNow(Date.now()),0);
+  const interval=window.setInterval(()=>setClockNow(Date.now()),60_000);
+  return()=>{window.clearTimeout(initial);window.clearInterval(interval);};
+ },[]);
  const {active,aircraft,members,schedules,liveSchedules,positions,selectedAircraft,selectedPosition,selectedActiveSchedule,selectedNextSchedule,selectedPhotos,photoIndex,routeProgress,flightHistory,parkedAirport,query,setQuery,mapContainer,setSelectedAircraft,navigatePage,dateTime}=useWorkspace();
  const previousFlight=flightHistory[0];
  const currentSchedule:{callsign?:string;originIcao?:string;destinationIcao?:string;scheduledDepartureUtc?:string}|undefined=selectedPosition?.state===4?(previousFlight?{...previousFlight,scheduledDepartureUtc:previousFlight.actualDepartureUtc}:undefined):selectedPosition?.state===1?selectedNextSchedule:selectedActiveSchedule||selectedNextSchedule;
  const parkedLabel=selectedPosition?.airportIcao||parkedAirport||"Airport not identified";
- const inactiveFor=selectedPosition?.updatedAt?Math.max(0,Date.now()-new Date(selectedPosition.updatedAt).getTime()):0;
+ const inactiveFor=selectedPosition?.updatedAt&&clockNow?Math.max(0,clockNow-new Date(selectedPosition.updatedAt).getTime()):0;
  const inactiveLabel=selectedPosition?.updatedAt?(inactiveFor>=86400000?Math.floor(inactiveFor/86400000)+"d "+Math.floor(inactiveFor%86400000/3600000)+"h":Math.floor(inactiveFor/3600000)+"h "+Math.floor(inactiveFor%3600000/60000)+"m"):"duration unavailable";
- const status=selectedAircraft?aircraftStatus(selectedAircraft,selectedPosition):null;
+ const status=selectedAircraft?aircraftStatus(selectedAircraft,selectedPosition,clockNow):null;
  return <>{active==="Home"&&<div className={selectedAircraft?"home-dashboard-layout has-selected-aircraft":"home-dashboard-layout"}>
   <div className="home-dashboard-main">
   <div className="stat-grid unified-stats home-stats">
