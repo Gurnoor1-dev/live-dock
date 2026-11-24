@@ -8,7 +8,18 @@ import {
 
 export const ORGANIZATION_ID = "d50dcc80-8dac-4608-970c-61d6a4739488";
 
-const rateLimits = new Map<string, { isPro: boolean; remaining: number; updatedAt: number }>();\nconst ifGetCache = new Map<string, { value: unknown; expiresAt: number }>();\nconst ifGetInflight = new Map<string, Promise<unknown>>();\nfunction ifCacheTtl(path: string) { if (path.endsWith("/position")) return 90_000; if (path.endsWith("/flights")) return 5 * 60_000; if (path.includes("/members") || path.includes("/aircraft") || path.includes("/schedules")) return path.includes("/schedules") ? 20_000 : 90_000; if (path.startsWith("/airport/") || path === "/aircraft") return 60 * 60_000; return 0; }
+const rateLimits = new Map<string, { isPro: boolean; remaining: number; updatedAt: number }>();
+const ifGetCache = new Map<string, { value: unknown; expiresAt: number }>();
+const ifGetInflight = new Map<string, Promise<unknown>>();
+
+function ifCacheTtl(path: string) {
+  if (path.endsWith("/position")) return 90_000;
+  if (path.endsWith("/flights")) return 5 * 60_000;
+  if (path.includes("/schedules")) return 20_000;
+  if (path.includes("/members") || path.includes("/aircraft")) return 90_000;
+  if (path.startsWith("/airport/") || path === "/airports" || path === "/aircraft") return 60 * 60_000;
+  return 0;
+}
 
 export function getIFRateLimit(session: IFSession) {
   const value = rateLimits.get(session.accessToken);
@@ -34,29 +45,64 @@ export async function requireIFSession() {
 }
 
 export async function ifFetch<T = unknown>(path: string, session: IFSession, init: RequestInit = {}): Promise<T> {
-  const response = await fetch("https://api.infiniteflight.com/public/v3" + path, {
-    ...init,
-    headers: {
-      Authorization: "Bearer " + session.accessToken,
-      ...(init.body ? { "Content-Type": "application/json" } : {}),
-      ...(init.headers || {})
-    },
-    cache: "no-store"
-  });
-  const remainingHeader = response.headers.get("x-rate-limit-remaining");
-  const remaining = remainingHeader === null ? 4 : Number(remainingHeader);
-  rateLimits.set(session.accessToken, {
-    isPro: (response.headers.get("x-user-pro") || "").toLowerCase() === "true",
-    remaining: Number.isFinite(remaining) ? remaining : 4,
-    updatedAt: Date.now()
-  });
-  const payload = await response.json().catch(() => ({})) as { errorCode?: number; message?: string; result?: T };
-  if (!response.ok || (typeof payload.errorCode === "number" && payload.errorCode !== 0)) {
-    throw Object.assign(new Error(payload.message || "Infinite Flight API request failed (" + response.status + ")."), {
-      status: response.status
-    });
+  const method = (init.method || "GET").toUpperCase();
+  const cacheKey = method === "GET" ? session.accessToken + ":" + path : "";
+  const ttl = method === "GET" ? ifCacheTtl(path) : 0;
+
+  if (ttl > 0) {
+    const cached = ifGetCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return cached.value as T;
+    if (cached) ifGetCache.delete(cacheKey);
+    const pending = ifGetInflight.get(cacheKey);
+    if (pending) return pending as Promise<T>;
   }
-  return payload.result as T;
+
+  const request = (async () => {
+    const response = await fetch("https://api.infiniteflight.com/public/v3" + path, {
+      ...init,
+      headers: {
+        Authorization: "Bearer " + session.accessToken,
+        ...(init.body ? { "Content-Type": "application/json" } : {}),
+        ...(init.headers || {})
+      },
+      cache: "no-store"
+    });
+    const remainingHeader = response.headers.get("x-rate-limit-remaining");
+    const remaining = remainingHeader === null ? 4 : Number(remainingHeader);
+    rateLimits.set(session.accessToken, {
+      isPro: (response.headers.get("x-user-pro") || "").toLowerCase() === "true",
+      remaining: Number.isFinite(remaining) ? remaining : 4,
+      updatedAt: Date.now()
+    });
+    const payload = await response.json().catch(() => ({})) as { errorCode?: number; message?: string; result?: T };
+    if (!response.ok || (typeof payload.errorCode === "number" && payload.errorCode !== 0)) {
+      throw Object.assign(new Error(payload.message || "Infinite Flight API request failed (" + response.status + ")."), {
+        status: response.status,
+        errorCode: payload.errorCode
+      });
+    }
+    return payload.result as T;
+  })();
+
+  if (ttl > 0) {
+    ifGetInflight.set(cacheKey, request);
+    try {
+      const value = await request;
+      if (ifGetCache.size > 600) ifGetCache.clear();
+      ifGetCache.set(cacheKey, { value, expiresAt: Date.now() + ttl });
+      return value;
+    } finally {
+      ifGetInflight.delete(cacheKey);
+    }
+  }
+
+  const value = await request;
+  if (method !== "GET") {
+    for (const key of ifGetCache.keys()) {
+      if (key.startsWith(session.accessToken + ":")) ifGetCache.delete(key);
+    }
+  }
+  return value;
 }
 
 export async function requireOrganizationAdmin(session: IFSession) {
