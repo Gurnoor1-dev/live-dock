@@ -40,6 +40,8 @@ type WorkspaceSnapshot={organization:Organization|null;aircraft:Aircraft[];membe
 let sharedWorkspaceSnapshot:WorkspaceSnapshot|null=null;
 const sharedPositions:Record<string,Position>={};
 let positionsRefreshedAt=0;
+let sharedPositionCursor=0;
+let sharedIsPro=false;
 let supportingDataLoaded=false;
 let sharedAircraftTypes:AircraftType[]=[];
 let sharedGallery:GalleryManifest|null=null;
@@ -64,7 +66,8 @@ async function api(path:string,init:RequestInit={}) {
     ...init,cache:"no-store",credentials:"same-origin",
     headers:{"Content-Type":"application/json",...(init.headers||{})}
   });
-  const proHeader=response.headers.get("x-user-pro");if(proHeader!==null)sharedIsPro=proHeader.toLowerCase()==="true";\n  const payload=await response.json().catch(()=>({}));
+  const proHeader=response.headers.get("x-user-pro");if(proHeader!==null)sharedIsPro=proHeader.toLowerCase()==="true";
+  const payload=await response.json().catch(()=>({}));
   if(!response.ok) throw new Error(payload.error_description||payload.error||payload.message||`Infinite Flight returned HTTP ${response.status}.`);
   if(typeof payload.errorCode==="number"&&payload.errorCode!==0) throw new Error(payload.message||`Infinite Flight API error ${payload.errorCode}.`);
   return payload.result;
