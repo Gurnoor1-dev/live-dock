@@ -553,3 +553,10 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
  .home-dashboard-layout .map-aircraft-popup{left:0;right:0;bottom:0;max-height:84%;border-radius:19px 19px 0 0;padding:17px 16px calc(18px + env(safe-area-inset-bottom))}
 }
 @media(prefers-reduced-motion:reduce){.home-dashboard-main,.home-dashboard-layout .map-aircraft-popup{animation:none!important;transition:none!important}}
+
+@media(max-width:1100px){
+ .home-dashboard-layout .map-aircraft-popup{position:relative;inset:auto;width:100%;max-height:72vh;margin-top:0;overflow-y:auto;animation:aircraft-popup-in .24s ease-out}
+}
+@media(max-width:760px){
+ .home-dashboard-layout .map-aircraft-popup{position:relative;inset:auto;width:100%;max-height:72vh;border-radius:16px;padding:17px;margin-top:0}
+}
