@@ -351,7 +351,17 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
   },[selectedAircraft]);
 
 
-  useEffect(()=>{\n    let alive=true;\n    if(!selectedAircraft||selectedPosition?.state!==1){setParkedAirport("Unknown");return;}\n    if(selectedPosition.airportIcao){setParkedAirport(selectedPosition.airportIcao+(selectedPosition.airportName?" · "+selectedPosition.airportName:""));return;}\n    api("/airports").then((value:any)=>{\n      const airports=Array.isArray(value)?value:(value?.items||value?.airports||[]);\n      const nearest=airports.map((airport:any)=>({icao:airport.icao||airport.icaoCode||airport.code,name:airport.name||airport.icao||"Airport",latitude:Number(airport.latitude??airport.location?.latitude),longitude:Number(airport.longitude??airport.location?.longitude)})).filter((airport:any)=>airport.icao&&Number.isFinite(airport.latitude)&&Number.isFinite(airport.longitude)).map((airport:any)=>({...airport,distance:haversineKm(airport,{latitude:selectedPosition.latitude,longitude:selectedPosition.longitude})})).sort((a:any,b:any)=>a.distance-b.distance)[0];\n      if(alive)setParkedAirport(nearest&&nearest.distance<=15?nearest.icao+" · "+nearest.name:"Airport not identified");\n    }).catch(()=>{if(alive)setParkedAirport("Airport not identified");});\n    return()=>{alive=false;};\n  },[selectedAircraft?.id,selectedPosition?.latitude,selectedPosition?.longitude,selectedPosition?.state,selectedPosition?.airportIcao,selectedPosition?.airportName]);
+  useEffect(()=>{
+    let alive=true;
+    if(!selectedAircraft||selectedPosition?.state!==1){setParkedAirport("Unknown");return;}
+    if(selectedPosition.airportIcao){setParkedAirport(selectedPosition.airportIcao+(selectedPosition.airportName?" · "+selectedPosition.airportName:""));return;}
+    api("/airports").then((value:any)=>{
+      const airports=Array.isArray(value)?value:(value?.items||value?.airports||[]);
+      const nearest=airports.map((airport:any)=>({icao:airport.icao||airport.icaoCode||airport.code,name:airport.name||airport.icao||"Airport",latitude:Number(airport.latitude??airport.location?.latitude),longitude:Number(airport.longitude??airport.location?.longitude)})).filter((airport:any)=>airport.icao&&Number.isFinite(airport.latitude)&&Number.isFinite(airport.longitude)).map((airport:any)=>({...airport,distance:haversineKm(airport,{latitude:selectedPosition.latitude,longitude:selectedPosition.longitude})})).sort((a:any,b:any)=>a.distance-b.distance)[0];
+      if(alive)setParkedAirport(nearest&&nearest.distance<=15?nearest.icao+" · "+nearest.name:"Airport not identified");
+    }).catch(()=>{if(alive)setParkedAirport("Airport not identified");});
+    return()=>{alive=false;};
+  },[selectedAircraft?.id,selectedPosition?.latitude,selectedPosition?.longitude,selectedPosition?.state,selectedPosition?.airportIcao,selectedPosition?.airportName]);
 
   useEffect(()=>{
     if(selectedPhotos.length<2)return;
@@ -395,7 +405,14 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     finally{setGalleryLoading(false);}
   }
 
-  async function saveDiscordProfile(event:FormEvent){\n    event.preventDefault();setProfileSaving(true);setProfileNotice("");setError("");\n    try{const response=await fetch("/api/profile",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({discordUserId,discordUsername}),credentials:"same-origin"});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||"Could not save Discord profile.");setProfileNotice("Discord account saved.");}\n    catch(e){setError(e instanceof Error?e.message:"Could not save Discord profile.");}\n    finally{setProfileSaving(false);}\n  }\n\n  async function refresh(){await loadOrganization(true);}
+  async function saveDiscordProfile(event:FormEvent){
+    event.preventDefault();setProfileSaving(true);setProfileNotice("");setError("");
+    try{const response=await fetch("/api/profile",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({discordUserId,discordUsername}),credentials:"same-origin"});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||"Could not save Discord profile.");setProfileNotice("Discord account saved.");}
+    catch(e){setError(e instanceof Error?e.message:"Could not save Discord profile.");}
+    finally{setProfileSaving(false);}
+  }
+
+  async function refresh(){await loadOrganization(true);}
   async function signOut(){
     setBusy(true);setError("");
     try{
