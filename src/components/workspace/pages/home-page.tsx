@@ -23,7 +23,8 @@ export function HomePage(){
  const inactiveFor=selectedPosition?.updatedAt?Math.max(0,Date.now()-new Date(selectedPosition.updatedAt).getTime()):0;
  const inactiveLabel=selectedPosition?.updatedAt?(inactiveFor>=86400000?Math.floor(inactiveFor/86400000)+"d "+Math.floor(inactiveFor%86400000/3600000)+"h":Math.floor(inactiveFor/3600000)+"h "+Math.floor(inactiveFor%3600000/60000)+"m"):"duration unavailable";
  const status=selectedAircraft?aircraftStatus(selectedAircraft,selectedPosition):null;
- return <>{active==="Home"&&<>
+ return <>{active==="Home"&&<div className={selectedAircraft?"home-dashboard-layout has-selected-aircraft":"home-dashboard-layout"}>
+  <div className="home-dashboard-main">
   <div className="stat-grid unified-stats home-stats">
    <Stat label="Fleet aircraft" value={aircraft.length} icon={<Plane/>} note="Organisation fleet"/>
    <Stat label="Live schedules" value={schedules.length} icon={<CalendarDays/>} note="Published schedules"/>
@@ -34,7 +35,10 @@ export function HomePage(){
    <div className="section-head"><div><p className="eyebrow">VIRTUAL BLUE · LIVE OPERATIONS</p><h2>Live fleet map</h2><p>Aircraft positions refresh every 90 seconds.</p></div><span className="count-pill">{Object.keys(positions).length} live positions</span></div>
    <div className="map-legend"><span><i className="legend-flight"/>In flight</span><span><i className="legend-ground"/>On ground</span><span><i className="legend-stopped"/>Stopped</span><span><i className="legend-inactive"/>Inactive 18h+</span><span><i className="legend-hangared"/>Hangared</span></div>
    <div ref={mapContainer} className="fleet-map" aria-label="Virtual Blue live aircraft map"/>
-   {selectedAircraft&&<section className="aircraft-detail-card map-aircraft-popup" aria-label="Selected aircraft details">
+
+  </section>
+  </div>
+  {selectedAircraft&&<section className="aircraft-detail-card map-aircraft-popup" aria-label="Selected aircraft details">
     <div className="aircraft-popup-grabber"/>
     <div className="aircraft-popup-header"><div><p className="eyebrow">AIRCRAFT</p><div className="aircraft-popup-title"><h2>{selectedAircraft.registration}</h2><span className={"aircraft-status-chip "+status?.tone}><i/>{status?.label}</span></div><p className="aircraft-popup-subtitle">{selectedPosition?.state===1?"Parked at "+parkedLabel:selectedPosition?.state===4?"Stopped · last flight shown below":selectedAircraft.visibility===2?"Hangared · "+inactiveLabel+" since last position":"Fleet aircraft · #"+selectedAircraft.fleetRank}</p></div><button className="icon-button aircraft-popup-close" onClick={()=>setSelectedAircraft(null)} aria-label="Close aircraft details"><X size={20}/></button></div>
     <div className="aircraft-popup-photo">{selectedPhotos.length>0?<img key={selectedPhotos[photoIndex]?.id} src={selectedPhotos[photoIndex]?.url} alt={selectedPhotos[photoIndex]?.altText||selectedAircraft.registration}/>:aircraftImages[selectedAircraft.registration.toUpperCase()]?<img src={aircraftImages[selectedAircraft.registration.toUpperCase()]} alt={selectedAircraft.registration}/>:<div className="aircraft-photo-placeholder"><Plane size={48}/><span>{selectedAircraft.registration}</span></div>}{selectedPhotos[photoIndex]?.caption&&<span className="photo-caption">{selectedPhotos[photoIndex].caption}</span>}{selectedPhotos[photoIndex]?.credit?.displayText&&<span className="photo-credit">{selectedPhotos[photoIndex].credit.displayText}</span>}</div>
@@ -48,7 +52,6 @@ export function HomePage(){
      <div><small><Clock3 size={13}/> Last update</small><b>{selectedPosition?.updatedAt?dateTime(selectedPosition.updatedAt):"—"}</b></div>
     </div>
     <div className="aircraft-popup-actions"><button className="outline-button" onClick={()=>{setQuery(selectedAircraft.registration);navigatePage("Schedules");}}>View schedules</button><button className="outline-button" onClick={()=>navigatePage("History")}>Flight history</button></div>
-   </section>}
-  </section>
- </>}</>;
+  </section>}
+ </div>}</>;
 }
