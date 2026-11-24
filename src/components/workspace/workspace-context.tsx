@@ -16,7 +16,8 @@ type GalleryPhoto={id:string;url:string;altText:string;caption:string;credit:{na
 type GalleryManifest={settings:{maxPhotosPerAircraft:number;slideshowIntervalMs:number};aircraft:Record<string,{photos:GalleryPhoto[]}>};
 
 export interface WorkspaceContextValue {
-  active:string;\n  refreshWorkspace:()=>Promise<void>;
+  active:string;
+  refreshWorkspace:()=>Promise<void>;
   organization:Organization|null;
   aircraft:Aircraft[];
   aircraftTypes:AircraftType[];
