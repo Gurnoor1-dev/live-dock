@@ -130,6 +130,20 @@ export function EditSchedulesPage() {
   }, [records, selected?.aircraftId]);
 
   const queueAction = (action: PendingAction) => { setError(""); setNotice(""); setPending(action); };
+  const selectSchedule = (item: Schedule) => {
+    if (item.id === selectedId) return;
+    if (changedFields.length || dirtyFlightPlan) {
+      queueAction({
+        title: "Discard unsaved changes?",
+        description: "You have edits that have not been sent to Infinite Flight. Switching schedules will discard those local changes.",
+        warning: "Nothing has been changed on Infinite Flight yet. Confirm only if you are happy to lose the unsaved editor draft.",
+        confirmLabel: "Discard and switch",
+        run: async () => { setSelectedId(item.id); setSection("details"); }
+      });
+      return;
+    }
+    setSelectedId(item.id); setSection("details"); setError("");
+  };
   const executePending = async () => {
     if (!pending || busy) return;
     setBusy(true); setError(""); setNotice("");
@@ -304,7 +318,7 @@ export function EditSchedulesPage() {
           <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} aria-label="Filter by status"><option value="all">All statuses</option>{[1,2,3,4,6,7,8,9,10,11].map(n=><option key={n} value={String(n)}>{statusLabel(n)}</option>)}</select>
         </div>
         <div className={styles.scheduleList}>
-          {filtered.map(item => <button key={item.id} className={item.id===selectedId?styles.scheduleItemActive:styles.scheduleItem} onClick={()=>{setSelectedId(item.id);setSection("details");setError("");}} draggable={false}>
+          {filtered.map(item => <button key={item.id} className={item.id===selectedId?styles.scheduleItemActive:styles.scheduleItem} onClick={()=>selectSchedule(item)} draggable={false}>
             <span className={styles.itemTop}><b>{item.callsign}</b><i className={styles[statusClass(item.status)]}>{statusLabel(item.status)}</i></span>
             <span className={styles.itemRoute}>{item.originIcao}<ArrowRightIcon/> {item.destinationIcao}</span>
             <span className={styles.itemMeta}><span><Plane size={12}/>{aircraftName(item.aircraftId).split(" · ")[0]}</span><span><Clock3 size={12}/>{formatDate(item.scheduledDepartureUtc,item.isTimeless)}</span></span>
@@ -390,6 +404,8 @@ export function EditSchedulesPage() {
         <button className={styles.modalClose} onClick={()=>setPending(null)} disabled={busy} aria-label="Close"><X size={17}/></button>
         <p className={styles.eyebrow}>INFINITE FLIGHT LIVE · CONFIRMATION</p><h3 id="confirm-title">{pending.title}</h3><p className={styles.modalDescription}>{pending.description}</p>
         {pending.title==="Update schedule details"&&changedFields.length>0&&<div className={styles.modalDiff}>{changedFields.map(([name,before,after])=><div key={name}><b>{name}</b><span>{before} → {after}</span></div>)}</div>}
+        {pending.title==="Update flight plan"&&<div className={styles.backupPreview}><b>Current flight plan · manual recovery snapshot</b><pre>{parseFlightPlan(selected?.flightPlan||null)||"No existing flight plan is stored."}</pre></div>}
+        {pending.title==="Permanently delete schedule"&&selected&&<div className={styles.backupPreview}><b>Schedule details · record these before deletion</b><pre>{JSON.stringify({callsign:selected.callsign,aircraft:aircraftName(selected.aircraftId),flightType:selected.flightType,originIcao:selected.originIcao,destinationIcao:selected.destinationIcao,isTimeless:selected.isTimeless,scheduledDepartureUtc:selected.scheduledDepartureUtc,scheduledArrivalUtc:selected.scheduledArrivalUtc,briefing:selected.briefing,flightPlan:selected.flightPlan,crew:selected.crew},null,2)}</pre></div>}
         <div className={styles.warningBox}><ShieldAlert size={17}/><span>{pending.warning}</span></div>
         <div className={styles.modalActions}><button className={styles.secondaryButton} onClick={()=>setPending(null)} disabled={busy}>Cancel</button><button className={pending.danger?styles.dangerConfirm:styles.primaryButton} onClick={()=>void executePending()} disabled={busy}>{busy?<RefreshCw size={15} className={styles.spinning}/>:<Check size={15}/>} {busy?"Applying…":pending.confirmLabel}</button></div>
       </section>
