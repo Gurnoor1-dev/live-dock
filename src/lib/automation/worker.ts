@@ -68,8 +68,7 @@ export async function runNotifier(){
 
 export async function getStickyCrewPanelStatus(){
  if(!await feature("sticky_crew"))return{exists:false,reason:"disabled"};
- const operator=await admin();
- return stickyCrewStatus(operator.session);
+ return stickyCrewStatus();
 }
 export async function runStickyCrew(){
  if(!await feature("sticky_crew"))return{skipped:true,reason:"disabled"};
