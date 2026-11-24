@@ -72,7 +72,8 @@ export function EditSchedulesPage() {
   const [error, setError] = useState("");
   const [draggedId, setDraggedId] = useState("");
   const [dragOverId, setDragOverId] = useState("");
-  const [crewUserId, setCrewUserId] = useState("");\n  const [crewRole, setCrewRole] = useState(0);
+  const [crewUserId, setCrewUserId] = useState("");
+  const [crewRole, setCrewRole] = useState(0);
 
   const records = schedules as Schedule[];
   const selected = records.find(item => item.id === selectedId) || null;
