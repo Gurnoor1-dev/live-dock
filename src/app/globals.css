@@ -560,3 +560,15 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 @media(max-width:760px){
  .home-dashboard-layout .map-aircraft-popup{position:relative;inset:auto;width:100%;max-height:72vh;border-radius:16px;padding:17px;margin-top:0}
 }
+
+/* Final responsive breakpoint: keep the inspector in the right rail on desktop-sized viewports. */
+@media(min-width:851px){
+ .home-dashboard-layout.has-selected-aircraft{grid-template-columns:minmax(0,1fr) minmax(300px,360px)!important;align-items:start}
+ .home-dashboard-layout .map-aircraft-popup{position:sticky!important;inset:auto!important;grid-column:auto!important;grid-row:auto!important;width:100%!important;max-height:calc(100vh - 110px)!important;margin:0!important;align-self:start!important;overflow-y:auto!important;border-radius:16px!important}
+ .home-dashboard-layout .aircraft-popup-grabber{display:none!important}
+}
+@media(max-width:850px){
+ .home-dashboard-layout.has-selected-aircraft{grid-template-columns:minmax(0,1fr)!important}
+ .home-dashboard-layout .map-aircraft-popup{position:relative!important;inset:auto!important;grid-column:1!important;width:100%!important;max-height:72vh!important;margin:0!important;overflow-y:auto!important;border-radius:16px!important}
+ .home-dashboard-layout .aircraft-popup-grabber{display:block!important}
+}
