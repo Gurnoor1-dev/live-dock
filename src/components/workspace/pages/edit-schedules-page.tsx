@@ -370,7 +370,7 @@ export function EditSchedulesPage() {
       <div><span>Aircraft represented</span><b>{new Set(records.map(s=>s.aircraftId)).size}</b><small>Across the organization fleet</small></div>
     </div>
 
-    {(error || notice) && <div className={error ? styles.errorBanner : styles.successBanner} role="status">{error ? <AlertTriangle size={17}/> : <CheckCircle2 size={17}/>}<span>{error || notice}</span><button onClick={() => {setError("");setNotice("");}} aria-label="Dismiss"><X size={15}/></button></div>}
+    {(error || notice) && <div className={error ? "app-toast app-toast-error" : "app-toast app-toast-success"} role="status">{error ? <AlertTriangle size={17}/> : <CheckCircle2 size={17}/>}<span>{error || notice}</span><button onClick={() => {setError("");setNotice("");}} aria-label="Dismiss"><X size={15}/></button></div>}
 
     <div className={styles.layout}>
       <aside className={styles.listPanel}>
