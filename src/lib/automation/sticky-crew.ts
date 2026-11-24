@@ -2,7 +2,7 @@ import "server-only";
 import { and,eq,inArray } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { getDb } from "@/lib/db";
-import { appSettings,appUsers,crewRequests,discordIntegrations } from "@/lib/db/schema";
+import { activeCrewAssignments,appSettings,appUsers,crewRequests,discordIntegrations } from "@/lib/db/schema";
 import { ifFetch,ORGANIZATION_ID } from "@/lib/infinite-flight/server";
 import type { IFSession } from "@/lib/infinite-flight/session";
 import { sendDiscordMessage,editDiscordMessage } from "@/lib/discord/components";
@@ -133,7 +133,7 @@ export async function submitStickyCrewRequests(discordId:string,operator:IFSessi
   if(!schedule||!REQUESTABLE.includes(schedule.status)){errors.push(scheduleId+": schedule unavailable");continue;}
   const role=state.seat==="captain"?0:1;
   await db.update(crewRequests).set({status:"completed"}).where(and(eq(crewRequests.scheduleId,scheduleId),eq(crewRequests.seat,state.seat!),eq(crewRequests.status,"approved")));
-  await db.update((await import("@/lib/db/schema")).activeCrewAssignments).set({status:"released"}).where(and(eq((await import("@/lib/db/schema")).activeCrewAssignments.scheduleId,scheduleId),eq((await import("@/lib/db/schema")).activeCrewAssignments.seat,state.seat!),eq((await import("@/lib/db/schema")).activeCrewAssignments.status,"assigned")));
+  await db.update(activeCrewAssignments).set({status:"released"}).where(and(eq(activeCrewAssignments.scheduleId,scheduleId),eq(activeCrewAssignments.seat,state.seat!),eq(activeCrewAssignments.status,"assigned")));
   if((schedule.crew||[]).some(c=>c.role===role)){errors.push(schedule.callsign+": seat already assigned");continue;}
   const [pending]=await db.select({id:crewRequests.id}).from(crewRequests).where(and(eq(crewRequests.scheduleId,scheduleId),eq(crewRequests.seat,state.seat!),inArray(crewRequests.status,["pending","processing","approved"]))).limit(1);
   if(pending){errors.push(schedule.callsign+": request already exists");continue;}
