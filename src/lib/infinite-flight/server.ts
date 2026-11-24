@@ -8,7 +8,7 @@ import {
 
 export const ORGANIZATION_ID = "d50dcc80-8dac-4608-970c-61d6a4739488";
 
-const rateLimits = new Map<string, { isPro: boolean; remaining: number; updatedAt: number }>();
+const rateLimits = new Map<string, { isPro: boolean; remaining: number; updatedAt: number }>();\nconst ifGetCache = new Map<string, { value: unknown; expiresAt: number }>();\nconst ifGetInflight = new Map<string, Promise<unknown>>();\nfunction ifCacheTtl(path: string) { if (path.endsWith("/position")) return 90_000; if (path.endsWith("/flights")) return 5 * 60_000; if (path.includes("/members") || path.includes("/aircraft") || path.includes("/schedules")) return path.includes("/schedules") ? 20_000 : 90_000; if (path.startsWith("/airport/") || path === "/aircraft") return 60 * 60_000; return 0; }
 
 export function getIFRateLimit(session: IFSession) {
   const value = rateLimits.get(session.accessToken);
