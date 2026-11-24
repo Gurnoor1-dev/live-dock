@@ -75,3 +75,10 @@ export async function runStickyCrew(){
  const operator=await admin();
  return publishStickyCrewPanel(operator.session);
 }
+
+export async function refreshStickyCrewPanel(){
+ if(!await feature("sticky_crew"))return{skipped:true,reason:"disabled"};
+ const operator=await admin();
+ const result=await publishStickyCrewPanel(operator.session);
+ return{...result,refreshedAt:new Date().toISOString(),adminIfcUserId:operator.ifcUserId};
+}
