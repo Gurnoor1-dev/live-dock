@@ -70,8 +70,8 @@ export async function POST(request:NextRequest){
      const {session}=await anyAdmin();
      const result=await submitStickyCrewRequests(discordId,session);
      const done=result.created.length;
-     const errors=result.errors.length?("\\n\\n**Not submitted:**\\n"+result.errors.map(x=>"• "+x).join("\\n")):"";
-     payload={flags:32768|64,components:[{type:10,content:`# Crew requests submitted\\n**${done}** request(s) sent to the Crew Requests channel.${errors}\\n\\nYou can close this message now.`}]};
+     const errors=result.errors.length?(" Not submitted: "+result.errors.join("; ")):"";
+     payload={flags:32768|64,components:[{type:10,content:`${done} crew request${done===1?"":"s"} sent to the Crew Requests channel.${errors}`}]};
     }else throw new Error("Unknown Sticky Crew action.");
     await editOriginal(interaction.application_id,interaction.token,payload);
    }catch(error){
