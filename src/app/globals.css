@@ -496,3 +496,17 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .flight-pagination>div{display:flex;align-items:center;gap:10px}
 .flight-pagination .outline-button{width:34px;padding:0;justify-content:center}
 @media(max-width:560px){.flight-pagination{align-items:flex-start;flex-direction:column}.flight-pagination>div{align-self:flex-end}}
+
+.aircraft-map-marker svg path{fill:var(--marker-color)!important}
+.profile-popover{max-height:min(82vh,620px);overflow-y:auto;position:fixed}
+.profile-link-form{display:grid;gap:10px;padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.profile-link-form label{display:grid;gap:5px;font-size:10px;font-weight:700;color:var(--muted)}
+.profile-link-form input{width:100%;height:36px;min-width:0;border:1px solid var(--line);border-radius:7px;padding:0 9px;background:var(--surface-2);color:var(--ink);font-size:11px}
+.profile-inline-notice{font-size:10px;color:var(--green)}
+.personal-flight-row{position:relative;grid-template-columns:minmax(110px,.8fr) minmax(130px,1fr) minmax(130px,.9fr);gap:14px;padding:16px 13px;margin:8px 0;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);transition:border-color .18s,transform .18s}
+.personal-flight-row:hover{border-color:var(--muted);transform:translateY(-1px)}
+.personal-flight-main,.personal-flight-route{min-width:0;display:grid;gap:6px}
+.personal-flight-main b{font:800 13px Manrope,sans-serif;letter-spacing:.2px}
+.personal-flight-route b{font:800 14px Manrope,sans-serif;overflow-wrap:anywhere}
+.personal-flight-duration{font-size:10px;line-height:1.5;color:var(--muted);text-align:right;overflow-wrap:anywhere}
+@media(max-width:760px){.personal-flight-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px}.personal-flight-duration{grid-column:1/-1;text-align:left;border-top:1px solid var(--line);padding-top:8px}}
