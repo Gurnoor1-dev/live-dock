@@ -16,6 +16,7 @@ function ifCacheTtl(path: string) {
   if (path.endsWith("/position")) return 90_000;
   if (path.endsWith("/flights")) return 5 * 60_000;
   if (path.includes("/schedules")) return 20_000;
+  if (/^\/live\/organizations\/[^/]+$/.test(path)) return 90_000;
   if (path.includes("/members") || path.includes("/aircraft")) return 90_000;
   if (path.startsWith("/airport/") || path === "/airports" || path === "/aircraft") return 60 * 60_000;
   return 0;
@@ -76,7 +77,7 @@ export async function ifFetch<T = unknown>(path: string, session: IFSession, ini
     });
     const payload = await response.json().catch(() => ({})) as { errorCode?: number; message?: string; result?: T };
     if (!response.ok || (typeof payload.errorCode === "number" && payload.errorCode !== 0)) {
-      throw Object.assign(new Error(payload.message || "Infinite Flight API request failed (" + response.status + ")."), {
+      throw Object.assign(new Error((payload.message || "Infinite Flight API request failed (" + response.status + ").") + (typeof payload.errorCode === "number" ? " [Infinite Flight error code " + payload.errorCode + "]." : "")), {
         status: response.status,
         errorCode: payload.errorCode
       });
