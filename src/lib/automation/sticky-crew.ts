@@ -42,7 +42,7 @@ export async function stickyCrewStatus(session:IFSession):Promise<StickyPanelRes
  if(response.status===404)return{exists:false,reason:"message_deleted"};
  if(!response.ok)throw new Error("Could not verify Sticky Crew message in Discord (HTTP "+response.status+").");
  const data=await response.json() as {id?:string;components?:Array<Record<string,unknown>>};
- try{await editDiscordMessage(channelId,stored.messageId,{flags:32768,components:data.components||[]});}
+ try{await editDiscordMessage(channelId,stored.messageId,{components:data.components||[]});}
  catch{return{exists:false,reason:"message_not_editable",messageId:stored.messageId};}
  return{exists:Boolean(data.id),messageId:data.id};
 }
