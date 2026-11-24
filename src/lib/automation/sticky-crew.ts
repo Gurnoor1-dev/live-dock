@@ -141,6 +141,7 @@ export async function submitStickyCrewRequests(discordId:string,operator:IFSessi
   const departure=schedule.isTimeless?"**Anytime**":schedule.scheduledDepartureUtc?`<t:${Math.floor(new Date(schedule.scheduledDepartureUtc).getTime()/1000)}:F>`:"**Anytime**";
   try{const {crewRequestMessage,sendDiscordMessage}=await import("@/lib/discord/components");const sent=await sendDiscordMessage(cfg.crewRequestsChannelId,crewRequestMessage({discordUserId:pilot.discordUserId,pilot:pilot.ifcUsername||"Infinite Flight pilot",requestId:id,registration:aircraft?.registration||"Aircraft",role:state.seat==="captain"?"Captain":"First Officer",origin:schedule.originIcao,destination:schedule.destinationIcao,departure}));await db.update(crewRequests).set({discordMessageId:sent.id}).where(eq(crewRequests.id,id));created.push(schedule.callsign);}catch{await db.update(crewRequests).set({status:"failed",failureCode:"discord_delivery_failed"}).where(eq(crewRequests.id,id));errors.push(schedule.callsign+": Discord delivery failed");}
  }
+ await publishStickyCrewPanel(operator);
  await db.delete(appSettings).where(eq(appSettings.key,key));
  return {created,errors};
 }
