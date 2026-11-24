@@ -55,6 +55,29 @@ export async function POST(request:NextRequest){
   const isInitial=action==="aircraft";
   if(isInitial&&!await stickyPanelIsCurrent(interaction.message))return NextResponse.json({type:4,data:{content:"This Sticky Crew panel is no longer active. Ask an administrator to restore it.",flags:64}});
   const deferType=isInitial?5:6;
+  after(async()=>{
+   if(!interaction.application_id||!interaction.token)return;
+   try{
+    let payload:Record<string,unknown>;
+    if(action==="aircraft"){
+     const {session}=await anyAdmin();
+     payload=await stickyCrewAircraftSelection(discordId,interaction.data?.values||[],session);
+    }else if(action==="schedules"){
+     payload=await stickyCrewScheduleSelection(discordId,interaction.data?.values||[]);
+    }else if(action==="seat"){
+     payload=await stickyCrewSeatSelection(discordId,(interaction.data?.values||[])[0]||"");
+    }else if(action==="confirm"){
+     const {session}=await anyAdmin();
+     const result=await submitStickyCrewRequests(discordId,session);
+     const done=result.created.length;
+     const errors=result.errors.length?("\\n\\n**Not submitted:**\\n"+result.errors.map(x=>"• "+x).join("\\n")):"";
+     payload={flags:32768|64,components:[{type:10,content:`# Crew requests submitted\\n**${done}** request(s) sent to the Crew Requests channel.${errors}\\n\\nYou can close this message now.`}]};
+    }else throw new Error("Unknown Sticky Crew action.");
+    await editOriginal(interaction.application_id,interaction.token,payload);
+   }catch(error){
+    await editOriginal(interaction.application_id,interaction.token,{flags:32768|64,components:[{type:10,content:"**Sticky Crew could not complete that action.**\\n"+(error instanceof Error?error.message:"Please try again.")}] }).catch(()=>followup(interaction.application_id!,interaction.token!,error instanceof Error?error.message:"Sticky Crew action failed.").catch(()=>undefined));
+   }
+  });
   return NextResponse.json({type:deferType,...(isInitial?{data:{flags:64}}:{})},{headers:{"Cache-Control":"no-store"}});
  }
  if(!id)return NextResponse.json({type:4,data:{content:"Invalid interaction.",flags:64}});
