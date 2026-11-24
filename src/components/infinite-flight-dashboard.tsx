@@ -92,6 +92,10 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
   const [mobileNav,setMobileNav]=useState(false);
   const [profileName,setProfileName]=useState("Infinite Flight Pilot");
   const [profileRole,setProfileRole]=useState<number|null>(null);
+  const [discordUserId,setDiscordUserId]=useState("");
+  const [discordUsername,setDiscordUsername]=useState("");
+  const [profileSaving,setProfileSaving]=useState(false);
+  const [profileNotice,setProfileNotice]=useState("");
   const [profileOpen,setProfileOpen]=useState(false);
   const [query,setQuery]=useState("");
   const [busy,setBusy]=useState(false);
