@@ -1,6 +1,6 @@
 const APP_ORIGIN = (process.env.LIVE_DOCK_ORIGIN || "").replace(/\/$/, "");
 const CRON_SECRET = process.env.NEON_CRON_SECRET || "";
-const ROUTES = new Set(["/auto-crew", "/schedule-reviser", "/notifier"]);
+const ROUTES = new Set(["/auto-crew", "/schedule-reviser", "/notifier", "/sticky-crew"]);
 
 export default {
   async fetch(request) {
