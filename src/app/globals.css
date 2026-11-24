@@ -184,8 +184,9 @@ tbody tr:hover{background:#fafcff}
 .live-indicator i,.landing-secure i,.landing-footer i{background:#777!important;box-shadow:none!important}
 .status,.count-pill,.date-chip,.form-success,.form-error{filter:grayscale(1)}
 .legend-flight,.legend-ground,.legend-maintenance,.legend-stopped,.legend-unknown{background:#777!important}
-.aircraft-map-marker{filter:grayscale(1)}
-.maplibregl-map{filter:grayscale(1)}
+.aircraft-map-marker,.aircraft-map-marker svg,.aircraft-map-marker svg path{filter:none!important;}
+.aircraft-map-marker{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;color:var(--marker-color)!important;}
+.aircraft-map-marker svg path{fill:var(--marker-color)!important;stroke:#101820!important;}
 .brand-logo,.workspace-logo,.landing-brand img,.landing-globe,.landing-yoke,
 .aircraft-photo-frame img,.gallery-admin-photo img{filter:grayscale(1)}
 .vb-hub-marker{filter:grayscale(1);background-color:#fff!important;border-color:#fff!important}
