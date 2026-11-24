@@ -41,7 +41,9 @@ export async function stickyCrewStatus(session:IFSession):Promise<StickyPanelRes
  const response=await fetch("https://discord.com/api/v10/channels/"+channelId+"/messages/"+stored.messageId,{headers:{Authorization:"Bot "+(process.env.DISCORD_BOT_TOKEN||"")},cache:"no-store"});
  if(response.status===404)return{exists:false,reason:"message_deleted"};
  if(!response.ok)throw new Error("Could not verify Sticky Crew message in Discord (HTTP "+response.status+").");
- const data=await response.json() as {id?:string};
+ const data=await response.json() as {id?:string;components?:Array<Record<string,unknown>>};
+ try{await editDiscordMessage(channelId,stored.messageId,{flags:32768,components:data.components||[]});}
+ catch{return{exists:false,reason:"message_not_editable",messageId:stored.messageId};}
  return{exists:Boolean(data.id),messageId:data.id};
 }
 export async function publishStickyCrewPanel(session:IFSession):Promise<StickyPanelResult>{
@@ -59,10 +61,12 @@ export async function publishStickyCrewPanel(session:IFSession):Promise<StickyPa
  if(stored.messageId&&stored.channelId===channelId){
   try{
    await editDiscordMessage(channelId,stored.messageId,payload);
-   return{exists:true,updated:true,messageId:stored.messageId,aircraftCount:payload.components[2].content?aircraft.filter(a=>schedules.some(s=>s.aircraftId===a.id&&REQUESTABLE.includes(s.status))).length:0,scheduleCount:schedules.filter(s=>REQUESTABLE.includes(s.status)).length};
+   return{exists:true,updated:true,messageId:stored.messageId,aircraftCount:payload.components[2].content?aircraft.filter(a=>schedules.some(s=>s.aircraftId===a.id&&REQUESTABLE.includes(s.status))).length:0,scheduleCount:aircraft.filter(a=>schedules.some(s=>s.aircraftId===a.id&&REQUESTABLE.includes(s.status))).reduce((n,a)=>n+schedules.filter(s=>s.aircraftId===a.id&&REQUESTABLE.includes(s.status)).length,0)};
   }catch(error){
    const check=await fetch("https://discord.com/api/v10/channels/"+channelId+"/messages/"+stored.messageId,{headers:{Authorization:"Bot "+(process.env.DISCORD_BOT_TOKEN||"")},cache:"no-store"});
-   if(check.status!==404)throw error;
+   if(check.status!==404&&check.ok){
+    // The message still exists but the bot cannot edit it; publish a fresh managed panel.
+   }else if(check.status!==404&&!check.ok)throw error;
   }
  }
  const sent=await sendDiscordMessage(channelId,payload);
