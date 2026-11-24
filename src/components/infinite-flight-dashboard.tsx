@@ -87,6 +87,9 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
   const [theme,setTheme]=useState<"light"|"dark">("light");
   const [themeReady,setThemeReady]=useState(false);
   const [mobileNav,setMobileNav]=useState(false);
+  const [profileName,setProfileName]=useState("Infinite Flight Pilot");
+  const [profileRole,setProfileRole]=useState<number|null>(null);
+  const [profileOpen,setProfileOpen]=useState(false);
   const [query,setQuery]=useState("");
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState("");
@@ -184,6 +187,8 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
         if(!data.authenticated){setAuth("signed-out");return;}
         setAuth("signed-in");
         await loadOrganization();
+        const profileResponse=await fetch("/api/profile",{cache:"no-store"});
+        if(profileResponse.ok){const profile=await profileResponse.json();if(profile.username)setProfileName(profile.username);if(typeof profile.role==="number")setProfileRole(profile.role);}
       }catch(e){
         if(mounted){setAuth("signed-in");setError(e instanceof Error?e.message:"Unable to connect to Virtual Blue.");}
       }
@@ -253,6 +258,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     });
     map.addControl(new maplibregl.NavigationControl({showCompass:true}),"top-right");
     mapRef.current=map;
+    map.on("style.load",()=>{for(const layer of map.getStyle().layers||[]){if(/country|admin[_-]?0/i.test(layer.id))try{map.setLayoutProperty(layer.id,"visibility","none");}catch{}}});
     map.on("load",async()=>{
       const points=Object.values(positions).filter(p=>Number.isFinite(p.latitude)&&Number.isFinite(p.longitude));
       if(points.length>1){
@@ -287,7 +293,8 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     for(const aircraftItem of aircraft){
       const position=positions[aircraftItem.id];
       if(!position||!Number.isFinite(position.latitude)||!Number.isFinite(position.longitude))continue;
-      const color=position.state===2?"#111111":position.state===1?"#444444":position.state===5?"#777777":position.state===4?"#999999":position.state===3?"#555555":"#bbbbbb";
+      const stale=(position.state===1||position.state===4)&&position.updatedAt&&Date.now()-new Date(position.updatedAt).getTime()>18*60*60*1000;
+      const color=aircraftItem.visibility===2?"#f08a32":position.state===2?"#25b96b":stale?"#b28a18":position.state===4?"#8b5cf6":position.state===1?"#3b82f6":"#8b929b";
       const element=document.createElement("button");
       element.type="button";element.className="aircraft-map-marker";element.title=aircraftItem.registration;
       element.style.setProperty("--marker-color",color);
@@ -505,7 +512,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     <OnboardingGate/>
     <aside className={`sidebar ${mobileNav?"open":""}`}>
       <div className="brand"><Image src={vbLogo} alt="Virtual Blue" className="brand-logo" priority/><span>VIRTUAL BLUE<small>FLEET OPERATIONS</small></span><button className="icon-button mobile-close" onClick={()=>setMobileNav(false)} aria-label="Close menu"><X size={18}/></button></div>
-      <div className="user-row sidebar-account"><div className="avatar">IF</div><span><b>Infinite Flight pilot</b><small>{organization?roleName(organization.role):"Signed in"}</small></span><button className="signout-button" onClick={signOut} disabled={busy} title="Sign out of Infinite Flight"><LogOut size={15}/><span>Sign out</span></button></div>
+      <button className="user-row sidebar-account sidebar-profile-button" onClick={()=>setProfileOpen(true)}><div className="avatar">{(profileName||"IF").slice(0,2).toUpperCase()}</div><span><b>{profileName}</b><small>{profileRole!==null?roleName(profileRole):organization?roleName(organization.role):"Member"}</small></span><UserRoundCog size={16}/></button>
       <div className="sidebar-section">
         <p className="nav-caption">PILOT</p>
         <nav>
@@ -522,7 +529,8 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     </aside>
     {mobileNav&&<button className="mobile-scrim" onClick={()=>setMobileNav(false)} aria-label="Close navigation"/>}
     <main className="main-area">
-      <header className="topbar"><div className="topbar-left"><button className="icon-button mobile-menu" onClick={()=>setMobileNav(true)} aria-label="Open menu"><Menu size={19}/></button><span className="breadcrumb">Virtual Blue <b>/</b> {active==="Admin Schedules"?"Admin / Schedules":active==="Integrations"?"Admin / Integrations":active==="Applications"?"Admin / Applications":active==="User Management"?"Admin / User Management":active==="Feature Selection"?"Admin / Feature Selection":active}</span></div><div className="topbar-actions"><span className="live-indicator"><i/> IF API connected</span><button className="icon-button" onClick={refresh} aria-label="Refresh Infinite Flight data" title="Refresh"><RefreshCw size={16}/></button><button className={`theme-switch ${theme}`} onClick={()=>setTheme(theme==="light"?"dark":"light")} aria-label={`Switch to ${theme==="light"?"dark":"light"} theme`} aria-pressed={theme==="dark"} title={`Switch to ${theme==="light"?"dark":"light"} theme`}><span className="theme-switch-copy"><span className="theme-switch-icon">{theme==="light"?<Sun size={15}/>:<Moon size={15}/>}</span><span>{theme==="light"?"Light":"Dark"}</span></span><span className="theme-switch-track" aria-hidden="true"><span className="theme-switch-thumb"/></span></button></div></header>
+      <header className="topbar"><div className="topbar-left"><button className="icon-button mobile-menu" onClick={()=>setMobileNav(true)} aria-label="Open menu"><Menu size={19}/></button><button className="topbar-brand-button" onClick={()=>setProfileOpen(value=>!value)} aria-label="Open profile"><img src="/assets/veyro-live.png" alt="Veyro Live"/></button></div><div className="topbar-actions"><span className="live-indicator"><i/> IF API connected</span><button className="icon-button" onClick={refresh} aria-label="Refresh Infinite Flight data" title="Refresh"><RefreshCw size={16}/></button><button className={`theme-switch ${theme}`} onClick={()=>setTheme(theme==="light"?"dark":"light")} aria-label={`Switch to ${theme==="light"?"dark":"light"} theme`} aria-pressed={theme==="dark"} title={`Switch to ${theme==="light"?"dark":"light"} theme`}><span className="theme-switch-copy"><span className="theme-switch-icon">{theme==="light"?<Sun size={15}/>:<Moon size={15}/>}</span><span>{theme==="light"?"Light":"Dark"}</span></span><span className="theme-switch-track" aria-hidden="true"><span className="theme-switch-thumb"/></span></button></div></header>
+      {profileOpen&&<div className="profile-popover"><div className="profile-popover-head"><span className="avatar">{(profileName||"IF").slice(0,2).toUpperCase()}</span><div><b>{profileName}</b><small>{profileRole!==null?roleName(profileRole):"Virtual Blue member"}</small></div></div><button className="signout-button" onClick={signOut} disabled={busy}><LogOut size={15}/> Sign out</button></div>}
       <div className="content">
         <div className="page-heading"><div><p className="eyebrow">VIRTUAL BLUE · INFINITE FLIGHT LIVE</p><h1>{active==="Admin Schedules"?"Schedules":active}</h1><p className="muted">{active==="Home"?"Your Virtual Blue operations overview and live fleet picture.":active==="Schedules"?"Explore published Virtual Blue schedules and available crew positions.":active==="My Flights"?"Your flight activity, crew assignments and booked upcoming legs.":active==="Organisation Dock"?"Your organisation profile, airline information and operational reference.":active==="Admin Schedules"?"Create, publish and maintain your organisation’s schedules.":active==="Integrations"?"Configure Discord connections, channels and automated operational messages.":active==="Applications"?"Review pilot applications and approve eligible Infinite Flight usernames.":active==="User Management"?"Manage approved app accounts and the wider organisation pilot directory.":active==="Feature Selection"?"Enable or disable optional premium organisation features.":"Aircraft flight history."}</p></div><div className="heading-actions"><span className="date-chip"><CalendarDays size={15}/>{new Intl.DateTimeFormat("en",{dateStyle:"medium"}).format(new Date())}</span></div></div>
         {error&&<p className="form-error" role="alert">{error}</p>}{notice&&<p className="form-success" role="status">{notice}</p>}
