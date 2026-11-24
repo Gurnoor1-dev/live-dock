@@ -11,6 +11,7 @@ export const ORGANIZATION_ID = "d50dcc80-8dac-4608-970c-61d6a4739488";
 const rateLimits = new Map<string, { isPro: boolean; remaining: number; updatedAt: number }>();
 const ifGetCache = new Map<string, { value: unknown; expiresAt: number }>();
 const ifGetInflight = new Map<string, Promise<unknown>>();
+const IF_ERROR_NAMES: Record<number, string> = { 4: "Not authorized", 5: "Server not found", 6: "Flight not found", 7: "No ATIS available", 8: "Airport not found", 9: "Request exceeds maximum request size" };
 
 function ifCacheTtl(path: string) {
   if (path.endsWith("/position")) return 90_000;
@@ -77,7 +78,7 @@ export async function ifFetch<T = unknown>(path: string, session: IFSession, ini
     });
     const payload = await response.json().catch(() => ({})) as { errorCode?: number; message?: string; result?: T };
     if (!response.ok || (typeof payload.errorCode === "number" && payload.errorCode !== 0)) {
-      throw Object.assign(new Error((payload.message || "Infinite Flight API request failed (" + response.status + ").") + (typeof payload.errorCode === "number" ? " [Infinite Flight error code " + payload.errorCode + "]." : "")), {
+      throw Object.assign(new Error((payload.message || "Infinite Flight API request failed (" + response.status + ").") + (typeof payload.errorCode === "number" ? " [Infinite Flight error " + payload.errorCode + (IF_ERROR_NAMES[payload.errorCode] ? ": " + IF_ERROR_NAMES[payload.errorCode] : "") + "]." : "")), {
         status: response.status,
         errorCode: payload.errorCode
       });
