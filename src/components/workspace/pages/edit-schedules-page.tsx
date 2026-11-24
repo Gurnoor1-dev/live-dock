@@ -207,12 +207,22 @@ export function EditSchedulesPage() {
     if (!Number.isInteger(Number(draft.flightType)) || Number(draft.flightType) < 0 || Number(draft.flightType) > 12) {
       setError("Select a valid Infinite Flight flight category."); return;
     }
+    let existingFlightPlan: unknown = undefined;
+    if (selected.flightPlan) {
+      try {
+        const parsed = JSON.parse(selected.flightPlan);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) existingFlightPlan = parsed;
+      } catch {
+        // Legacy plain-text plans are not valid FlightPlanInfo payloads.
+      }
+    }
     const payload = {
       callsign: draft.callsign.trim(), flightType: Number(draft.flightType),
       originIcao: draft.originIcao.trim().toUpperCase(), destinationIcao: draft.destinationIcao.trim().toUpperCase(),
       isTimeless: draft.isTimeless,
       ...(draft.isTimeless ? {} : { scheduledDepartureUtc: departureDate!.toISOString(), scheduledArrivalUtc: arrivalDate!.toISOString() }),
-      briefing: draft.briefing.trim() || null
+      briefing: draft.briefing.trim() || null,
+      ...(existingFlightPlan === undefined ? {} : { flightPlan: existingFlightPlan })
     };
     queueAction({
       title: "Update schedule details",
@@ -397,6 +407,7 @@ export function EditSchedulesPage() {
               <label className={styles.field}>Destination ICAO<input maxLength={8} value={draft.destinationIcao} onChange={e=>setDraft({...draft,destinationIcao:e.target.value.toUpperCase()})}/><small>1–8 alphanumeric characters.</small></label>
             </div>
             <div className={styles.planInfo}><Plane size={18}/><div><b>Aircraft assignment · {aircraftName(selected.aircraftId)}</b><p>Read-only: Infinite Flight's Update Schedule endpoint does not accept an aircraftId. Moving a leg to another aircraft requires a separate recreate workflow.</p></div></div>
+            {selected.flightPlan && !flightPlanText.trim().startsWith("{") && <p className={styles.footnote}>This schedule has a legacy or unrecognized flight-plan value. The details update will leave it out of the ScheduleRequest; use the dedicated Flight Plan tab to replace it with a structured FlightPlanInfo object.</p>}
             <div className={styles.scheduleMode}><div><b>Timeless schedule</b><small>Allow the pilot to fly this leg at any time without scheduled departure or arrival values.</small></div><button type="button" role="switch" aria-checked={draft.isTimeless} className={draft.isTimeless?styles.switchOn:styles.switchOff} onClick={()=>setDraft({...draft,isTimeless:!draft.isTimeless})}><span/></button></div>
             {!draft.isTimeless&&<div className={styles.formGrid}><label className={styles.field}>Departure date & time<input type="datetime-local" value={draft.departure} onChange={e=>setDraft({...draft,departure:e.target.value})}/><small>Entered in your local timezone; sent to Infinite Flight in UTC.</small></label><label className={styles.field}>Arrival date & time<input type="datetime-local" value={draft.arrival} onChange={e=>setDraft({...draft,arrival:e.target.value})}/><small>Must be later than departure.</small></label></div>}
             <label className={styles.field}>Crew briefing<textarea rows={5} maxLength={4000} value={draft.briefing} onChange={e=>setDraft({...draft,briefing:e.target.value})} placeholder="Operational briefing, notes, restrictions and pilot instructions…"/><small>{draft.briefing.length}/4000 characters · Plain text briefing.</small></label>
@@ -420,6 +431,7 @@ export function EditSchedulesPage() {
           {section==="crew"&&<div className={styles.formArea}>
             <div className={styles.sectionIntro}><div><h4>Crew & schedule sequence</h4><p>Review assigned crew and adjust this aircraft's schedule order.</p></div><span className={styles.readonlyPill}>{groupSchedules.length} aircraft schedules</span></div>
             <div className={styles.crewSummary}><div><span>Captain</span><b>{selected.crew?.find(c=>c.role===0)?.username||"Unassigned"}</b></div><div><span>First officer</span><b>{selected.crew?.find(c=>c.role===1)?.username||"Unassigned"}</b></div><div><span>Crew total</span><b>{selected.crew?.length||0}/2</b></div></div>
+            <p className={styles.footnote}>Direct crew changes are written to Infinite Flight. If a pilot's assignment is tied to a pending LiveDock approval request, use the approval workflow so its internal request records remain consistent.</p>
             <div className={styles.crewManager}>
               <div className={styles.sequenceHeader}><div><h4>Manage assigned crew</h4><p>Assign a pilot, change their seat or remove an existing assignment. Infinite Flight validates the final crew state.</p></div><span>CREW WRITE ACCESS</span></div>
               {(selected.crew||[]).map(crew=><div className={styles.crewMemberRow} key={crew.userId}><div><b>{crew.username||"Unknown pilot"}</b><span>{crew.role===0?"Captain":"First Officer"} · {crew.userId}</span></div><button className={styles.dangerButton} onClick={()=>removeCrewMember(crew)}><Trash2 size={13}/> Remove</button></div>)}
