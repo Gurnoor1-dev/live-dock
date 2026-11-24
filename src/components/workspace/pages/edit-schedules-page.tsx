@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState, type DragEvent } from "react";
 import {
-  AlertTriangle, ArrowDown, ArrowDownUp, ArrowLeft, ArrowUp, Check, CheckCircle2,
-  ChevronDown, ChevronRight, Clock3, Code2, Copy, FileJson, GripVertical, Layers3,
-  MapPin, Plane, RefreshCw, Save, Search, ShieldAlert, Trash2, Undo2, X
+  AlertTriangle, ArrowDown, ArrowUp, Check, CheckCircle2, ChevronRight, Clock3,
+  Code2, FileJson, GripVertical, Layers3, Plane, RefreshCw, Save, Search,
+  ShieldAlert, Trash2, Undo2, X
 } from "lucide-react";
 import { useWorkspace } from "../workspace-context";
 import { Empty } from "../shared-ui";
@@ -57,7 +57,7 @@ const parseFlightPlan = (value: string | null) => {
 const formatDate = (value: string, timeless: boolean) => timeless ? "Timeless" : value ? new Date(value).toLocaleString() : "—";
 
 export function EditSchedulesPage() {
-  const { active, canManage, schedules, aircraft, aircraftTypes, dateTime, refreshWorkspace } = useWorkspace();
+  const { active, canManage, schedules, aircraft, aircraftTypes, members, refreshWorkspace } = useWorkspace();
   const [selectedId, setSelectedId] = useState("");
   const [search, setSearch] = useState("");
   const [aircraftFilter, setAircraftFilter] = useState("all");
@@ -72,7 +72,7 @@ export function EditSchedulesPage() {
   const [error, setError] = useState("");
   const [draggedId, setDraggedId] = useState("");
   const [dragOverId, setDragOverId] = useState("");
-  const [jsonMode, setJsonMode] = useState(true);
+  const [crewUserId, setCrewUserId] = useState("");\n  const [crewRole, setCrewRole] = useState(0);
 
   const records = schedules as Schedule[];
   const selected = records.find(item => item.id === selectedId) || null;
@@ -97,7 +97,7 @@ export function EditSchedulesPage() {
     setDraft(toDraft(selected));
     setFlightPlanText(parseFlightPlan(selected.flightPlan));
     setDirtyFlightPlan(false);
-  }, [selected?.id, selected?.updatedAt, selected?.callsign, selected?.flightPlan]);
+  }, [selected?.id, selected?.callsign, selected?.flightPlan, selected?.briefing, selected?.scheduledDepartureUtc, selected?.scheduledArrivalUtc, selected?.originIcao, selected?.destinationIcao, selected?.isTimeless, selected?.flightType]);
 
   const changedFields = useMemo(() => {
     if (!selected || !draft) return [];
@@ -198,6 +198,43 @@ export function EditSchedulesPage() {
         await api("/live/schedules/" + selected.id, { method: "DELETE" });
         setNotice("Schedule deleted from Infinite Flight.");
         setSelectedId("");
+        await refreshWorkspace();
+      }
+    });
+  };
+
+  const assignCrewMember = () => {
+    if (!selected || !crewUserId) return;
+    const member = members.find(item => item.userId === crewUserId);
+    const occupant = selected.crew?.find(item => item.role === crewRole && item.userId !== crewUserId);
+    queueAction({
+      title: "Assign or update schedule crew",
+      description: `Assign ${member?.username || "the selected pilot"} as ${crewRole === 0 ? "Captain" : "First Officer"} on ${selected.callsign}.`,
+      warning: occupant
+        ? `The selected seat is currently occupied by ${occupant.username || occupant.userId}. Infinite Flight may reject the change. This operation changes the live crew assignment and has no built-in undo.`
+        : "This changes the live crew assignment in Infinite Flight. There is no built-in undo; you can manually assign the previous pilot and role again.",
+      confirmLabel: "Save crew assignment",
+      run: async () => {
+        await api("/live/schedules/" + selected.id + "/crew/" + crewUserId, {
+          method: "PUT", body: JSON.stringify({ role: crewRole })
+        });
+        setNotice("Crew assignment updated in Infinite Flight.");
+        setCrewUserId("");
+        await refreshWorkspace();
+      }
+    });
+  };
+
+  const removeCrewMember = (crew: Crew) => {
+    if (!selected) return;
+    queueAction({
+      title: "Remove assigned crew member",
+      description: `Remove ${crew.username || crew.userId} from ${selected.callsign} as ${crew.role === 0 ? "Captain" : "First Officer"}?`,
+      warning: "This removes the pilot from the live Infinite Flight schedule. There is no built-in undo; you must manually assign the pilot again if this was a mistake.",
+      confirmLabel: "Remove crew member", danger: true,
+      run: async () => {
+        await api("/live/schedules/" + selected.id + "/crew/" + crew.userId, { method: "DELETE" });
+        setNotice("Crew member removed from the schedule.");
         await refreshWorkspace();
       }
     });
@@ -322,6 +359,15 @@ export function EditSchedulesPage() {
           {section==="crew"&&<div className={styles.formArea}>
             <div className={styles.sectionIntro}><div><h4>Crew & schedule sequence</h4><p>Review assigned crew and adjust this aircraft's schedule order.</p></div><span className={styles.readonlyPill}>{groupSchedules.length} aircraft schedules</span></div>
             <div className={styles.crewSummary}><div><span>Captain</span><b>{selected.crew?.find(c=>c.role===0)?.username||"Unassigned"}</b></div><div><span>First officer</span><b>{selected.crew?.find(c=>c.role===1)?.username||"Unassigned"}</b></div><div><span>Crew total</span><b>{selected.crew?.length||0}/2</b></div></div>
+            <div className={styles.crewManager}>
+              <div className={styles.sequenceHeader}><div><h4>Manage assigned crew</h4><p>Assign a pilot, change their seat or remove an existing assignment. Infinite Flight validates the final crew state.</p></div><span>CREW WRITE ACCESS</span></div>
+              {(selected.crew||[]).map(crew=><div className={styles.crewMemberRow} key={crew.userId}><div><b>{crew.username||"Unknown pilot"}</b><span>{crew.role===0?"Captain":"First Officer"} · {crew.userId}</span></div><button className={styles.dangerButton} onClick={()=>removeCrewMember(crew)}><Trash2 size={13}/> Remove</button></div>)}
+              <div className={styles.crewAssignForm}>
+                <label>Pilot<select value={crewUserId} onChange={e=>setCrewUserId(e.target.value)}><option value="">Select an organization member</option>{members.map(member=><option key={member.userId} value={member.userId}>{member.username||member.userId}</option>)}</select></label>
+                <label>Seat<select value={crewRole} onChange={e=>setCrewRole(Number(e.target.value))}><option value={0}>Captain</option><option value={1}>First Officer</option></select></label>
+                <button className={styles.primaryButton} disabled={!crewUserId||busy} onClick={assignCrewMember}><Check size={14}/> Assign / update</button>
+              </div>
+            </div>
             <div className={styles.sequenceHeader}><div><h4>Aircraft schedule sequence</h4><p>Drag a movable schedule onto another schedule to place it after that record. Use the top target to move it to first position.</p></div><span>DRAG & DROP</span></div>
             <div className={styles.dropTop} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();const id=draggedId||e.dataTransfer.getData("text/plain");const item=groupSchedules.find(s=>s.id===id);setDraggedId("");if(item)moveSchedule(item,null);}}><ArrowUp size={14}/> Drop here to move to the top</div>
             <div className={styles.sequenceList}>
