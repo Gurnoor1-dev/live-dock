@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type DragEvent } from "react";
 import {
-  AlertTriangle, ArrowDown, ArrowUp, Check, CheckCircle2, ChevronRight, Clock3,
+  AlertTriangle, ArrowDown, ArrowUp, Check, CheckCircle2, ChevronRight, ClipboardCopy, Clock3,
   Code2, FileJson, GripVertical, Layers3, Plane, RefreshCw, Save, Search,
   ShieldAlert, Trash2, Undo2, X
 } from "lucide-react";
@@ -155,18 +155,22 @@ export function EditSchedulesPage() {
 
   const saveDetails = () => {
     if (!selected || !draft || !changedFields.length) return;
-    const departure = draft.isTimeless ? null : new Date(draft.departure).toISOString();
-    const arrival = draft.isTimeless ? null : new Date(draft.arrival).toISOString();
-    if (!draft.isTimeless && (!draft.departure || !draft.arrival || new Date(arrival!).getTime() <= new Date(departure!).getTime())) {
+    const departureDate = draft.isTimeless ? null : new Date(draft.departure);
+    const arrivalDate = draft.isTimeless ? null : new Date(draft.arrival);
+    if (!draft.isTimeless && (!draft.departure || !draft.arrival || Number.isNaN(departureDate?.getTime()) || Number.isNaN(arrivalDate?.getTime()) || arrivalDate!.getTime() <= departureDate!.getTime())) {
       setError("Arrival must be later than departure. Choose valid local date and times."); return;
     }
-    if (!draft.callsign.trim() || !draft.originIcao.trim() || !draft.destinationIcao.trim()) {
-      setError("Flight number, origin and destination are required."); return;
+    if (!draft.callsign.trim() || /[\\u0000-\\u001f]/.test(draft.callsign) || !/^[A-Za-z0-9]{1,8}$/.test(draft.originIcao.trim()) || !/^[A-Za-z0-9]{1,8}$/.test(draft.destinationIcao.trim())) {
+      setError("Enter a callsign and 1–8 character alphanumeric airport codes. Control characters are not allowed."); return;
+    }
+    if (!Number.isInteger(Number(draft.flightType)) || Number(draft.flightType) < 0 || Number(draft.flightType) > 12) {
+      setError("Select a valid Infinite Flight flight category."); return;
     }
     const payload = {
       callsign: draft.callsign.trim(), flightType: Number(draft.flightType),
       originIcao: draft.originIcao.trim().toUpperCase(), destinationIcao: draft.destinationIcao.trim().toUpperCase(),
-      isTimeless: draft.isTimeless, scheduledDepartureUtc: departure, scheduledArrivalUtc: arrival,
+      isTimeless: draft.isTimeless,
+      ...(draft.isTimeless ? {} : { scheduledDepartureUtc: departureDate!.toISOString(), scheduledArrivalUtc: arrivalDate!.toISOString() }),
       briefing: draft.briefing.trim() || null
     };
     queueAction({
@@ -346,7 +350,7 @@ export function EditSchedulesPage() {
             <div className={styles.sectionIntro}><div><h4>Schedule configuration</h4><p>These fields update the live schedule record. The schedule ID and aircraft association remain unchanged.</p></div><span className={styles.readonlyPill}>ID locked</span></div>
             <div className={styles.formGrid}>
               <label className={styles.field}>Flight number<input maxLength={32} value={draft.callsign} onChange={e=>setDraft({...draft,callsign:e.target.value.toUpperCase()})}/><small>Maximum 32 characters.</small></label>
-              <label className={styles.field}>Flight type code<input type="number" min={0} max={255} value={draft.flightType} onChange={e=>setDraft({...draft,flightType:Number(e.target.value)})}/><small>Retain the existing code unless you know the required enum value.</small></label>
+              <label className={styles.field}>Flight category<select value={draft.flightType} onChange={e=>setDraft({...draft,flightType:Number(e.target.value)})}>{["None","Commercial","Charter","Cargo","Training","Test flight","Medical emergency","Military","VIP / Executive","Humanitarian relief","General aviation","Airshow","Other"].map((name,index)=><option key={index} value={index}>{index} · {name}</option>)}</select><small>Choose one of the official PersistentFlightType values.</small></label>
               <label className={styles.field}>Origin ICAO<input maxLength={8} value={draft.originIcao} onChange={e=>setDraft({...draft,originIcao:e.target.value.toUpperCase()})}/><small>1–8 alphanumeric characters.</small></label>
               <label className={styles.field}>Destination ICAO<input maxLength={8} value={draft.destinationIcao} onChange={e=>setDraft({...draft,destinationIcao:e.target.value.toUpperCase()})}/><small>1–8 alphanumeric characters.</small></label>
             </div>
