@@ -54,9 +54,9 @@ function ttlFor(method: string, path: string) {
   if (path.startsWith("/sessions/") && (path.endsWith("/flights") || path.includes("/flights/") || path.endsWith("/atc") || path.endsWith("/status") || path.endsWith("/atis"))) return 15_000;
   if (path.startsWith("/users/") || path === "/users") return 5 * 60_000;
   if (path === "/aircraft" || path === "/airports" || path === "/aircraft/liveries" || path.startsWith("/aircraft/") || path.startsWith("/airport/")) return 60 * 60_000;
-  if (path.startsWith("/live/aircraft/") && path.endsWith("/position")) return 15_000;
+  if (path.startsWith("/live/aircraft/") && path.endsWith("/position")) return 90_000;
   if (path.startsWith("/live/aircraft/") && path.endsWith("/flights")) return 5 * 60_000;
-  if (path.startsWith("/live/")) return 60_000;
+  if (path.startsWith("/live/")) return 90_000;
   return 0;
 }
 
