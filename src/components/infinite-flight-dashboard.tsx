@@ -8,7 +8,8 @@ import { useRouter } from "next/navigation";
 import { HomePage } from "@/components/workspace/pages/home-page";
 import { SchedulesPage } from "@/components/workspace/pages/schedules-page";
 import { HistoryPage } from "@/components/workspace/pages/history-page";
-import { AdminSchedulesPage } from "@/components/workspace/pages/admin-schedules-page";\nimport { EditSchedulesPage } from "@/components/workspace/pages/edit-schedules-page";
+import { AdminSchedulesPage } from "@/components/workspace/pages/admin-schedules-page";
+import { EditSchedulesPage } from "@/components/workspace/pages/edit-schedules-page";
 import { MyFlightsPage } from "@/components/workspace/pages/my-flights-page";
 import { OrganisationDockPage } from "@/components/workspace/pages/organisation-dock-page";
 import { IntegrationsPage } from "@/components/workspace/pages/integrations-page";
@@ -54,7 +55,8 @@ const PAGE_ROUTES:Record<Tab,string>={
   "Schedules":"/schedules",
   "My Flights":"/my-flights",
   "Organisation Dock":"/organisation-dock",
-  "Admin Schedules":"/admin/schedules",\n  "Edit Schedules":"/admin/edit-schedules",
+  "Admin Schedules":"/admin/schedules",
+  "Edit Schedules":"/admin/edit-schedules",
   "Integrations":"/admin/integrations",
   "Applications":"/admin/applications",
   "User Management":"/admin/users",
@@ -570,7 +572,8 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
           {active==="Home"&&<HomePage/>}
           {active==="Schedules"&&<SchedulesPage/>}
           {active==="History"&&<HistoryPage/>}
-          {active==="Admin Schedules"&&<AdminSchedulesPage/>}\n          {active==="Edit Schedules"&&<EditSchedulesPage/>}
+          {active==="Admin Schedules"&&<AdminSchedulesPage/>}
+          {active==="Edit Schedules"&&<EditSchedulesPage/>}
           {active==="My Flights"&&<MyFlightsPage/>}
           {active==="Organisation Dock"&&<OrganisationDockPage/>}
           {active==="Integrations"&&<IntegrationsPage/>}
