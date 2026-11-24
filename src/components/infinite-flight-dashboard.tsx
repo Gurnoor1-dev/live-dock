@@ -303,7 +303,8 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     markerRefs.current=[];
     for(const aircraftItem of aircraft){
       const position=positions[aircraftItem.id];
-      if(!position||!Number.isFinite(position.latitude)||!Number.isFinite(position.longitude))continue;\n      if(position.state===0&&aircraftItem.visibility!==2)continue;
+      if(!position||!Number.isFinite(position.latitude)||!Number.isFinite(position.longitude))continue;
+      if(position.state===0&&aircraftItem.visibility!==2)continue;
       const stale=(position.state===1||position.state===4)&&position.updatedAt&&Date.now()-new Date(position.updatedAt).getTime()>18*60*60*1000;
       const color=aircraftItem.visibility===2?"#f08a32":stale?"#b28a18":position.state===2?"#25b96b":position.state===4?"#8b5cf6":position.state===1?"#3b82f6":"#8b929b";
       const element=document.createElement("button");
