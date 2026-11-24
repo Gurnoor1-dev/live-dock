@@ -439,7 +439,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .map-legend{display:flex;gap:16px;flex-wrap:wrap;margin:0 0 13px}
 .map-legend span{display:inline-flex;align-items:center;gap:7px;font-size:10px;color:var(--muted)}
 .map-legend i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#87909a}
-.legend-flight{background:#25b96b!important}.legend-ground{background:#3b82f6!important}.legend-stopped{background:#8b5cf6!important}.legend-inactive{background:#b28a18!important}.legend-hangared{background:#f08a32!important}
+.legend-flight{background:#25b96b!important}.legend-ground{background:#3b82f6!important}.legend-stopped{background:#8b5cf6!important}.legend-inactive{background:#b28a18!important}.legend-hangared{background:#ef4444!important}
 .map-aircraft-popup{position:absolute;z-index:8;left:16px;right:16px;bottom:16px;max-height:min(78%,690px);overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 20px 65px rgba(0,0,0,.28);animation:aircraft-popup-in .24s ease-out}
 @keyframes aircraft-popup-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 .aircraft-popup-grabber{display:none;width:42px;height:4px;border-radius:5px;background:var(--muted);opacity:.4;margin:-9px auto 14px}
@@ -449,7 +449,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .aircraft-type-chip,.aircraft-status-chip{border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:10px;font-weight:700}
 .aircraft-status-chip{display:inline-flex;align-items:center;gap:7px;border:0;border-radius:30px;background:var(--surface-2)}
 .aircraft-status-chip i{width:7px;height:7px;border-radius:50%;background:currentColor}
-.aircraft-status-chip.flight{color:#25a765;background:rgba(37,185,107,.12)}.aircraft-status-chip.ground{color:#3b82f6;background:rgba(59,130,246,.12)}.aircraft-status-chip.stopped{color:#8b5cf6;background:rgba(139,92,246,.12)}.aircraft-status-chip.inactive{color:#b28a18;background:rgba(178,138,24,.14)}.aircraft-status-chip.hangared{color:#f08a32;background:rgba(240,138,50,.14)}
+.aircraft-status-chip.flight{color:#25a765;background:rgba(37,185,107,.12)}.aircraft-status-chip.ground{color:#3b82f6;background:rgba(59,130,246,.12)}.aircraft-status-chip.stopped{color:#8b5cf6;background:rgba(139,92,246,.12)}.aircraft-status-chip.inactive{color:#b28a18;background:rgba(178,138,24,.14)}.aircraft-status-chip.hangared{color:#ef4444;background:rgba(239,68,68,.14)}
 .aircraft-popup-subtitle{font-size:12px;color:var(--muted);margin:8px 0 0}
 .aircraft-popup-close{flex:none;border-radius:50%;width:38px;height:38px;border:1px solid var(--line)!important}
 .aircraft-popup-photo{position:relative;height:230px;margin:18px 0 14px;border:1px solid var(--line);border-radius:13px;overflow:hidden;background:var(--surface-2)}
