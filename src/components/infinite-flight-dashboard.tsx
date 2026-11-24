@@ -64,7 +64,7 @@ async function api(path:string,init:RequestInit={}) {
     ...init,cache:"no-store",credentials:"same-origin",
     headers:{"Content-Type":"application/json",...(init.headers||{})}
   });
-  const payload=await response.json().catch(()=>({}));
+  const proHeader=response.headers.get("x-user-pro");if(proHeader!==null)sharedIsPro=proHeader.toLowerCase()==="true";\n  const payload=await response.json().catch(()=>({}));
   if(!response.ok) throw new Error(payload.error_description||payload.error||payload.message||`Infinite Flight returned HTTP ${response.status}.`);
   if(typeof payload.errorCode==="number"&&payload.errorCode!==0) throw new Error(payload.message||`Infinite Flight API error ${payload.errorCode}.`);
   return payload.result;
@@ -213,20 +213,24 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
   useEffect(()=>{
     if(auth!=="signed-in"||!aircraft.length)return;
     let alive=true;
-    if(Object.keys(sharedPositions).length&&Date.now()-positionsRefreshedAt<WORKSPACE_REFRESH_MS)setPositions(sharedPositions);
+    if(Object.keys(sharedPositions).length)setPositions(sharedPositions);
     let lastActivityAt=Date.now();
     const markActivity=()=>{lastActivityAt=Date.now();};
+    const positionRefreshMs=60_000;
     const refreshPositions=async()=>{
       if(document.visibilityState!=="visible"||Date.now()-lastActivityAt>=15*60_000)return;
-      if(Object.keys(sharedPositions).length&&Date.now()-positionsRefreshedAt<WORKSPACE_REFRESH_MS)return;
-      const entries=await Promise.all(aircraft.map(async item=>{
-        try{
-          const position=await api("/live/aircraft/"+item.id+"/position");
-          return [item.id,position] as const;
-        }catch{return null;}
+      if(Date.now()-positionsRefreshedAt<positionRefreshMs)return;
+      // Free tokens allow 5 requests/minute; Pro tokens allow 20. Reserve room for other app actions.
+      const batchSize=sharedIsPro?8:1;
+      const batch=Array.from({length:Math.min(batchSize,aircraft.length)},(_,offset)=>aircraft[(sharedPositionCursor+offset)%aircraft.length]);
+      if(!batch.length)return;
+      sharedPositionCursor=(sharedPositionCursor+batch.length)%aircraft.length;
+      const entries=await Promise.all(batch.map(async item=>{
+        try{const position=await api("/live/aircraft/"+item.id+"/position");return [item.id,position] as const;}
+        catch{return null;}
       }));
       if(!alive)return;
-      const updated:Record<string,Position>={};
+      const updated:Record<string,Position>={...sharedPositions};
       for(const entry of entries)if(entry&&entry[1]&&Number.isFinite(entry[1].latitude)&&Number.isFinite(entry[1].longitude))updated[entry[0]]=entry[1] as Position;
       for(const key of Object.keys(sharedPositions))delete sharedPositions[key];
       Object.assign(sharedPositions,updated);
@@ -237,7 +241,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     window.addEventListener("pointerdown",markActivity,{passive:true});
     window.addEventListener("keydown",markActivity);
     window.addEventListener("touchstart",markActivity,{passive:true});
-    const timer=window.setInterval(()=>{if(Date.now()-positionsRefreshedAt>=WORKSPACE_REFRESH_MS)void refreshPositions();},WORKSPACE_REFRESH_MS);
+    const timer=window.setInterval(()=>{if(Date.now()-positionsRefreshedAt>=positionRefreshMs)void refreshPositions();},positionRefreshMs);
     return()=>{alive=false;window.clearInterval(timer);window.removeEventListener("pointerdown",markActivity);window.removeEventListener("keydown",markActivity);window.removeEventListener("touchstart",markActivity);};
   },[auth,aircraft]);
 
