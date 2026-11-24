@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { HomePage } from "@/components/workspace/pages/home-page";
 import { SchedulesPage } from "@/components/workspace/pages/schedules-page";
 import { HistoryPage } from "@/components/workspace/pages/history-page";
-import { AdminSchedulesPage } from "@/components/workspace/pages/admin-schedules-page";
+import { AdminSchedulesPage } from "@/components/workspace/pages/admin-schedules-page";\nimport { EditSchedulesPage } from "@/components/workspace/pages/edit-schedules-page";
 import { MyFlightsPage } from "@/components/workspace/pages/my-flights-page";
 import { OrganisationDockPage } from "@/components/workspace/pages/organisation-dock-page";
 import { IntegrationsPage } from "@/components/workspace/pages/integrations-page";
@@ -32,7 +32,7 @@ type Crew={userId:string;username:string|null;role:number};
 type Schedule={id:string;status:number;callsign:string;organizationId:string;aircraftId:string;flightType:number;originIcao:string;destinationIcao:string;isTimeless:boolean;scheduledDepartureUtc:string;scheduledArrivalUtc:string;briefing:string|null;flightPlan:string|null;crew:Crew[];sequence:number};
 type FlightHistoryCrewMember={username?:string|null;userId?:string};
 type FlightHistoryRecord={id?:string;callsign?:string;actualDepartureUtc?:string;actualArrivalUtc?:string;originIcao?:string;destinationIcao?:string;flightTimeMinutes?:number;crew?:FlightHistoryCrewMember[]};
-type Tab="Home"|"Schedules"|"My Flights"|"Organisation Dock"|"Admin Schedules"|"Integrations"|"Applications"|"User Management"|"Feature Selection"|"History";
+type Tab="Home"|"Schedules"|"My Flights"|"Organisation Dock"|"Admin Schedules"|"Edit Schedules"|"Integrations"|"Applications"|"User Management"|"Feature Selection"|"History";
 type Position={id:string;state:number;isOnGround:boolean;latitude:number;longitude:number;altitude:number;heading:number;speed:number;verticalSpeed:number;lastPilotId?:string;lastPilotUsername?:string;updatedAt:string;airportIcao?:string;airportName?:string};
 type AircraftType={id:string;name:string};
 type GalleryPhoto={id:string;url:string;altText:string;caption:string;credit:{name:string;url:string;displayText:string};displayOrder:number;isVisible:boolean};
@@ -54,7 +54,7 @@ const PAGE_ROUTES:Record<Tab,string>={
   "Schedules":"/schedules",
   "My Flights":"/my-flights",
   "Organisation Dock":"/organisation-dock",
-  "Admin Schedules":"/admin/schedules",
+  "Admin Schedules":"/admin/schedules",\n  "Edit Schedules":"/admin/edit-schedules",
   "Integrations":"/admin/integrations",
   "Applications":"/admin/applications",
   "User Management":"/admin/users",
@@ -498,7 +498,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     finally{setBusy(false);}
   }
   const workspaceValue={
-    active,organization,aircraft,aircraftTypes,members,schedules,liveSchedules,positions,selectedAircraft,
+    active,refreshWorkspace:refresh,organization,aircraft,aircraftTypes,members,schedules,liveSchedules,positions,selectedAircraft,
     selectedPosition,selectedActiveSchedule,selectedNextSchedule,selectedPhotos,photoIndex,
     routeProgress,parkedAirport,flightHistory,canManage,query,setQuery,visibleAircraft,
     mapContainer,setSelectedAircraft,navigatePage,statusName,dateTime,aircraftCategory,
@@ -553,7 +553,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
       {canManage&&<div className="sidebar-section admin-sidebar-section">
         <p className="nav-caption">ADMIN</p>
         <nav>
-          {([{label:"Schedules",tab:"Admin Schedules" as Tab,icon:<CalendarDays size={17}/>},{label:"Integrations",tab:"Integrations" as Tab,icon:<Plug size={17}/>},{label:"Applications",tab:"Applications" as Tab,icon:<ClipboardList size={17}/>},{label:"User Management",tab:"User Management" as Tab,icon:<UserRoundCog size={17}/>},{label:"Feature Selection",tab:"Feature Selection" as Tab,icon:<SlidersHorizontal size={17}/>}]).map(item=><button key={item.tab} className={active===item.tab?"nav-item active":"nav-item"} onClick={()=>navigatePage(item.tab)}>{item.icon}<span>{item.label}</span></button>)}
+          {([{label:"Schedules",tab:"Admin Schedules" as Tab,icon:<CalendarDays size={17}/>},{label:"Edit Schedules",tab:"Edit Schedules" as Tab,icon:<ArrowUpRight size={17}/>},{label:"Integrations",tab:"Integrations" as Tab,icon:<Plug size={17}/>},{label:"Applications",tab:"Applications" as Tab,icon:<ClipboardList size={17}/>},{label:"User Management",tab:"User Management" as Tab,icon:<UserRoundCog size={17}/>},{label:"Feature Selection",tab:"Feature Selection" as Tab,icon:<SlidersHorizontal size={17}/>}]).map(item=><button key={item.tab} className={active===item.tab?"nav-item active":"nav-item"} onClick={()=>navigatePage(item.tab)}>{item.icon}<span>{item.label}</span></button>)}
         </nav>
       </div>}
 
@@ -563,14 +563,14 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
       <header className="topbar"><div className="topbar-left"><button className="icon-button mobile-menu" onClick={()=>setMobileNav(true)} aria-label="Open menu"><Menu size={19}/></button><button className="topbar-brand-button" onClick={()=>setProfileOpen(value=>!value)} aria-label="Open profile" title="Veyro Live · Open profile"><Image src={veyroLiveLogo} alt="Veyro Live" priority/></button></div><div className="topbar-actions"><span className="live-indicator"><i/> IF API connected</span><button className="icon-button" onClick={refresh} aria-label="Refresh Infinite Flight data" title="Refresh"><RefreshCw size={16}/></button><button className={`theme-switch ${theme}`} onClick={()=>setTheme(theme==="light"?"dark":"light")} aria-label={`Switch to ${theme==="light"?"dark":"light"} theme`} aria-pressed={theme==="dark"} title={`Switch to ${theme==="light"?"dark":"light"} theme`}><span className="theme-switch-copy"><span className="theme-switch-icon">{theme==="light"?<Sun size={15}/>:<Moon size={15}/>}</span><span>{theme==="light"?"Light":"Dark"}</span></span><span className="theme-switch-track" aria-hidden="true"><span className="theme-switch-thumb"/></span></button></div></header>
       {profileOpen&&<><button className="profile-popover-backdrop" aria-label="Close profile menu" onClick={()=>setProfileOpen(false)}/><div className="profile-popover"><button className="profile-popover-close" aria-label="Close profile menu" onClick={()=>setProfileOpen(false)}><X size={16}/></button><div className="profile-popover-head"><span className="avatar">{(profileName||"IF").slice(0,2).toUpperCase()}</span><div><b>{profileName}</b><small>{profileRole!==null?roleName(profileRole):"Virtual Blue member"}</small></div></div><form className="profile-link-form" onSubmit={saveDiscordProfile}><label>Discord User ID<input required inputMode="numeric" pattern="[0-9]{17,20}" value={discordUserId} onChange={event=>setDiscordUserId(event.target.value)} placeholder="17–20 digit Discord ID"/></label><label>Discord username<input value={discordUsername} onChange={event=>setDiscordUsername(event.target.value)} placeholder="@username"/></label><button className="primary-button" type="submit" disabled={profileSaving}>{profileSaving?"Saving…":"Save Discord account"}</button>{profileNotice&&<small className="profile-inline-notice">{profileNotice}</small>}</form><button className="signout-button" onClick={signOut} disabled={busy}><LogOut size={15}/> Sign out</button></div></>}
       <div className="content">
-        <div className="page-heading"><div><p className="eyebrow">VIRTUAL BLUE · INFINITE FLIGHT LIVE</p><h1>{active==="Admin Schedules"?"Schedules":active}</h1><p className="muted">{active==="Home"?"Your Virtual Blue operations overview and live fleet picture.":active==="Schedules"?"Explore published Virtual Blue schedules and available crew positions.":active==="My Flights"?"Your flight activity, crew assignments and booked upcoming legs.":active==="Organisation Dock"?"Your organisation profile, airline information and operational reference.":active==="Admin Schedules"?"Create, publish and maintain your organisation’s schedules.":active==="Integrations"?"Configure Discord connections, channels and automated operational messages.":active==="Applications"?"Review pilot applications and approve eligible Infinite Flight usernames.":active==="User Management"?"Manage approved app accounts and the wider organisation pilot directory.":active==="Feature Selection"?"Enable or disable optional premium organisation features.":"Aircraft flight history."}</p></div><div className="heading-actions"><span className="date-chip"><CalendarDays size={15}/>{new Intl.DateTimeFormat("en",{dateStyle:"medium"}).format(new Date())}</span></div></div>
+        <div className="page-heading"><div><p className="eyebrow">VIRTUAL BLUE · INFINITE FLIGHT LIVE</p><h1>{active==="Admin Schedules"?"Schedules":active==="Edit Schedules"?"Edit Schedules":active}</h1><p className="muted">{active==="Home"?"Your Virtual Blue operations overview and live fleet picture.":active==="Schedules"?"Explore published Virtual Blue schedules and available crew positions.":active==="My Flights"?"Your flight activity, crew assignments and booked upcoming legs.":active==="Organisation Dock"?"Your organisation profile, airline information and operational reference.":active==="Admin Schedules"?"Publish schedules and operate schedule automations.":active==="Edit Schedules"?"Advanced editing, flight plans, crew assignments and aircraft schedule sequencing.":active==="Integrations"?"Configure Discord connections, channels and automated operational messages.":active==="Applications"?"Review pilot applications and approve eligible Infinite Flight usernames.":active==="User Management"?"Manage approved app accounts and the wider organisation pilot directory.":active==="Feature Selection"?"Enable or disable optional premium organisation features.":"Aircraft flight history."}</p></div><div className="heading-actions"><span className="date-chip"><CalendarDays size={15}/>{new Intl.DateTimeFormat("en",{dateStyle:"medium"}).format(new Date())}</span></div></div>
         {error&&<p className="form-error" role="alert">{error}</p>}{notice&&<p className="form-success" role="status">{notice}</p>}
         {!organization&&<section className="section-card"><div className="empty-state"><span className="empty-icon"><Compass size={20}/></span><b>Virtual Blue workspace unavailable</b><p>This Infinite Flight account could not access the configured Virtual Blue organisation. Confirm that your account is a member and has the required API permissions, then try again.</p><button className="outline-button" onClick={()=>void loadOrganization()} disabled={busy}>{busy?"Connecting…":"Retry connection"}</button></div></section>}
         {organization&&<WorkspaceProvider value={workspaceValue}>
           {active==="Home"&&<HomePage/>}
           {active==="Schedules"&&<SchedulesPage/>}
           {active==="History"&&<HistoryPage/>}
-          {active==="Admin Schedules"&&<AdminSchedulesPage/>}
+          {active==="Admin Schedules"&&<AdminSchedulesPage/>}\n          {active==="Edit Schedules"&&<EditSchedulesPage/>}
           {active==="My Flights"&&<MyFlightsPage/>}
           {active==="Organisation Dock"&&<OrganisationDockPage/>}
           {active==="Integrations"&&<IntegrationsPage/>}
