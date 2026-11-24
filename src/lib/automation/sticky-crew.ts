@@ -103,21 +103,19 @@ export async function stickyCrewSeatSelection(discordId:string,seat:string){
  await getDb().update(appSettings).set({value:{...state,seat},updatedAt:new Date()}).where(eq(appSettings.key,key));
  return{flags:32768|64,components:[{type:10,content:`Seat selected: **${seat==="captain"?"Captain":"First Officer"}**. Press submit to create the crew requests.`},{type:1,components:[{type:2,style:3,label:"Submit crew requests",custom_id:"sticky:confirm"}]}]};
 }
-export async function submitStickyCrewRequests(discordId:string){
+export async function submitStickyCrewRequests(discordId:string,operator:IFSession){
  const db=getDb();const key="sticky_crew_session:"+discordId;const [stateRow]=await db.select().from(appSettings).where(eq(appSettings.key,key)).limit(1);
  if(!stateRow)throw new Error("Your Sticky Crew selection expired. Start again from the panel.");
  const state=stateRow.value as {scheduleIds?:string[];seat?:string};
  if(!state.scheduleIds?.length||!["captain","first_officer"].includes(state.seat||""))throw new Error("Select at least one schedule and a crew seat first.");
  const [pilot]=await db.select().from(appUsers).where(eq(appUsers.discordUserId,discordId)).limit(1);
- if(!pilot?.onboardingCompletedAt)throw new Error("Link your Infinite Flight and Discord accounts in Live Dock before requesting a flight.");
+ if(!pilot?.onboardingCompletedAt||!pilot.discordUserId)throw new Error("Link your Infinite Flight and Discord accounts in Live Dock before requesting a flight.");
  const [cfg]=await db.select().from(discordIntegrations).where(eq(discordIntegrations.id,"virtual-blue")).limit(1);
  if(!cfg?.crewRequestsChannelId)throw new Error("Crew Requests channel is not configured.");
- const rows=await db.select().from(appSettings).where(eq(appSettings.key,"sticky_crew_panel"));
- const adminRows=await db.select().from((await import("@/lib/db/schema")).adminOperatorCredentials);
- let operator:IFSession|undefined;
- for(const row of adminRows){try{const {openSecret}=await import("@/lib/security/secret-box");const stored=JSON.parse(openSecret(row.encryptedSession)) as IFSession;if(stored.expiresAt>Date.now()+60000){operator=stored;break;}}catch{}}
- if(!operator)throw new Error("No connected organisation administrator session is available. Ask an administrator to reconnect.");
- const raw=await ifFetch<Schedule[]|{items?:Schedule[]}>(`/live/organizations/${ORGANIZATION_ID}/schedules?page=1&pageSize=100`,operator);
+ const [raw,aircraftRaw]=await Promise.all([
+  ifFetch<Schedule[]|{items?:Schedule[]}>(`/live/organizations/${ORGANIZATION_ID}/schedules?page=1&pageSize=100`,operator),
+  ifFetch<Aircraft[]>(`/live/organizations/${ORGANIZATION_ID}/aircraft`,operator)
+ ]);
  const schedules=Array.isArray(raw)?raw:raw.items||[];
  const created:string[]=[];const errors:string[]=[];
  for(const scheduleId of state.scheduleIds){
@@ -129,9 +127,9 @@ export async function submitStickyCrewRequests(discordId:string){
   if(pending){errors.push(schedule.callsign+": request already exists");continue;}
   const id=randomUUID();
   try{await db.insert(crewRequests).values({id,scheduleId,aircraftId:schedule.aircraftId,pilotIfcUserId:pilot.ifcUserId,seat:state.seat!,status:"pending"});}catch{errors.push(schedule.callsign+": seat has a pending request");continue;}
-  const aircraft=(await ifFetch<Aircraft[]>(`/live/organizations/${ORGANIZATION_ID}/aircraft`,operator)).find(a=>a.id===schedule.aircraftId);
+  const aircraft=(aircraftRaw||[]).find(a=>a.id===schedule.aircraftId);
   const departure=schedule.isTimeless?"**Anytime**":schedule.scheduledDepartureUtc?`<t:${Math.floor(new Date(schedule.scheduledDepartureUtc).getTime()/1000)}:F>`:"**Anytime**";
-  try{const {crewRequestMessage,sendDiscordMessage}=await import("@/lib/discord/components");const sent=await sendDiscordMessage(cfg.crewRequestsChannelId,crewRequestMessage({discordUserId:pilot.discordUserId!,requestId:id,pilot:pilot.ifcUsername||"Infinite Flight pilot",registration:aircraft?.registration||"Aircraft",role:state.seat==="captain"?"Captain":"First Officer",origin:schedule.originIcao,destination:schedule.destinationIcao,departure}));await db.update(crewRequests).set({discordMessageId:sent.id}).where(eq(crewRequests.id,id));created.push(schedule.callsign);}catch(error){await db.update(crewRequests).set({status:"failed",failureCode:"discord_delivery_failed"}).where(eq(crewRequests.id,id));errors.push(schedule.callsign+": Discord delivery failed");}
+  try{const {crewRequestMessage,sendDiscordMessage}=await import("@/lib/discord/components");const sent=await sendDiscordMessage(cfg.crewRequestsChannelId,crewRequestMessage({discordUserId:pilot.discordUserId,pilot:pilot.ifcUsername||"Infinite Flight pilot",requestId:id,registration:aircraft?.registration||"Aircraft",role:state.seat==="captain"?"Captain":"First Officer",origin:schedule.originIcao,destination:schedule.destinationIcao,departure}));await db.update(crewRequests).set({discordMessageId:sent.id}).where(eq(crewRequests.id,id));created.push(schedule.callsign);}catch{await db.update(crewRequests).set({status:"failed",failureCode:"discord_delivery_failed"}).where(eq(crewRequests.id,id));errors.push(schedule.callsign+": Discord delivery failed");}
  }
  await db.delete(appSettings).where(eq(appSettings.key,key));
  return {created,errors};
