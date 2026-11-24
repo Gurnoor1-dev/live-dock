@@ -132,6 +132,8 @@ export async function submitStickyCrewRequests(discordId:string,operator:IFSessi
   const schedule=schedules.find(s=>s.id===scheduleId);
   if(!schedule||!REQUESTABLE.includes(schedule.status)){errors.push(scheduleId+": schedule unavailable");continue;}
   const role=state.seat==="captain"?0:1;
+  await db.update(crewRequests).set({status:"completed"}).where(and(eq(crewRequests.scheduleId,scheduleId),eq(crewRequests.seat,state.seat!),eq(crewRequests.status,"approved")));
+  await db.update((await import("@/lib/db/schema")).activeCrewAssignments).set({status:"released"}).where(and(eq((await import("@/lib/db/schema")).activeCrewAssignments.scheduleId,scheduleId),eq((await import("@/lib/db/schema")).activeCrewAssignments.seat,state.seat!),eq((await import("@/lib/db/schema")).activeCrewAssignments.status,"assigned")));
   if((schedule.crew||[]).some(c=>c.role===role)){errors.push(schedule.callsign+": seat already assigned");continue;}
   const [pending]=await db.select({id:crewRequests.id}).from(crewRequests).where(and(eq(crewRequests.scheduleId,scheduleId),eq(crewRequests.seat,state.seat!),inArray(crewRequests.status,["pending","processing","approved"]))).limit(1);
   if(pending){errors.push(schedule.callsign+": request already exists");continue;}
