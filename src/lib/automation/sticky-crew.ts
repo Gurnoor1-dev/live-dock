@@ -31,8 +31,8 @@ export function stickyPanelPayload(aircraft:Aircraft[],schedules:Schedule[]){
 }
 async function storedPanel(){const [row]=await getDb().select().from(appSettings).where(eq(appSettings.key,PANEL_KEY)).limit(1);return (row?.value||{}) as {channelId?:string;messageId?:string};}
 async function savePanel(channelId:string,messageId:string){await getDb().insert(appSettings).values({key:PANEL_KEY,value:{channelId,messageId},updatedAt:new Date()}).onConflictDoUpdate({target:appSettings.key,set:{value:{channelId,messageId},updatedAt:new Date()}});}
-export async function stickyCrewStatus(session:IFSession):Promise<StickyPanelResult>{
- const db=getDb();const [cfg]=await db.select().from(discordIntegrations).where(eq(discordIntegrations.id,"virtual-blue")).limit(1);
+export async function stickyCrewStatus():Promise<StickyPanelResult>{
+ const db=getDb();
  const [settings]=await db.select().from(appSettings).where(eq(appSettings.key,CONFIG_KEY)).limit(1);
  const channelId=String((settings?.value as {channelId?:string}|undefined)?.channelId||"");
  if(!channelId)return{exists:false,reason:"channel_missing"};
@@ -61,7 +61,7 @@ export async function publishStickyCrewPanel(session:IFSession):Promise<StickyPa
  if(stored.messageId&&stored.channelId===channelId){
   try{
    await editDiscordMessage(channelId,stored.messageId,payload);
-   return{exists:true,updated:true,messageId:stored.messageId,aircraftCount:payload.components[2].content?aircraft.filter(a=>schedules.some(s=>s.aircraftId===a.id&&REQUESTABLE.includes(s.status))).length:0,scheduleCount:aircraft.filter(a=>schedules.some(s=>s.aircraftId===a.id&&REQUESTABLE.includes(s.status))).reduce((n,a)=>n+schedules.filter(s=>s.aircraftId===a.id&&REQUESTABLE.includes(s.status)).length,0)};
+   return{exists:true,updated:true,messageId:stored.messageId,aircraftCount:aircraft.filter(a=>schedules.some(s=>s.aircraftId===a.id&&REQUESTABLE.includes(s.status))).length,scheduleCount:aircraft.filter(a=>schedules.some(s=>s.aircraftId===a.id&&REQUESTABLE.includes(s.status))).reduce((n,a)=>n+schedules.filter(s=>s.aircraftId===a.id&&REQUESTABLE.includes(s.status)).length,0)};
   }catch(error){
    const check=await fetch("https://discord.com/api/v10/channels/"+channelId+"/messages/"+stored.messageId,{headers:{Authorization:"Bot "+(process.env.DISCORD_BOT_TOKEN||"")},cache:"no-store"});
    if(check.status!==404&&check.ok){
