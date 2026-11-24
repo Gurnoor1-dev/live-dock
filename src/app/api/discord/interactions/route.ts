@@ -2,18 +2,19 @@ import { createPublicKey,randomUUID,verify } from "node:crypto";
 import { after,NextRequest,NextResponse } from "next/server";
 import { and,eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { activeCrewAssignments,adminOperatorCredentials,appUsers,auditLogs,automationAlerts,crewRequests,discordIntegrations } from "@/lib/db/schema";
+import { activeCrewAssignments,adminOperatorCredentials,appSettings,appUsers,auditLogs,automationAlerts,crewRequests,discordIntegrations } from "@/lib/db/schema";
 import { ifFetch,ORGANIZATION_ID,requireOrganizationAdmin } from "@/lib/infinite-flight/server";
 import type { IFSession } from "@/lib/infinite-flight/session";
 import { openSecret,sealSecret } from "@/lib/security/secret-box";
 import { editDiscordMessage } from "@/lib/discord/components";
+import { stickyCrewAircraftSelection,stickyCrewScheduleSelection,stickyCrewSeatSelection,submitStickyCrewRequests } from "@/lib/automation/sticky-crew";
 export const runtime="nodejs";
 type Crew={userId:string;username?:string|null;role:number};
 type Schedule={id:string;status:number;crew?:Crew[]};
 type PilotTime={userId:string;username?:string;startSeconds:number};
 type Flight={pilotFlightTimes?:PilotTime[]};
 function verifiedTakeoffPilot(flight:Flight|undefined,crew:Crew[]){const first=[...(flight?.pilotFlightTimes||[])].filter(p=>p.userId&&Number.isFinite(p.startSeconds)).sort((a,b)=>a.startSeconds-b.startSeconds)[0];if(!first)return null;const member=crew.find(c=>c.userId===first.userId);return member?{userId:first.userId,username:first.username||member.username||null,startSeconds:first.startSeconds}:null;}
-type Interaction={type:number;application_id?:string;token?:string;data?:{custom_id?:string};member?:{user?:{id?:string}};user?:{id?:string};message?:{id?:string;channel_id?:string;components?:Array<Record<string,unknown>>}};
+type Interaction={type:number;application_id?:string;token?:string;data?:{custom_id?:string;values?:string[]};member?:{user?:{id?:string}};user?:{id?:string};message?:{id?:string;channel_id?:string;components?:Array<Record<string,unknown>>}};
 function validSignature(raw:string,timestamp:string,signature:string){const key=process.env.DISCORD_PUBLIC_KEY||"";if(!/^[a-f0-9]{64}$/i.test(key)||!/^[0-9]+$/.test(timestamp)||!/^[a-f0-9]{128}$/i.test(signature)||Math.abs(Date.now()-Number(timestamp)*1000)>300000)return false;const der=Buffer.concat([Buffer.from("302a300506032b6570032100","hex"),Buffer.from(key,"hex")]);return verify(null,Buffer.from(timestamp+raw),createPublicKey({key:der,format:"der",type:"spki"}),Buffer.from(signature,"hex"))}
 async function refreshStored(session:IFSession){if(session.expiresAt>Date.now()+60000)return session;if(!session.refreshToken)throw new Error("Administrator session expired. Reconnect in User Management.");const form=new URLSearchParams({grant_type:"refresh_token",client_id:process.env.IF_OAUTH_CLIENT_ID||"",client_secret:process.env.IF_OAUTH_CLIENT_SECRET||"",refresh_token:session.refreshToken});const r=await fetch("https://api.infiniteflight.com/auth/v2/connect/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:form,cache:"no-store"});const d=await r.json();if(!r.ok||!d.access_token)throw new Error("Could not refresh the administrator session.");return{accessToken:d.access_token,refreshToken:d.refresh_token||session.refreshToken,expiresAt:Date.now()+Number(d.expires_in||1800)*1000}}
 async function adminForDiscord(discordId:string){const db=getDb();const [user]=await db.select().from(appUsers).where(eq(appUsers.discordUserId,discordId)).limit(1);if(!user?.onboardingCompletedAt)throw new Error("This Discord account is not linked to a verified Live Dock administrator.");const [row]=await db.select().from(adminOperatorCredentials).where(eq(adminOperatorCredentials.ifcUserId,user.ifcUserId)).limit(1);if(!row)throw new Error("This administrator has not connected an operator account.");const session=await refreshStored(JSON.parse(openSecret(row.encryptedSession)) as IFSession);await db.update(adminOperatorCredentials).set({encryptedSession:sealSecret(JSON.stringify(session)),updatedAt:new Date()}).where(eq(adminOperatorCredentials.ifcUserId,user.ifcUserId));await requireOrganizationAdmin(session);return{session,actor:user.ifcUserId}}
@@ -29,4 +30,42 @@ async function claim(alertId:string,discordId:string,requested:"auto"|"captain"|
  try{await ifFetch(`/live/schedules/${alert.scheduleId}/crew/${pilot.ifcUserId}`,session,{method:"PUT",body:JSON.stringify({role})});assigned=true}catch(error){if(removed){try{await ifFetch(`/live/schedules/${alert.scheduleId}/crew/${removed.userId}`,session,{method:"PUT",body:JSON.stringify({role:removed.role})})}catch(restoreError){await db.update(automationAlerts).set({status:"failed"}).where(eq(automationAlerts.id,alertId)).catch(()=>undefined);throw new Error("The new assignment failed and the previous crew member could not be restored. Admin intervention is required. "+(restoreError instanceof Error?restoreError.message:"Restore failed."))}}throw error}
  await db.update(automationAlerts).set({status:"claimed",claimedByIfcUserId:pilot.ifcUserId}).where(eq(automationAlerts.id,alertId));await db.update(activeCrewAssignments).set({status:"released"}).where(and(eq(activeCrewAssignments.scheduleId,alert.scheduleId),eq(activeCrewAssignments.seat,seat),eq(activeCrewAssignments.status,"assigned")));if(removed)await db.update(activeCrewAssignments).set({status:"released"}).where(and(eq(activeCrewAssignments.scheduleId,alert.scheduleId),eq(activeCrewAssignments.pilotIfcUserId,removed.userId),eq(activeCrewAssignments.status,"assigned")));await db.insert(activeCrewAssignments).values({id:randomUUID(),scheduleId:alert.scheduleId,aircraftId:alert.aircraftId,pilotIfcUserId:pilot.ifcUserId,seat,status:"assigned"});await db.insert(auditLogs).values({id:randomUUID(),actorIfcUserId:actor,action:"automation_claim",targetType:alert.alertType,targetId:alertId,metadata:{pilotIfcUserId:pilot.ifcUserId,seat,removedIfcUserId:removed?.userId||null}});await disableOriginal(message)
  }catch(error){if(!assigned)await db.update(automationAlerts).set({status:"open"}).where(and(eq(automationAlerts.id,alertId),eq(automationAlerts.status,"processing"))).catch(()=>undefined);else{await db.update(automationAlerts).set({status:"claimed",claimedByIfcUserId:pilot.ifcUserId}).where(eq(automationAlerts.id,alertId)).catch(()=>undefined);await disableOriginal(message)}throw error}}
-export async function POST(request:NextRequest){const raw=await request.text();const timestamp=request.headers.get("x-signature-timestamp")||"",signature=request.headers.get("x-signature-ed25519")||"";if(!validSignature(raw,timestamp,signature))return NextResponse.json({error:"Invalid Discord request signature."},{status:401});const interaction=JSON.parse(raw) as Interaction;if(interaction.type===1)return NextResponse.json({type:1});if(interaction.type!==3)return NextResponse.json({type:4,data:{content:"Unsupported interaction.",flags:64}});const discordId=interaction.member?.user?.id||interaction.user?.id||"",customId=interaction.data?.custom_id||"";const [kind,action,id]=customId.split(":");if(!discordId||!id)return NextResponse.json({type:4,data:{content:"Invalid interaction.",flags:64}});after(async()=>{try{if(kind==="crew"&&(action==="approve"||action==="reject"))await crewDecision(action,id,discordId,interaction.message);else if(kind==="auto"&&action==="claim")await claim(id,discordId,"auto",interaction.message);else if(kind==="reviser"&&(action==="captain"||action==="first_officer"))await claim(id,discordId,action,interaction.message);else throw new Error("Unknown action.");if(interaction.application_id&&interaction.token)await followup(interaction.application_id,interaction.token,"Action completed successfully.")}catch(error){if(interaction.application_id&&interaction.token)await followup(interaction.application_id,interaction.token,error instanceof Error?error.message:"Action failed.").catch(()=>undefined)}});return NextResponse.json({type:6})}
+async function editOriginal(appId:string,token:string,payload:Record<string,unknown>){
+ const response=await fetch(`https://discord.com/api/v10/webhooks/${appId}/${token}/messages/@original`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),cache:"no-store"});
+ if(!response.ok)throw new Error("Could not update the Sticky Crew selection message.");
+}
+async function stickyPanelIsCurrent(message:Interaction["message"]){
+ if(!message?.id||!message.channel_id)return false;
+ const [panel]=await getDb().select().from(appSettings).where(eq(appSettings.key,"sticky_crew_panel")).limit(1);
+ const [config]=await getDb().select().from(appSettings).where(eq(appSettings.key,"sticky_crew_config")).limit(1);
+ const panelState=panel?.value as {messageId?:string;channelId?:string}|undefined;
+ const channelId=String((config?.value as {channelId?:string}|undefined)?.channelId||"");
+ return Boolean(panelState?.messageId===message.id&&panelState.channelId===message.channel_id&&channelId===message.channel_id);
+}
+export async function POST(request:NextRequest){
+ const raw=await request.text();const timestamp=request.headers.get("x-signature-timestamp")||"",signature=request.headers.get("x-signature-ed25519")||"";
+ if(!validSignature(raw,timestamp,signature))return NextResponse.json({error:"Invalid Discord request signature."},{status:401});
+ const interaction=JSON.parse(raw) as Interaction;
+ if(interaction.type===1)return NextResponse.json({type:1});
+ if(interaction.type!==3)return NextResponse.json({type:4,data:{content:"Unsupported interaction.",flags:64}});
+ const discordId=interaction.member?.user?.id||interaction.user?.id||"",customId=interaction.data?.custom_id||"";
+ if(!discordId||!customId)return NextResponse.json({type:4,data:{content:"Invalid interaction.",flags:64}});
+ const [kind,action,id]=customId.split(":");
+ if(kind==="sticky"){
+  const isInitial=action==="aircraft";
+  if(isInitial&&!await stickyPanelIsCurrent(interaction.message))return NextResponse.json({type:4,data:{content:"This Sticky Crew panel is no longer active. Ask an administrator to restore it.",flags:64}});
+  const deferType=isInitial?5:6;
+  return NextResponse.json({type:deferType,...(isInitial?{data:{flags:64}}:{})},{headers:{"Cache-Control":"no-store"}});
+ }
+ if(!id)return NextResponse.json({type:4,data:{content:"Invalid interaction.",flags:64}});
+ after(async()=>{
+  try{
+   if(kind==="crew"&&(action==="approve"||action==="reject"))await crewDecision(action,id,discordId,interaction.message);
+   else if(kind==="auto"&&action==="claim")await claim(id,discordId,"auto",interaction.message);
+   else if(kind==="reviser"&&(action==="captain"||action==="first_officer"))await claim(id,discordId,action,interaction.message);
+   else throw new Error("Unknown action.");
+   if(interaction.application_id&&interaction.token)await followup(interaction.application_id,interaction.token,"Action completed successfully.");
+  }catch(error){if(interaction.application_id&&interaction.token)await followup(interaction.application_id,interaction.token,error instanceof Error?error.message:"Action failed.").catch(()=>undefined)}
+ });
+ return NextResponse.json({type:6});
+}
