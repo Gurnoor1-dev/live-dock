@@ -30,9 +30,9 @@ type Member={userId:string;username:string|null;role:number;joinedAt:string;acti
 type Crew={userId:string;username:string|null;role:number};
 type Schedule={id:string;status:number;callsign:string;organizationId:string;aircraftId:string;flightType:number;originIcao:string;destinationIcao:string;isTimeless:boolean;scheduledDepartureUtc:string;scheduledArrivalUtc:string;briefing:string|null;flightPlan:string|null;crew:Crew[];sequence:number};
 type FlightHistoryCrewMember={username?:string|null;userId?:string};
-type FlightHistoryRecord={id?:string;actualDepartureUtc?:string;actualArrivalUtc?:string;originIcao?:string;destinationIcao?:string;flightTimeMinutes?:number;crew?:FlightHistoryCrewMember[]};
+type FlightHistoryRecord={id?:string;callsign?:string;actualDepartureUtc?:string;actualArrivalUtc?:string;originIcao?:string;destinationIcao?:string;flightTimeMinutes?:number;crew?:FlightHistoryCrewMember[]};
 type Tab="Home"|"Schedules"|"My Flights"|"Organisation Dock"|"Admin Schedules"|"Integrations"|"Applications"|"User Management"|"Feature Selection"|"History";
-type Position={id:string;state:number;isOnGround:boolean;latitude:number;longitude:number;altitude:number;heading:number;speed:number;verticalSpeed:number;lastPilotId?:string;lastPilotUsername?:string;updatedAt:string};
+type Position={id:string;state:number;isOnGround:boolean;latitude:number;longitude:number;altitude:number;heading:number;speed:number;verticalSpeed:number;lastPilotId?:string;lastPilotUsername?:string;updatedAt:string;airportIcao?:string;airportName?:string};
 type AircraftType={id:string;name:string};
 type GalleryPhoto={id:string;url:string;altText:string;caption:string;credit:{name:string;url:string;displayText:string};displayOrder:number;isVisible:boolean};
 type GalleryManifest={settings:{maxPhotosPerAircraft:number;slideshowIntervalMs:number};aircraft:Record<string,{photos:GalleryPhoto[]}>};
@@ -344,23 +344,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
   },[selectedAircraft]);
 
 
-  useEffect(()=>{
-    let alive=true;
-    if(!selectedAircraft||selectedPosition?.state!==1){setParkedAirport("Unknown");return;}
-    const candidates=[selectedNextSchedule?.originIcao,flightHistory[0]?.destinationIcao,flightHistory[0]?.originIcao].filter((value,index,array):value is string=>Boolean(value)&&array.indexOf(value)===index);
-    if(!candidates.length){setParkedAirport("Unknown");return;}
-    Promise.all(candidates.map(async icao=>{
-      const airport=await api("/airport/"+icao);
-      const point={latitude:Number(airport?.latitude),longitude:Number(airport?.longitude)};
-      if(!Number.isFinite(point.latitude)||!Number.isFinite(point.longitude))return null;
-      return {icao,name:airport?.name||icao,distance:haversineKm(point,{latitude:selectedPosition.latitude,longitude:selectedPosition.longitude})};
-    })).then(results=>{
-      if(!alive)return;
-      const nearest=results.filter(Boolean).sort((a,b)=>a!.distance-b!.distance)[0];
-      setParkedAirport(nearest&&nearest.distance<=15?nearest.icao+" · "+nearest.name:"Unknown");
-    }).catch(()=>{if(alive)setParkedAirport("Unknown");});
-    return()=>{alive=false;};
-  },[selectedAircraft?.id,selectedPosition?.latitude,selectedPosition?.longitude,selectedPosition?.state,selectedNextSchedule?.id,flightHistory[0]?.id]);
+  useEffect(()=>{\n    let alive=true;\n    if(!selectedAircraft||selectedPosition?.state!==1){setParkedAirport("Unknown");return;}\n    if(selectedPosition.airportIcao){setParkedAirport(selectedPosition.airportIcao+(selectedPosition.airportName?" · "+selectedPosition.airportName:""));return;}\n    api("/airports").then((value:any)=>{\n      const airports=Array.isArray(value)?value:(value?.items||value?.airports||[]);\n      const nearest=airports.map((airport:any)=>({icao:airport.icao||airport.icaoCode||airport.code,name:airport.name||airport.icao||"Airport",latitude:Number(airport.latitude??airport.location?.latitude),longitude:Number(airport.longitude??airport.location?.longitude)})).filter((airport:any)=>airport.icao&&Number.isFinite(airport.latitude)&&Number.isFinite(airport.longitude)).map((airport:any)=>({...airport,distance:haversineKm(airport,{latitude:selectedPosition.latitude,longitude:selectedPosition.longitude})})).sort((a:any,b:any)=>a.distance-b.distance)[0];\n      if(alive)setParkedAirport(nearest&&nearest.distance<=15?nearest.icao+" · "+nearest.name:"Airport not identified");\n    }).catch(()=>{if(alive)setParkedAirport("Airport not identified");});\n    return()=>{alive=false;};\n  },[selectedAircraft?.id,selectedPosition?.latitude,selectedPosition?.longitude,selectedPosition?.state,selectedPosition?.airportIcao,selectedPosition?.airportName]);
 
   useEffect(()=>{
     if(selectedPhotos.length<2)return;
