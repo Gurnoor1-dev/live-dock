@@ -510,3 +510,6 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .personal-flight-route b{font:800 14px Manrope,sans-serif;overflow-wrap:anywhere}
 .personal-flight-duration{font-size:10px;line-height:1.5;color:var(--muted);text-align:right;overflow-wrap:anywhere}
 @media(max-width:760px){.personal-flight-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px}.personal-flight-duration{grid-column:1/-1;text-align:left;border-top:1px solid var(--line);padding-top:8px}}
+
+.fleet-aircraft-identity>b{font-size:16px!important;font-weight:800!important;letter-spacing:.1px}
+.fleet-aircraft-identity>small{font-size:10px!important}
