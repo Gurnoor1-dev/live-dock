@@ -307,7 +307,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
       if(!position||!Number.isFinite(position.latitude)||!Number.isFinite(position.longitude))continue;
       const stale=(position.state===1||position.state===4)&&Boolean(position.updatedAt)&&Date.now()-new Date(position.updatedAt).getTime()>18*60*60*1000;
       let color:string;
-      if(aircraftItem.visibility===2)color="#f08a32";
+      if(aircraftItem.visibility===2)color="#ef4444";
       else if(stale)color="#b28a18";
       else if(position.state===2)color="#25b96b";
       else if(position.state===4)color="#8b5cf6";
