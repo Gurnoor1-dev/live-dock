@@ -7,6 +7,7 @@ import { getIFRateLimit,ifFetch,ORGANIZATION_ID,requireOrganizationAdmin } from 
 import type { IFSession } from "@/lib/infinite-flight/session";
 import { openSecret,sealSecret } from "@/lib/security/secret-box";
 import { autoCrewMessage,notifierMessage,reviserMessage,sendDiscordMessage } from "@/lib/discord/components";
+import { publishStickyCrewPanel,stickyCrewStatus } from "@/lib/automation/sticky-crew";
 type Aircraft={id:string;aircraftId:string;registration:string;status:number;visibility:number;isFleetActiveSlot:boolean};
 type Position={state:number;isOnGround:boolean;latitude:number;longitude:number;altitude:number;lastPilotId?:string;lastPilotUsername?:string;updatedAt:string};
 type Crew={userId:string;username?:string|null;role:number};
@@ -63,4 +64,15 @@ export async function runNotifier(){
   const previousPilot=latest.pilotFlightTimes?.at(-1)?.username||latest.crew?.at(-1)?.username||"Virtual Blue pilot";await sendDiscordMessage(cfg.notifierChannelId,notifierMessage(previousPilot,item.registration,latest.destinationIcao||"Unknown",next.originIcao,next.destinationIcao,appUser.discordUserId));await getDb().update(notificationOutbox).set({status:"sent"}).where(eq(notificationOutbox.id,outboxId));await getDb().insert(appSettings).values({key,value:{flightId:latest.id},updatedAt:new Date()}).onConflictDoUpdate({target:appSettings.key,set:{value:{flightId:latest.id},updatedAt:new Date()}});results.push({registration:item.registration,notified:true});
  }catch(error){if(outboxId)await getDb().update(notificationOutbox).set({status:"failed",nextAttemptAt:new Date(Date.now()+60000)}).where(eq(notificationOutbox.id,outboxId));results.push({registration:item.registration,error:error instanceof Error?error.message:"notifier_failed"})}}
  return{scanned:batch.length,results};
+}
+
+export async function getStickyCrewPanelStatus(){
+ if(!await feature("sticky_crew"))return{exists:false,reason:"disabled"};
+ const operator=await admin();
+ return stickyCrewStatus(operator.session);
+}
+export async function runStickyCrew(){
+ if(!await feature("sticky_crew"))return{skipped:true,reason:"disabled"};
+ const operator=await admin();
+ return publishStickyCrewPanel(operator.session);
 }
