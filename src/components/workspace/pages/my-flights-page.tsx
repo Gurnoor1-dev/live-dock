@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect,useState,type ReactNode } from "react";
-import { CalendarDays,History,Radio,RefreshCw } from "lucide-react";
+import { CalendarDays,History,Radio,RefreshCw,ChevronLeft,ChevronRight } from "lucide-react";
 import { Empty } from "@/components/workspace/shared-ui";
 import { useWorkspace } from "../workspace-context";
 
@@ -9,7 +9,7 @@ type Flight={id:string;callsign?:string;originIcao?:string|null;destinationIcao?
 type Coverage={checked:number;total:number;complete:boolean;limited:boolean};
 
 function FlightGroup({title,description,icon,flights,empty}:{title:string;description:string;icon:ReactNode;flights:Flight[];empty:string}){
- return <section className="section-card"><div className="section-head"><div className="flight-group-title">{icon}<span><h2>{title}</h2><p>{description}</p></span></div><span className="count-pill">{flights.length}</span></div>{flights.length?flights.map((flight,index)=><div className="personal-flight-row" key={flight.id||index}><div className="personal-flight-main"><b>{flight.callsign||"Flight"}</b><small>{flight.aircraftRegistration||"Virtual Blue aircraft"}</small></div><div className="personal-flight-route"><small>ROUTE</small><b>{flight.originIcao||"—"} <span>→</span> {flight.destinationIcao||"—"}</b></div><div className="personal-flight-duration">{flight.isTimeless?"Anytime":flight.actualDepartureUtc||flight.scheduledDepartureUtc?new Date(flight.actualDepartureUtc||flight.scheduledDepartureUtc!).toLocaleString():"Time not available"}{flight.flightTimeMinutes?" · "+Math.round(flight.flightTimeMinutes)+" min":""}</div></div>):<Empty title={empty} body="Flights will appear here when they match your Infinite Flight organisation crew records."/>}</section>;
+ return <section className="section-card"><div className="section-head"><div className="flight-group-title">{icon}<span><h2>{title}</h2><p>{description}</p></span></div><span className="count-pill">{flights.length}</span></div>{flights.length?visible.map((flight,index)=><div className="personal-flight-row" key={flight.id||index}><div className="personal-flight-main"><b>{flight.callsign||"Flight"}</b><small>{flight.aircraftRegistration||"Virtual Blue aircraft"}</small></div><div className="personal-flight-route"><small>ROUTE</small><b>{flight.originIcao||"—"} <span>→</span> {flight.destinationIcao||"—"}</b></div><div className="personal-flight-duration">{flight.isTimeless?"Anytime":flight.actualDepartureUtc||flight.scheduledDepartureUtc?new Date(flight.actualDepartureUtc||flight.scheduledDepartureUtc!).toLocaleString():"Time not available"}{flight.flightTimeMinutes?" · "+Math.round(flight.flightTimeMinutes)+" min":""}</div></div>):<Empty title={empty} body="Flights will appear here when they match your Infinite Flight organisation crew records."/>}</section>;
 }
 
 export function MyFlightsPage(){
