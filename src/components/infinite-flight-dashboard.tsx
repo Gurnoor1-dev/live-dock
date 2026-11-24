@@ -73,7 +73,7 @@ async function api(path:string,init:RequestInit={}) {
   return payload.result;
 }
 function roleName(role:number){return role===2?"Owner":role===1?"Admin":"Member";}
-function statusName(status:number){return ({0:"Unknown",1:"Scheduled",2:"Boarding",3:"Boarded",4:"Taxiing to runway",6:"In flight",7:"Diverted",8:"Delayed",9:"Cancelled",10:"Taxiing to parking",11:"Arrived"} as Record<number,string>)[status]??"Unknown";}
+function statusName(status:number){return ({0:"Status unavailable",1:"Scheduled",2:"Boarding",3:"Boarded",4:"Taxiing to runway",6:"In flight",7:"Diverted",8:"Delayed",9:"Cancelled",10:"Taxiing to parking",11:"Arrived"} as Record<number,string>)[status]??"Status unavailable";}
 function dateTime(value:string|undefined,timeless=false){return timeless?"Timeless":value?.startsWith("0001-")?"—":value?new Date(value).toLocaleString():"—";}
 function aircraftCategory(code:string){const value=code.toUpperCase();if(/(A33|A34|A35|A38|B74|B76|B77|B78|B79|777|787|330|340|350|380|747|767|MD1|DC1)/.test(value))return "Wide-body";if(/(A19|A20|A21|B70|B71|B72|B73|B75|737|319|320|321|220|E17|E19|CRJ)/.test(value))return "Narrow-body";if(/(C17|C13|C30|C5|AN2|AN7|DH8)/.test(value))return "Regional / cargo";return "Unknown";}
 function haversineKm(a:{latitude:number;longitude:number},b:{latitude:number;longitude:number}){const rad=(n:number)=>n*Math.PI/180;const dLat=rad(b.latitude-a.latitude),dLon=rad(b.longitude-a.longitude);const value=Math.sin(dLat/2)**2+Math.cos(rad(a.latitude))*Math.cos(rad(b.latitude))*Math.sin(dLon/2)**2;return 6371*2*Math.atan2(Math.sqrt(value),Math.sqrt(1-value));}
@@ -303,7 +303,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     markerRefs.current=[];
     for(const aircraftItem of aircraft){
       const position=positions[aircraftItem.id];
-      if(!position||!Number.isFinite(position.latitude)||!Number.isFinite(position.longitude))continue;
+      if(!position||!Number.isFinite(position.latitude)||!Number.isFinite(position.longitude))continue;\n      if(position.state===0&&aircraftItem.visibility!==2)continue;
       const stale=(position.state===1||position.state===4)&&position.updatedAt&&Date.now()-new Date(position.updatedAt).getTime()>18*60*60*1000;
       const color=aircraftItem.visibility===2?"#f08a32":stale?"#b28a18":position.state===2?"#25b96b":position.state===4?"#8b5cf6":position.state===1?"#3b82f6":"#8b929b";
       const element=document.createElement("button");
