@@ -424,3 +424,61 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .legend-flight{background:#111}.legend-ground{background:#444}.legend-maintenance{background:#777}.legend-stopped{background:#999}.legend-unknown{background:#bbb}
 .aircraft-map-marker{border-color:var(--surface);box-shadow:0 2px 8px rgba(0,0,0,.18)}
 .app-frame[data-theme=dark] .aircraft-map-marker{border-color:#eee}
+
+
+/* Veyro Live aircraft map and popup */
+.aircraft-map-marker{width:34px;height:34px;padding:4px;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;filter:none!important;display:grid;place-items:center;transform-origin:center}
+.aircraft-map-marker svg{width:28px;height:28px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.55))}
+.app-frame[data-theme=dark] .aircraft-map-marker{filter:none!important}
+.home-stats{width:100%;min-width:0;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible}
+.home-stats .stat-card{min-width:0;overflow-wrap:anywhere}
+.home-map-card{position:relative;min-width:0;overflow:hidden}
+.home-map-card>.section-head p{margin-top:5px}
+.home-map-card .fleet-map{min-height:540px}
+.map-legend{display:flex;gap:16px;flex-wrap:wrap;margin:0 0 13px}
+.map-legend span{display:inline-flex;align-items:center;gap:7px;font-size:10px;color:var(--muted)}
+.map-legend i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#87909a}
+.legend-flight{background:#25b96b!important}.legend-ground{background:#3b82f6!important}.legend-stopped{background:#8b5cf6!important}.legend-inactive{background:#b28a18!important}.legend-hangared{background:#f08a32!important}
+.map-aircraft-popup{position:absolute;z-index:8;left:16px;right:16px;bottom:16px;max-height:min(78%,690px);overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 20px 65px rgba(0,0,0,.28);animation:aircraft-popup-in .24s ease-out}
+@keyframes aircraft-popup-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.aircraft-popup-grabber{display:none;width:42px;height:4px;border-radius:5px;background:var(--muted);opacity:.4;margin:-9px auto 14px}
+.aircraft-popup-header{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.aircraft-popup-title{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.aircraft-popup-title h2{font:800 25px Manrope,sans-serif;letter-spacing:-.7px;margin:0}
+.aircraft-type-chip,.aircraft-status-chip{border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:10px;font-weight:700}
+.aircraft-status-chip{display:inline-flex;align-items:center;gap:7px;border:0;border-radius:30px;background:var(--surface-2)}
+.aircraft-status-chip i{width:7px;height:7px;border-radius:50%;background:currentColor}
+.aircraft-status-chip.flight{color:#25a765;background:rgba(37,185,107,.12)}.aircraft-status-chip.ground{color:#3b82f6;background:rgba(59,130,246,.12)}.aircraft-status-chip.stopped{color:#8b5cf6;background:rgba(139,92,246,.12)}.aircraft-status-chip.inactive{color:#b28a18;background:rgba(178,138,24,.14)}.aircraft-status-chip.hangared{color:#f08a32;background:rgba(240,138,50,.14)}
+.aircraft-popup-subtitle{font-size:12px;color:var(--muted);margin:8px 0 0}
+.aircraft-popup-close{flex:none;border-radius:50%;width:38px;height:38px;border:1px solid var(--line)!important}
+.aircraft-popup-photo{position:relative;height:230px;margin:18px 0 14px;border:1px solid var(--line);border-radius:13px;overflow:hidden;background:var(--surface-2)}
+.aircraft-popup-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.aircraft-photo-placeholder{height:100%;display:grid;place-content:center;justify-items:center;gap:10px;color:var(--muted);font:700 12px Manrope,sans-serif;letter-spacing:1px}
+.aircraft-popup-route{border:1px solid var(--line);border-radius:13px;padding:15px;background:var(--surface-2)}
+.aircraft-route-kicker{display:flex;justify-content:space-between;align-items:center;gap:10px;color:var(--muted);font-size:10px}
+.aircraft-route-kicker b{font:800 13px Manrope,sans-serif;color:var(--ink)}
+.aircraft-route-points{display:grid;grid-template-columns:auto minmax(45px,1fr) auto;align-items:center;gap:12px;margin:14px 0}
+.aircraft-route-points>div{display:grid;gap:4px}.aircraft-route-points>div b{font:800 27px Manrope,sans-serif}.aircraft-route-points small{font-size:10px;color:var(--muted)}.aircraft-route-points .destination{text-align:right}
+.route-dash{display:flex;align-items:center;gap:3px;color:var(--muted);border-bottom:1px dashed var(--line);padding-bottom:4px}.route-dash i{width:8px;height:8px;background:#25b96b;border-radius:50%}
+.aircraft-route-meta{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:10px;color:var(--muted)}
+.aircraft-popup-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 14px;padding:19px 2px}
+.aircraft-popup-facts>div{min-width:0;display:grid;gap:5px}.aircraft-popup-facts small{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:10px}.aircraft-popup-facts b{font:700 13px Manrope,sans-serif;overflow-wrap:anywhere}
+.aircraft-popup-actions{display:flex;gap:9px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:13px}
+.topbar-brand-button{height:38px;min-width:130px;border:0;background:transparent;padding:0;display:flex;align-items:center;cursor:pointer}
+.topbar-brand-button img{display:block;max-width:160px;max-height:34px;object-fit:contain}
+.profile-popover{position:fixed;z-index:80;right:20px;top:72px;width:min(290px,calc(100vw - 30px));padding:15px;border:1px solid var(--line);border-radius:13px;background:var(--surface);box-shadow:0 15px 50px rgba(0,0,0,.2);display:grid;gap:14px}
+.profile-popover-head{display:flex;align-items:center;gap:11px}.profile-popover-head>div{display:grid;gap:4px;min-width:0}.profile-popover-head b{font-size:12px;overflow-wrap:anywhere}.profile-popover-head small{font-size:10px;color:var(--muted)}
+.sidebar-profile-button{width:100%;text-align:left;color:var(--ink);background:transparent;border:0;cursor:pointer}.sidebar-profile-button>span{flex:1;min-width:0}.sidebar-profile-button>span b{overflow:hidden;text-overflow:ellipsis}
+@media(max-width:760px){
+ .home-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .home-stats .stat-card:nth-child(2n){border-left:1px solid var(--line)!important}
+ .home-stats .stat-card:nth-child(n+3){border-top:1px solid var(--line)!important}
+ .home-map-card .fleet-map{min-height:560px}
+ .map-aircraft-popup{left:0;right:0;bottom:0;max-height:84%;border-radius:19px 19px 0 0;padding:17px 16px calc(18px + env(safe-area-inset-bottom))}
+ .aircraft-popup-grabber{display:block}
+ .aircraft-popup-title h2{font-size:22px}
+ .aircraft-popup-photo{height:190px}
+ .aircraft-popup-facts{gap:15px 10px}
+ .topbar-brand-button{min-width:90px}.topbar-brand-button img{max-width:115px;max-height:30px}
+}
+@media(max-width:390px){.aircraft-popup-title{gap:6px}.aircraft-popup-title h2{font-size:20px}.aircraft-type-chip,.aircraft-status-chip{font-size:9px;padding:4px 7px}.aircraft-popup-photo{height:160px}}
