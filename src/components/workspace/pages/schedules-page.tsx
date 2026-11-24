@@ -4,7 +4,7 @@ import { ChevronDown,Users,ArrowRight } from "lucide-react";
 import { Empty } from "@/components/workspace/shared-ui";
 import { useWorkspace } from "../workspace-context";
 type SeatRequest={scheduleId:string;seat:"captain"|"first_officer";status:"pending"|"processing"|"approved"|"rejected"|"failed"};
-type PositionLike={state:number;isOnGround:boolean;airportIcao?:string;airportName?:string;lastPilotUsername?:string};
+type PositionLike={state:number;isOnGround:boolean;latitude:number;longitude:number;airportIcao?:string;airportName?:string;lastPilotUsername?:string};
 type ScheduleLike={aircraftId:string;status:number;sequence:number;callsign:string;originIcao:string;destinationIcao:string};
 type Airport={icao?:string;icaoCode?:string;code?:string;name?:string;latitude?:number;longitude?:number;location?:{latitude?:number;longitude?:number}};
 function airportDistance(a:{latitude:number;longitude:number},b:{latitude:number;longitude:number}){const rad=(n:number)=>n*Math.PI/180;const dLat=rad(b.latitude-a.latitude),dLon=rad(b.longitude-a.longitude);const v=Math.sin(dLat/2)**2+Math.cos(rad(a.latitude))*Math.cos(rad(b.latitude))*Math.sin(dLon/2)**2;return 6371*2*Math.atan2(Math.sqrt(v),Math.sqrt(1-v));}
@@ -22,7 +22,8 @@ function aircraftState(position:PositionLike|undefined,aircraftId:string,schedul
  return{label:"Status unavailable",tone:"unknown",detail:"Live aircraft status unavailable"};
 }
 export function SchedulesPage(){
- const {active,aircraft,aircraftTypes,schedules,positions,dateTime}=useWorkspace();\n const [airports,setAirports]=useState<Airport[]>([]);\n useEffect(()=>{if(active!=="Schedules")return;let alive=true;fetch("/api/if/airports",{cache:"force-cache"}).then(async r=>{const d=await r.json();if(alive&&r.ok)setAirports(Array.isArray(d.result)?d.result:Array.isArray(d)?d:[])}).catch(()=>{});return()=>{alive=false};},[active]);
+ const {active,aircraft,aircraftTypes,schedules,positions,dateTime}=useWorkspace();
+ const [airports,setAirports]=useState<Airport[]>([]);\n useEffect(()=>{if(active!=="Schedules")return;let alive=true;fetch("/api/if/airports",{cache:"force-cache"}).then(async r=>{const d=await r.json();if(alive&&r.ok)setAirports(Array.isArray(d.result)?d.result:Array.isArray(d)?d:[])}).catch(()=>{});return()=>{alive=false};},[active]);
  const [expanded,setExpanded]=useState<string|null>(null);
  const [requests,setRequests]=useState<SeatRequest[]>([]);
  const [choice,setChoice]=useState<{scheduleId:string;seat:"captain"|"first_officer"}|null>(null);
