@@ -5,7 +5,9 @@ import { getStickyCrewPanelStatus,runAutoCrew,runScheduleReviser,runStickyCrew }
 export const runtime="nodejs";
 export const maxDuration=60;
 
-export async function GET(){try{const {session}=await requireIFSession();await requireOrganizationAdmin(session);const result=await getStickyCrewPanelStatus();return NextResponse.json(result,{headers:{"Cache-Control":"no-store"}})}catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Unable to verify Sticky Crew panel."},{status:Number((error as {status?:number})?.status)||500,headers:{"Cache-Control":"no-store"}})}}\n\nexport async function POST(request:NextRequest){
+export async function GET(){try{const {session}=await requireIFSession();await requireOrganizationAdmin(session);const result=await getStickyCrewPanelStatus();return NextResponse.json(result,{headers:{"Cache-Control":"no-store"}})}catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Unable to verify Sticky Crew panel."},{status:Number((error as {status?:number})?.status)||500,headers:{"Cache-Control":"no-store"}})}}
+
+export async function POST(request:NextRequest){
  try{
   const {session}=await requireIFSession();
   await requireOrganizationAdmin(session);
