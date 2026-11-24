@@ -11,6 +11,7 @@ export const ORGANIZATION_ID = "d50dcc80-8dac-4608-970c-61d6a4739488";
 const rateLimits = new Map<string, { isPro: boolean; remaining: number; updatedAt: number }>();
 const ifGetCache = new Map<string, { value: unknown; expiresAt: number }>();
 const ifGetInflight = new Map<string, Promise<unknown>>();
+const ifRateLimitCooldown = new Map<string, number>();
 const IF_ERROR_NAMES: Record<number, string> = { 4: "Not authorized", 5: "Server not found", 6: "Flight not found", 7: "No ATIS available", 8: "Airport not found", 9: "Request exceeds maximum request size" };
 
 function ifCacheTtl(path: string) {
@@ -60,6 +61,10 @@ export async function ifFetch<T = unknown>(path: string, session: IFSession, ini
   }
 
   const request = (async () => {
+    const cooldownUntil = ifRateLimitCooldown.get(session.accessToken) || 0;
+    if (cooldownUntil > Date.now()) {
+      throw Object.assign(new Error("Infinite Flight rate limit reached (HTTP 429). Requests are paused until the quota window resets."), { status: 429, retryAfterMs: cooldownUntil - Date.now() });
+    }
     const response = await fetch("https://api.infiniteflight.com/public/v3" + path, {
       ...init,
       headers: {
@@ -69,6 +74,12 @@ export async function ifFetch<T = unknown>(path: string, session: IFSession, ini
       },
       cache: "no-store"
     });
+    if (response.status === 429) {
+      const retryAfterHeader = response.headers.get("retry-after");
+      const retrySeconds = retryAfterHeader ? Number(retryAfterHeader) : NaN;
+      const retryAt = Number.isFinite(retrySeconds) && retrySeconds > 0 ? Date.now() + retrySeconds * 1000 : Date.now() + 60_000;
+      ifRateLimitCooldown.set(session.accessToken, retryAt);
+    }
     const remainingHeader = response.headers.get("x-rate-limit-remaining");
     const remaining = remainingHeader === null ? 4 : Number(remainingHeader);
     rateLimits.set(session.accessToken, {
