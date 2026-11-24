@@ -6,13 +6,15 @@ import { useWorkspace } from "../workspace-context";
 type SeatRequest={scheduleId:string;seat:"captain"|"first_officer";status:"pending"|"processing"|"approved"|"rejected"|"failed"};
 type PositionLike={state:number;isOnGround:boolean;airportIcao?:string;airportName?:string;lastPilotUsername?:string};
 type ScheduleLike={aircraftId:string;status:number;sequence:number;callsign:string;originIcao:string;destinationIcao:string};
-function aircraftState(position:PositionLike|undefined,aircraftId:string,schedules:ScheduleLike[]){
+type Airport={icao?:string;icaoCode?:string;code?:string;name?:string;latitude?:number;longitude?:number;location?:{latitude?:number;longitude?:number}};
+function airportDistance(a:{latitude:number;longitude:number},b:{latitude:number;longitude:number}){const rad=(n:number)=>n*Math.PI/180;const dLat=rad(b.latitude-a.latitude),dLon=rad(b.longitude-a.longitude);const v=Math.sin(dLat/2)**2+Math.cos(rad(a.latitude))*Math.cos(rad(b.latitude))*Math.sin(dLon/2)**2;return 6371*2*Math.atan2(Math.sqrt(v),Math.sqrt(1-v));}
+function aircraftState(position:PositionLike|undefined,aircraftId:string,schedules:ScheduleLike[],airports:Airport[]){
  const active=schedules.find(s=>s.aircraftId===aircraftId&&[2,3,4,6,7,8,10].includes(s.status));
  const arrived=schedules.filter(s=>s.aircraftId===aircraftId&&s.status===11).sort((a,b)=>b.sequence-a.sequence)[0];
  const next=schedules.filter(s=>s.aircraftId===aircraftId&&s.status===1).sort((a,b)=>a.sequence-b.sequence)[0];
  const flight=active?active.callsign+" · "+active.originIcao+" → "+active.destinationIcao:"active flight not identified";
  if(!position)return{label:"Status unavailable",tone:"unknown",detail:"Live position is not available"};
- if(position.state===1||position.isOnGround)return{label:"On Ground",tone:"ground",detail:"Parked at "+(position.airportIcao?(position.airportIcao+(position.airportName?" · "+position.airportName:"")):"airport not identified")};
+ if(position.state===1||position.isOnGround){const reported=position.airportIcao?(position.airportIcao+(position.airportName?" · "+position.airportName:"")):null;const nearest=airports.map(a=>({icao:a.icao||a.icaoCode||a.code,name:a.name||a.icao||a.icaoCode||"Airport",latitude:Number(a.latitude??a.location?.latitude),longitude:Number(a.longitude??a.location?.longitude)})).filter(a=>a.icao&&Number.isFinite(a.latitude)&&Number.isFinite(a.longitude)).map(a=>({...a,distance:airportDistance(a,{latitude:position.latitude,longitude:position.longitude})})).sort((a,b)=>a.distance-b.distance)[0];const airport=reported||(nearest&&nearest.distance<=15?nearest.icao+" · "+nearest.name:"airport not identified");return{label:"On Ground",tone:"ground",detail:"Parked at "+airport};}
  if(position.state===3)return{label:"Cancelled",tone:"unknown",detail:"Last flight was cancelled"};
  if(position.state===4)return{label:"Stopped",tone:"stopped",detail:"Stopped · "+flight};
  if(position.state===2)return{label:"In Flight",tone:"flight",detail:"Flying · "+flight};
@@ -20,7 +22,7 @@ function aircraftState(position:PositionLike|undefined,aircraftId:string,schedul
  return{label:"Status unavailable",tone:"unknown",detail:"Live aircraft status unavailable"};
 }
 export function SchedulesPage(){
- const {active,aircraft,aircraftTypes,schedules,positions,dateTime}=useWorkspace();
+ const {active,aircraft,aircraftTypes,schedules,positions,dateTime}=useWorkspace();\n const [airports,setAirports]=useState<Airport[]>([]);\n useEffect(()=>{if(active!=="Schedules")return;let alive=true;fetch("/api/if/airports",{cache:"force-cache"}).then(async r=>{const d=await r.json();if(alive&&r.ok)setAirports(Array.isArray(d.result)?d.result:Array.isArray(d)?d:[])}).catch(()=>{});return()=>{alive=false};},[active]);
  const [expanded,setExpanded]=useState<string|null>(null);
  const [requests,setRequests]=useState<SeatRequest[]>([]);
  const [choice,setChoice]=useState<{scheduleId:string;seat:"captain"|"first_officer"}|null>(null);
@@ -34,7 +36,7 @@ export function SchedulesPage(){
   <div className="page-intro-inline"><div><p className="eyebrow">FLIGHT OPERATIONS</p><h2>Fleet schedules</h2><p className="muted">Choose an aircraft to see its upcoming legs and available crew seats.</p></div><span className="count-pill">{fleet.length} aircraft with schedules</span></div>
   {error&&<p className="form-error" role="alert">{error}</p>}{success&&<p className="form-success" role="status">{success}</p>}
   <section className="fleet-accordion-card">
-   {fleet.map(item=>{const pos=positions[item.id];const state=aircraftState(pos,item.id,schedules);const rows=schedules.filter(s=>s.aircraftId===item.id&&s.status!==9).sort((a,b)=>a.sequence-b.sequence);const open=expanded===item.id;
+   {fleet.map(item=>{const pos=positions[item.id];const state=aircraftState(pos,item.id,schedules,airports);const rows=schedules.filter(s=>s.aircraftId===item.id&&s.status!==9).sort((a,b)=>a.sequence-b.sequence);const open=expanded===item.id;
     return <div className="fleet-accordion-item" key={item.id}>
      <button className="fleet-aircraft-trigger" aria-expanded={open} onClick={()=>setExpanded(open?null:item.id)}>
       <span className={"fleet-status-dot "+state.tone}/><span className="fleet-aircraft-identity"><b>{item.registration}</b><small>{typeName(item.aircraftId)}</small></span><span className={"fleet-status-pill "+state.tone}>{state.label}</span><span className="fleet-aircraft-context">{state.detail}</span><span className="fleet-row-count">{rows.length} legs</span><ChevronDown className={open?"rotated":""} size={17}/>
