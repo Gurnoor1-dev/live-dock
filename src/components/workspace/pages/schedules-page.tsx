@@ -4,7 +4,7 @@ import { ChevronDown,Users,ArrowRight } from "lucide-react";
 import { Empty } from "@/components/workspace/shared-ui";
 import { useWorkspace } from "../workspace-context";
 type SeatRequest={scheduleId:string;seat:"captain"|"first_officer";status:"pending"|"processing"|"approved"|"rejected"|"failed"};
-type PositionLike={state:number;isOnGround:boolean;airportIcao?:string;lastPilotUsername?:string};
+type PositionLike={state:number;isOnGround:boolean;airportIcao?:string;airportName?:string;lastPilotUsername?:string};
 type ScheduleLike={aircraftId:string;status:number;sequence:number;callsign:string;originIcao:string;destinationIcao:string};
 function aircraftState(position:PositionLike|undefined,aircraftId:string,schedules:ScheduleLike[]){
  const active=schedules.find(s=>s.aircraftId===aircraftId&&[2,3,4,6,7,8,10].includes(s.status));
@@ -12,12 +12,12 @@ function aircraftState(position:PositionLike|undefined,aircraftId:string,schedul
  const next=schedules.filter(s=>s.aircraftId===aircraftId&&s.status===1).sort((a,b)=>a.sequence-b.sequence)[0];
  const flight=active?active.callsign+" · "+active.originIcao+" → "+active.destinationIcao:"active flight not identified";
  if(!position)return{label:"Status unavailable",tone:"unknown",detail:"Live position is not available"};
- if(position.state===1||position.isOnGround)return{label:"On Ground",tone:"ground",detail:"Parked at "+(position.airportIcao||arrived?.destinationIcao||next?.originIcao||"airport not identified")};
+ if(position.state===1||position.isOnGround)return{label:"On Ground",tone:"ground",detail:"Parked at "+(position.airportIcao?(position.airportIcao+(position.airportName?" · "+position.airportName:"")):"airport not identified")};
  if(position.state===3)return{label:"Cancelled",tone:"unknown",detail:"Last flight was cancelled"};
  if(position.state===4)return{label:"Stopped",tone:"stopped",detail:"Stopped · "+flight};
  if(position.state===2)return{label:"In Flight",tone:"flight",detail:"Flying · "+flight};
  if(position.state===5)return{label:"Maintenance",tone:"maintenance",detail:"Aircraft in maintenance"};
- return{label:"Unknown",tone:"unknown",detail:"Live aircraft status unavailable"};
+ return{label:"Status unavailable",tone:"unknown",detail:"Live aircraft status unavailable"};
 }
 export function SchedulesPage(){
  const {active,aircraft,aircraftTypes,schedules,positions,dateTime}=useWorkspace();
