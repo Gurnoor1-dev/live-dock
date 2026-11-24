@@ -121,7 +121,33 @@ export function EditSchedulesPage() {
       const value = JSON.parse(flightPlanText);
       if (!value || typeof value !== "object" || Array.isArray(value)) return { valid: false, value: null, message: "Flight plan must be a JSON object or null." };
       if (!Array.isArray(value.flightPlanItems) || value.flightPlanItems.length < 1 || value.flightPlanItems.length > 500) return { valid: false, value: null, message: "flightPlanItems must contain between 1 and 500 items." };
-      return { valid: true, value, message: value.flightPlanItems.length + " flight-plan item(s) ready to submit." };
+      if (JSON.stringify(value).length > 16000) return { valid: false, value: null, message: "The serialized flight plan exceeds the 16,000-character API limit." };
+      const validateItem = (item: unknown, topLevel: boolean): string | null => {
+        if (!item || typeof item !== "object" || Array.isArray(item)) return "Every flight-plan item must be an object.";
+        const point = item as Record<string, unknown>;
+        const label = typeof point.name === "string" && point.name.trim() ? point.name : point.identifier;
+        if (typeof label !== "string" || !label.trim() || label.length > 32 || /[\\u0000-\\u001f]/.test(label)) return "Each waypoint needs a 1–32 character name or identifier without control characters.";
+        if (Array.isArray(point.children)) {
+          if (!point.children.length) return "Procedure items must contain child waypoints.";
+          for (const child of point.children) {
+            if (!child || typeof child !== "object" || Array.isArray(child) || (child as Record<string, unknown>).children !== undefined) return "Nested procedures are not supported.";
+            const childError = validateItem(child, false);
+            if (childError) return childError;
+          }
+          return null;
+        }
+        if (!point.location || typeof point.location !== "object") return "Each waypoint needs a location with latitude and longitude.";
+        const location = point.location as Record<string, unknown>;
+        const latitude = Number(location.latitude), longitude = Number(location.longitude);
+        if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 || !Number.isFinite(longitude) || longitude < -180 || longitude > 180) return "Waypoint coordinates are outside the valid latitude/longitude range.";
+        if (topLevel && latitude === 0 && longitude === 0) return "A top-level waypoint cannot use the 0,0 coordinate.";
+        return null;
+      };
+      for (const item of value.flightPlanItems) {
+        const issue = validateItem(item, true);
+        if (issue) return { valid: false, value: null, message: issue };
+      }
+      return { valid: true, value, message: value.flightPlanItems.length + " flight-plan item(s) validated and ready to submit." };
     } catch { return { valid: false, value: null, message: "JSON is invalid. Check commas, braces and quotation marks." }; }
   }, [flightPlanText]);
 
@@ -145,6 +171,21 @@ export function EditSchedulesPage() {
     }
     setSelectedId(item.id); setSection("details"); setError("");
   };
+  const copyRecoverySnapshot = async () => {
+    if (!selected) return;
+    const snapshot = {
+      capturedAt: new Date().toISOString(),
+      note: "Manual recovery snapshot. Infinite Flight does not provide schedule history or an undo endpoint.",
+      schedule: selected
+    };
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(snapshot, null, 2));
+      setNotice("Original schedule snapshot copied. Keep it somewhere safe before applying the change.");
+    } catch {
+      setError("Clipboard access was unavailable. Use the before-values shown in this confirmation to preserve a manual recovery copy.");
+    }
+  };
+
   const executePending = async () => {
     if (!pending || busy) return;
     setBusy(true); setError(""); setNotice("");
@@ -355,6 +396,7 @@ export function EditSchedulesPage() {
               <label className={styles.field}>Origin ICAO<input maxLength={8} value={draft.originIcao} onChange={e=>setDraft({...draft,originIcao:e.target.value.toUpperCase()})}/><small>1–8 alphanumeric characters.</small></label>
               <label className={styles.field}>Destination ICAO<input maxLength={8} value={draft.destinationIcao} onChange={e=>setDraft({...draft,destinationIcao:e.target.value.toUpperCase()})}/><small>1–8 alphanumeric characters.</small></label>
             </div>
+            <div className={styles.planInfo}><Plane size={18}/><div><b>Aircraft assignment · {aircraftName(selected.aircraftId)}</b><p>Read-only: Infinite Flight's Update Schedule endpoint does not accept an aircraftId. Moving a leg to another aircraft requires a separate recreate workflow.</p></div></div>
             <div className={styles.scheduleMode}><div><b>Timeless schedule</b><small>Allow the pilot to fly this leg at any time without scheduled departure or arrival values.</small></div><button type="button" role="switch" aria-checked={draft.isTimeless} className={draft.isTimeless?styles.switchOn:styles.switchOff} onClick={()=>setDraft({...draft,isTimeless:!draft.isTimeless})}><span/></button></div>
             {!draft.isTimeless&&<div className={styles.formGrid}><label className={styles.field}>Departure date & time<input type="datetime-local" value={draft.departure} onChange={e=>setDraft({...draft,departure:e.target.value})}/><small>Entered in your local timezone; sent to Infinite Flight in UTC.</small></label><label className={styles.field}>Arrival date & time<input type="datetime-local" value={draft.arrival} onChange={e=>setDraft({...draft,arrival:e.target.value})}/><small>Must be later than departure.</small></label></div>}
             <label className={styles.field}>Crew briefing<textarea rows={5} maxLength={4000} value={draft.briefing} onChange={e=>setDraft({...draft,briefing:e.target.value})} placeholder="Operational briefing, notes, restrictions and pilot instructions…"/><small>{draft.briefing.length}/4000 characters · Plain text briefing.</small></label>
@@ -410,6 +452,7 @@ export function EditSchedulesPage() {
         <button className={styles.modalClose} onClick={()=>setPending(null)} disabled={busy} aria-label="Close"><X size={17}/></button>
         <p className={styles.eyebrow}>INFINITE FLIGHT LIVE · CONFIRMATION</p><h3 id="confirm-title">{pending.title}</h3><p className={styles.modalDescription}>{pending.description}</p>
         {pending.title==="Update schedule details"&&changedFields.length>0&&<div className={styles.modalDiff}>{changedFields.map(([name,before,after])=><div key={name}><b>{name}</b><span>{before} → {after}</span></div>)}</div>}
+        {(pending.title==="Update schedule details"||pending.title==="Update flight plan")&&<button className={styles.textButton} onClick={()=>void copyRecoverySnapshot()}><ClipboardCopy size={14}/> Copy full original schedule snapshot</button>}
         {pending.title==="Update flight plan"&&<div className={styles.backupPreview}><b>Current flight plan · manual recovery snapshot</b><pre>{parseFlightPlan(selected?.flightPlan||null)||"No existing flight plan is stored."}</pre></div>}
         {pending.title==="Permanently delete schedule"&&selected&&<div className={styles.backupPreview}><b>Schedule details · record these before deletion</b><pre>{JSON.stringify({callsign:selected.callsign,aircraft:aircraftName(selected.aircraftId),flightType:selected.flightType,originIcao:selected.originIcao,destinationIcao:selected.destinationIcao,isTimeless:selected.isTimeless,scheduledDepartureUtc:selected.scheduledDepartureUtc,scheduledArrivalUtc:selected.scheduledArrivalUtc,briefing:selected.briefing,flightPlan:selected.flightPlan,crew:selected.crew},null,2)}</pre></div>}
         <div className={styles.warningBox}><ShieldAlert size={17}/><span>{pending.warning}</span></div>
