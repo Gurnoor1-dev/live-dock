@@ -17,7 +17,11 @@ function aircraftStatus(item:any,pos:any){
 }
 export function HomePage(){
  const {active,aircraft,members,schedules,liveSchedules,positions,selectedAircraft,selectedPosition,selectedActiveSchedule,selectedNextSchedule,selectedPhotos,photoIndex,routeProgress,flightHistory,parkedAirport,query,setQuery,mapContainer,setSelectedAircraft,navigatePage,dateTime}=useWorkspace();
- const previousFlight=flightHistory[0];\n const currentSchedule=selectedPosition?.state===4?previousFlight:selectedPosition?.state===1?selectedNextSchedule:selectedActiveSchedule||selectedNextSchedule;\n const parkedLabel=selectedPosition?.airportIcao||parkedAirport||"Airport not identified";\n const inactiveFor=selectedPosition?.updatedAt?Math.max(0,Date.now()-new Date(selectedPosition.updatedAt).getTime()):0;\n const inactiveLabel=selectedPosition?.updatedAt?(inactiveFor>=86400000?Math.floor(inactiveFor/86400000)+"d "+Math.floor(inactiveFor%86400000/3600000)+"h":Math.floor(inactiveFor/3600000)+"h "+Math.floor(inactiveFor%3600000/60000)+"m"):"duration unavailable";
+ const previousFlight=flightHistory[0];
+ const currentSchedule=selectedPosition?.state===4?previousFlight:selectedPosition?.state===1?selectedNextSchedule:selectedActiveSchedule||selectedNextSchedule;
+ const parkedLabel=selectedPosition?.airportIcao||parkedAirport||"Airport not identified";
+ const inactiveFor=selectedPosition?.updatedAt?Math.max(0,Date.now()-new Date(selectedPosition.updatedAt).getTime()):0;
+ const inactiveLabel=selectedPosition?.updatedAt?(inactiveFor>=86400000?Math.floor(inactiveFor/86400000)+"d "+Math.floor(inactiveFor%86400000/3600000)+"h":Math.floor(inactiveFor/3600000)+"h "+Math.floor(inactiveFor%3600000/60000)+"m"):"duration unavailable";
  const status=selectedAircraft?aircraftStatus(selectedAircraft,selectedPosition):null;
  return <>{active==="Home"&&<>
   <div className="stat-grid unified-stats home-stats">
