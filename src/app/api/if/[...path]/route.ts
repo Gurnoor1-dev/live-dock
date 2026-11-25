@@ -49,8 +49,6 @@ function allowed(method: string, path: string) {
 }
 
 function ttlFor(method: string, path: string) {
-  // Schedule creation relies on the live fleet slot state; never reuse a cached aircraft roster.
-  if (method === "GET" && /^\/live\/organizations\/[0-9a-fA-F-]{36}\/aircraft$/.test(path)) return 0;
   if (method === "GET" && (path === "/sessions" || (path.startsWith("/sessions/") && path.split("/").length === 3))) return 10 * 60_000;
   if (path.startsWith("/sessions/") && (path.endsWith("/flights") || path.includes("/flights/") || path.endsWith("/atc") || path.endsWith("/status") || path.endsWith("/atis"))) return 120_000;
   if (path.startsWith("/users/") || path === "/users") return 5 * 60_000;
