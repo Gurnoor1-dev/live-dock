@@ -2,7 +2,8 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect,useState } from "react";
 import { ShieldCheck,X } from "lucide-react";
-type Profile={onboardingRequired:boolean;discordUserId:string|null;discordUsername:string|null;username:string|null};
+import { loadPilotProfile, updateCachedPilotProfile } from "@/lib/client/pilot-profile";
+type Profile={ifcUserId:string;onboardingRequired:boolean;discordUserId:string|null;discordUsername:string|null;username:string|null;role:number|null};
 export function OnboardingGate(){
  const [profile,setProfile]=useState<Profile|null>(null);
  const [open,setOpen]=useState(false);
@@ -14,9 +15,7 @@ export function OnboardingGate(){
  const [error,setError]=useState("");
  const [notice,setNotice]=useState("");
  async function load(){
-  const r=await fetch("/api/profile",{cache:"no-store"});
-  const d=await r.json();
-  if(!r.ok)throw new Error(d.error||"Could not load your profile.");
+  const d=await loadPilotProfile();
   setProfile(d);setDiscordUserId(d.discordUserId||"");setDiscordUsername(d.discordUsername||"");setOpen(Boolean(d.onboardingRequired));
  }
  useEffect(()=>{void load().catch(e=>setError(e.message))},[]);
@@ -41,7 +40,9 @@ export function OnboardingGate(){
    });
    const d=await r.json();
    if(!r.ok)throw new Error(d.error||"Could not save your profile.");
-   setProfile(v=>v?{...v,onboardingRequired:false,discordUserId,discordUsername}:v);
+   const updated={onboardingRequired:false,discordUserId,discordUsername};
+   updateCachedPilotProfile(updated);
+   setProfile(v=>v?{...v,...updated}:v);
    setCode("");setOpen(false);setNotice("Your profile has been saved.");
   }catch(e){setError(e instanceof Error?e.message:"Could not save profile.");}
   finally{setLoading(false);}
