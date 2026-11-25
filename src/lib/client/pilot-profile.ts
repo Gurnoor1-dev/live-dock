@@ -11,7 +11,7 @@ export type PilotProfile = {
 
 let cachedProfile: { value: PilotProfile; expiresAt: number } | null = null;
 let profileRequest: Promise<PilotProfile> | null = null;
-const PROFILE_CACHE_MS = 2 * 60_000;
+const PROFILE_CACHE_MS = 5 * 60_000;
 
 export async function loadPilotProfile(force = false): Promise<PilotProfile> {
   if (!force && cachedProfile && cachedProfile.expiresAt > Date.now()) return cachedProfile.value;

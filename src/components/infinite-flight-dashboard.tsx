@@ -18,6 +18,7 @@ import { UserManagementPage } from "@/components/workspace/pages/user-management
 import { FeatureSelectionPage } from "@/components/workspace/pages/feature-selection-page";
 import { WorkspaceProvider } from "@/components/workspace/workspace-context";
 import { OnboardingGate } from "@/components/workspace/onboarding-gate";
+import { loadPilotProfile, updateCachedPilotProfile } from "@/lib/client/pilot-profile";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -255,8 +256,8 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
       if(!mounted)return;if(!authenticated){setAuth("signed-out");return;}setAuth("signed-in");
       await loadOrganization();
       if(!sharedProfile){
-        const profileResponse=await fetch("/api/profile",{cache:"no-store",credentials:"same-origin"});
-        if(profileResponse.ok){const profile=await profileResponse.json();sharedProfile={username:profile.username,role:profile.role,discordUserId:profile.discordUserId||"",discordUsername:profile.discordUsername||""};}
+        const profile=await loadPilotProfile();
+        sharedProfile={username:profile.username||undefined,role:profile.role??undefined,discordUserId:profile.discordUserId||"",discordUsername:profile.discordUsername||""};
       }
       if(mounted&&sharedProfile){if(sharedProfile.username)setProfileName(sharedProfile.username);if(typeof sharedProfile.role==="number")setProfileRole(sharedProfile.role);setDiscordUserId(sharedProfile.discordUserId||"");setDiscordUsername(sharedProfile.discordUsername||"");}
     }catch(e){if(mounted){setAuth(sharedAuthState==="signed-in"?"signed-in":"checking");setError(e instanceof Error?e.message:"Unable to verify your Infinite Flight session.");}}})();
@@ -496,7 +497,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
 
   async function saveDiscordProfile(event:FormEvent){
     event.preventDefault();setProfileSaving(true);setProfileNotice("");setError("");
-    try{const response=await fetch("/api/profile",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({discordUserId,discordUsername}),credentials:"same-origin"});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||"Could not save Discord profile.");setProfileNotice("Discord account saved.");}
+    try{const response=await fetch("/api/profile",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({discordUserId,discordUsername}),credentials:"same-origin"});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||"Could not save Discord profile.");updateCachedPilotProfile({discordUserId,discordUsername});sharedProfile={...(sharedProfile||{}),discordUserId,discordUsername};setProfileNotice("Discord account saved.");}
     catch(e){setError(e instanceof Error?e.message:"Could not save Discord profile.");}
     finally{setProfileSaving(false);}
   }
