@@ -46,6 +46,10 @@ let sharedWorkspacePromise:Promise<WorkspaceSnapshot>|null=null;
 let sharedAuthState:"unknown"|"signed-out"|"signed-in"="unknown";
 let sharedAuthCheckedAt=0;
 let sharedAuthPromise:Promise<boolean>|null=null;
+let sharedWorkspacePromise:Promise<WorkspaceSnapshot>|null=null;
+let sharedAuthState:"unknown"|"signed-out"|"signed-in"="unknown";
+let sharedAuthCheckedAt=0;
+let sharedAuthPromise:Promise<boolean>|null=null;
 const sharedPositions:Record<string,Position>={};
 let positionsRefreshedAt=0;
 let sharedPositionCursor=0;
@@ -226,28 +230,16 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
   },[theme,themeReady]);
 
   const loadOrganization=useCallback(async(force=false)=>{
-    if(!force&&sharedWorkspaceSnapshot&&Date.now()-sharedWorkspaceSnapshot.refreshedAt<WORKSPACE_REFRESH_MS){
-      setOrganization(sharedWorkspaceSnapshot.organization);
-      setAircraft(sharedWorkspaceSnapshot.aircraft);
-      setMembers(sharedWorkspaceSnapshot.members);
-      setSchedules(sharedWorkspaceSnapshot.schedules);
-      return;
-    }
+    if(!force&&sharedWorkspaceSnapshot&&Date.now()-sharedWorkspaceSnapshot.refreshedAt<WORKSPACE_REFRESH_MS){setOrganization(sharedWorkspaceSnapshot.organization);setAircraft(sharedWorkspaceSnapshot.aircraft);setMembers(sharedWorkspaceSnapshot.members);setSchedules(sharedWorkspaceSnapshot.schedules);return;}
     setBusy(true);setError("");setNotice("");
     try{
-      const [organizationResult,aircraftResult,membersResult,scheduleResult]=await Promise.all([
-        api("/live/organizations/"+ORGANIZATION_ID),
-        api("/live/organizations/"+ORGANIZATION_ID+"/aircraft"),
-        api("/live/organizations/"+ORGANIZATION_ID+"/members"),
-        api("/live/organizations/"+ORGANIZATION_ID+"/schedules?page=1&pageSize=100")
-      ]);
-      const next={organization:organizationResult as Organization,aircraft:Array.isArray(aircraftResult)?aircraftResult:[],members:Array.isArray(membersResult)?membersResult:[],schedules:Array.isArray(scheduleResult)?scheduleResult:(scheduleResult?.items||[]),refreshedAt:Date.now()};
-      sharedWorkspaceSnapshot=next;
-      setOrganization(next.organization);setAircraft(next.aircraft);setMembers(next.members);setSchedules(next.schedules);
-    }catch(e){
-      setError(e instanceof Error?e.message:"Unable to refresh the Virtual Blue workspace.");
-      if(!sharedWorkspaceSnapshot){setOrganization(null);setAircraft([]);setMembers([]);setSchedules([]);}
-    }finally{setBusy(false);}
+      if(!sharedWorkspacePromise){sharedWorkspacePromise=(async()=>{
+        const [o,a,m,sc]=await Promise.all([api("/live/organizations/"+ORGANIZATION_ID),api("/live/organizations/"+ORGANIZATION_ID+"/aircraft"),api("/live/organizations/"+ORGANIZATION_ID+"/members"),api("/live/organizations/"+ORGANIZATION_ID+"/schedules?page=1&pageSize=100")]);
+        const next:WorkspaceSnapshot={organization:o as Organization,aircraft:Array.isArray(a)?a:[],members:Array.isArray(m)?m:[],schedules:Array.isArray(sc)?sc:(sc?.items||[]),refreshedAt:Date.now()};sharedWorkspaceSnapshot=next;return next;
+      })().finally(()=>{sharedWorkspacePromise=null;});}
+      const next=await sharedWorkspacePromise;setOrganization(next.organization);setAircraft(next.aircraft);setMembers(next.members);setSchedules(next.schedules);
+    }catch(e){setError(e instanceof Error?e.message:"Unable to refresh the Virtual Blue workspace.");if(sharedWorkspaceSnapshot){setOrganization(sharedWorkspaceSnapshot.organization);setAircraft(sharedWorkspaceSnapshot.aircraft);setMembers(sharedWorkspaceSnapshot.members);setSchedules(sharedWorkspaceSnapshot.schedules);}else{setOrganization(null);setAircraft([]);setMembers([]);setSchedules([]);}}
+    finally{setBusy(false);}
   },[]);
 
   useEffect(()=>{
