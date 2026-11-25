@@ -91,7 +91,7 @@ async function proxy(request: NextRequest, context: RouteContext) {
   const bodyKey = body ? createHash("sha256").update(body).digest("hex") : "";
   const cacheKey = `${tokenKey}:${deviceId}:${request.method}:${target.toString()}:${bodyKey}`;
   const ttl = ttlFor(request.method, path);
-  const canCache = ttl > 0 && (request.method === "GET" || (request.method === "POST" && (path === "/users" || path.endsWith("/flights/flightplans"))));
+  const canCache = ttl > 0 && request.headers.get("x-if-cache-bypass") !== "1" && (request.method === "GET" || (request.method === "POST" && (path === "/users" || path.endsWith("/flights/flightplans"))));
 
   if (canCache) {
     const cached = cache.get(cacheKey);
