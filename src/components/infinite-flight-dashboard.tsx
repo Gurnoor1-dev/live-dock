@@ -545,6 +545,24 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
           <span className="landing-auth-note"><ShieldCheck size={14}/> Secure sign-in with Infinite Flight</span>
         </div>
       </div>
+      <div className="landing-globe-stage" aria-label="Animated globe with connected flight routes">
+        <div className="globe-orbit globe-orbit-one"/><div className="globe-orbit globe-orbit-two"/>
+        <div className="landing-globe">
+          <div className="globe-grid"/>
+          <svg className="globe-map" viewBox="0 0 420 420" aria-hidden="true">
+            <defs><clipPath id="globe-clip"><circle cx="210" cy="210" r="194"/></clipPath></defs>
+            <g clipPath="url(#globe-clip)">
+              <path className="globe-continent" d="M72 93l30-24 38 8 20 24-9 25-22 8-8 25-28 8-14 33-22-12-9-36-20-18 10-30z M168 189l28 8 22 31-8 38-19 25-7 42-19 31-16-24 4-42-16-36 9-42z M225 78l37-20 49 12 18 23 42 6 18 26-23 23-34-7-18 24-35-9-13 26-27-10-9-35-28-17z M258 198l42-14 39 19 17 37-17 31-34 4-23 32-27-17-18-40z M345 320l26-9 20 16-9 27-31 4-17-18z"/>
+              <path className="globe-route" d="M85 147 Q190 32 306 126"/><path className="globe-route route-two" d="M112 270 Q210 115 326 248"/><path className="globe-route route-three" d="M80 147 Q210 320 326 248"/>
+              <circle className="globe-node node-one" cx="85" cy="147" r="4"/><circle className="globe-node node-two" cx="306" cy="126" r="4"/><circle className="globe-node node-three" cx="326" cy="248" r="4"/>
+            </g>
+          </svg>
+          <div className="globe-shine"/>
+        </div>
+        <div className="globe-flight-chip chip-one"><span className="flight-chip-dot"/> <b>VB 204</b><small>JFK → LHR</small></div>
+        <div className="globe-flight-chip chip-two"><span className="flight-chip-dot"/> <b>VB 731</b><small>DXB → DEL</small></div>
+        <div className="globe-caption"><span>GLOBAL OPERATIONS</span><i/> CONNECTED IN REAL TIME</div>
+      </div>
     </section>
     <footer className="landing-footer">
       <span>© {new Date().getFullYear()} Virtual Blue</span>
