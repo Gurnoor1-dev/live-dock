@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { BlobPreconditionFailedError, del, head, list, put } from "@vercel/blob";
 import { randomUUID } from "node:crypto";
 import { getIFDeviceId, getIFSession } from "@/lib/infinite-flight/session";
+import { recordIFRateLimitResponse, takeIFRequestSlot } from "@/lib/infinite-flight/server";
 
 export const runtime = "nodejs";
 const API_BASE = "https://api.infiniteflight.com/public/v3";
@@ -51,12 +52,13 @@ function ttlFor(method: string, path: string) {
   // Schedule creation relies on the live fleet slot state; never reuse a cached aircraft roster.
   if (method === "GET" && /^\/live\/organizations\/[0-9a-fA-F-]{36}\/aircraft$/.test(path)) return 0;
   if (method === "GET" && (path === "/sessions" || (path.startsWith("/sessions/") && path.split("/").length === 3))) return 10 * 60_000;
-  if (path.startsWith("/sessions/") && (path.endsWith("/flights") || path.includes("/flights/") || path.endsWith("/atc") || path.endsWith("/status") || path.endsWith("/atis"))) return 15_000;
+  if (path.startsWith("/sessions/") && (path.endsWith("/flights") || path.includes("/flights/") || path.endsWith("/atc") || path.endsWith("/status") || path.endsWith("/atis"))) return 120_000;
   if (path.startsWith("/users/") || path === "/users") return 5 * 60_000;
   if (path === "/aircraft" || path === "/airports" || path === "/aircraft/liveries" || path.startsWith("/aircraft/") || path.startsWith("/airport/")) return 60 * 60_000;
-  if (path.startsWith("/live/aircraft/") && path.endsWith("/position")) return 90_000;
+  if (path.startsWith("/live/organizations/") && path.endsWith("/members")) return 5 * 60_000;
+  if (path.startsWith("/live/aircraft/") && path.endsWith("/position")) return 120_000;
   if (path.startsWith("/live/aircraft/") && path.endsWith("/flights")) return 5 * 60_000;
-  if (path.startsWith("/live/")) return 90_000;
+  if (path.startsWith("/live/")) return 120_000;
   return 0;
 }
 
@@ -105,6 +107,14 @@ async function proxy(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "Infinite Flight rate limit reached. Wait before retrying." }, { status: 429, headers: { "Retry-After": String(waitSeconds), "Cache-Control": "no-store" } });
   }
 
+  const slot = takeIFRequestSlot(session);
+  if (!slot.allowed) {
+    return NextResponse.json({ error: "LiveDock has reached the Infinite Flight request budget for this account. Requests will resume automatically when the quota window resets." }, {
+      status: 429,
+      headers: { "Retry-After": String(Math.max(1, Math.ceil(slot.retryAfterMs / 1000))), "Cache-Control": "no-store" }
+    });
+  }
+
   const upstream = await fetch(target, {
     method: request.method,
     headers: {
@@ -115,6 +125,7 @@ async function proxy(request: NextRequest, context: RouteContext) {
     cache: "no-store"
   });
   const text = await upstream.text();
+  recordIFRateLimitResponse(session, upstream);
   if (upstream.status === 429) {
     const retryAfter = upstream.headers.get("retry-after");
     const seconds = retryAfter ? Number(retryAfter) : Number.NaN;
