@@ -46,6 +46,9 @@ let sharedWorkspacePromise:Promise<WorkspaceSnapshot>|null=null;
 let sharedAuthState:"unknown"|"signed-out"|"signed-in"="unknown";
 let sharedAuthCheckedAt=0;
 let sharedAuthPromise:Promise<boolean>|null=null;
+let sharedAuthState:"unknown"|"signed-out"|"signed-in"="unknown";
+let sharedAuthCheckedAt=0;
+let sharedAuthPromise:Promise<boolean>|null=null;
 let sharedWorkspacePromise:Promise<WorkspaceSnapshot>|null=null;
 let sharedAuthState:"unknown"|"signed-out"|"signed-in"="unknown";
 let sharedAuthCheckedAt=0;
@@ -244,20 +247,22 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
 
   useEffect(()=>{
     let mounted=true;
-    (async()=>{
-      try{
-        const response=await fetch("/api/auth/if/session",{cache:"no-store"});
-        const data=await response.json();
-        if(!mounted)return;
-        if(!data.authenticated){setAuth("signed-out");return;}
-        setAuth("signed-in");
-        await loadOrganization();
-        const profileResponse=await fetch("/api/profile",{cache:"no-store"});
-        if(profileResponse.ok){const profile=await profileResponse.json();if(profile.username)setProfileName(profile.username);if(typeof profile.role==="number")setProfileRole(profile.role);setDiscordUserId(profile.discordUserId||"");setDiscordUsername(profile.discordUsername||"");}
-      }catch(e){
-        if(mounted){setAuth("signed-in");setError(e instanceof Error?e.message:"Unable to connect to Virtual Blue.");}
+    (async()=>{try{
+      let authenticated=sharedAuthState==="signed-in"&&Date.now()-sharedAuthCheckedAt<5*60_000;
+      if(sharedAuthState==="signed-out"&&Date.now()-sharedAuthCheckedAt<5*60_000)authenticated=false;
+      if(sharedAuthState==="unknown"||Date.now()-sharedAuthCheckedAt>=5*60_000){
+        if(!sharedAuthPromise){sharedAuthPromise=(async()=>{
+          const response=await fetch("/api/auth/if/session",{cache:"no-store",credentials:"same-origin"});
+          if(response.status===503)throw new Error("Account verification is temporarily unavailable. Your saved session has been retained; retrying shortly.");
+          const data=await response.json();const ok=Boolean(data.authenticated);sharedAuthState=ok?"signed-in":"signed-out";sharedAuthCheckedAt=Date.now();return ok;
+        })().finally(()=>{sharedAuthPromise=null;});}
+        authenticated=await sharedAuthPromise;
       }
-    })();
+      if(!mounted)return;if(!authenticated){setAuth("signed-out");return;}setAuth("signed-in");
+      await loadOrganization();
+      const profileResponse=await fetch("/api/profile",{cache:"no-store",credentials:"same-origin"});
+      if(profileResponse.ok){const profile=await profileResponse.json();if(mounted){if(profile.username)setProfileName(profile.username);if(typeof profile.role==="number")setProfileRole(profile.role);setDiscordUserId(profile.discordUserId||"");setDiscordUsername(profile.discordUsername||"");}}
+    }catch(e){if(mounted){setAuth(sharedAuthState==="signed-in"?"signed-in":"checking");setError(e instanceof Error?e.message:"Unable to verify your Infinite Flight session.");}}})();
     return()=>{mounted=false;};
   },[loadOrganization]);
 
