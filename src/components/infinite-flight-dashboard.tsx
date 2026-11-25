@@ -148,10 +148,10 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
   useEffect(()=>{setActive(initialPage);},[initialPage]);
   useEffect(()=>{
     if(auth!=="signed-out"||!landingGlobeContainer.current)return;
-    const globe=new maplibregl.Map({
+    const globeOptions={
       container:landingGlobeContainer.current,
       style:"https://tiles.openfreemap.org/styles/dark",
-      center:[8,22],
+      center:[8,22] as [number,number],
       zoom:1.35,
       minZoom:1.15,
       maxZoom:1.35,
@@ -159,13 +159,13 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
       interactive:false,
       projection:{type:"globe"},
       renderWorldCopies:false
-    });
+    } as maplibregl.MapOptions;
+    const globe=new maplibregl.Map(globeOptions);
     landingGlobeMap.current=globe;
     globe.on("style.load",()=>{
       for(const layer of globe.getStyle().layers||[]){
         if(layer.type==="symbol")try{globe.setLayoutProperty(layer.id,"visibility","none");}catch{}
       }
-      try{globe.setFog({color:"rgb(8, 12, 22)","high-color":"rgb(20, 31, 54)","space-color":"rgb(3, 6, 14)","star-intensity":0.08});}catch{}
     });
     globe.on("load",()=>{
       globe.addSource("landing-flight-routes",{type:"geojson",data:{
