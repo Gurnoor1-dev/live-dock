@@ -797,3 +797,22 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   .landing-vb-logo{height:43px;max-width:min(190px,48vw)}
   .landing-header-veyro img{height:29px;max-width:min(135px,38vw)}
 }
+
+
+/* Reliable visibility for both landing and signed-in dashboard credits */
+.landing-page .landing-footer{display:flex!important;visibility:visible!important;opacity:1!important}
+.landing-page .landing-powered{display:flex!important;align-items:center!important;gap:12px!important;visibility:visible!important;opacity:1!important;color:#f1f0ff!important;font-size:11px!important;font-weight:700!important;letter-spacing:.35px!important}
+.landing-page .landing-powered>span{display:inline!important;visibility:visible!important;opacity:1!important;color:#f1f0ff!important}
+.landing-page .landing-veyro-logo{display:block!important;visibility:visible!important;opacity:1!important;height:30px!important;width:auto!important;max-width:150px!important;object-fit:contain!important}
+.landing-page .landing-vb-logo{filter:brightness(0) invert(1)!important}
+.app-frame .footer{align-items:center}
+.app-frame .dashboard-powered{display:inline-flex;align-items:center;gap:10px;color:var(--muted);font-size:10px;font-weight:650;white-space:nowrap}
+.app-frame .dashboard-powered>span{display:inline!important;visibility:visible!important;opacity:1!important}
+.app-frame .dashboard-veyro-logo{display:block;width:auto;height:23px;max-width:115px;object-fit:contain;opacity:1;visibility:visible}
+@media(max-width:720px){
+ .landing-page .landing-powered{gap:8px!important;font-size:9px!important}
+ .landing-page .landing-veyro-logo{height:25px!important;max-width:120px!important}
+ .app-frame .footer{gap:12px}
+ .app-frame .dashboard-powered{gap:7px;font-size:9px}
+ .app-frame .dashboard-veyro-logo{height:20px;max-width:100px}
+}
