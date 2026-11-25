@@ -165,7 +165,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
       for(const layer of globe.getStyle().layers||[]){
         if(layer.type==="symbol")try{globe.setLayoutProperty(layer.id,"visibility","none");}catch{}
       }
-      try{globe.setFog({color:"rgb(8, 12, 22)",'"'high-color'"':'"'rgb(20, 31, 54)',space-color:"rgb(3, 6, 14)",'"'star-intensity'"':0.08});}catch{}
+      try{globe.setFog({color:"rgb(8, 12, 22)","high-color":"rgb(20, 31, 54)","space-color":"rgb(3, 6, 14)","star-intensity":0.08});}catch{}
     });
     globe.on("load",()=>{
       globe.addSource("landing-flight-routes",{type:"geojson",data:{
