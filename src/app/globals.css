@@ -726,3 +726,64 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   .landing-footer{font-size:6px}
 }
 @media(prefers-reduced-motion:reduce){.landing-signin{transition:none}.landing-signin:hover{transform:none}}
+
+
+/* Landing page refinement — official Virtual Blue and Veyro marks */
+.landing-page{height:100svh;min-height:520px;max-height:100svh;overflow:hidden}
+.landing-vb-logo{display:block;width:auto;height:42px;max-width:min(210px,48vw);object-fit:contain;object-position:left center}
+.landing-header{height:82px;min-height:82px}
+.landing-version{font:650 9px "DM Sans",sans-serif;letter-spacing:1.5px;color:#a6a5b9;padding:8px 11px;border:1px solid rgba(255,255,255,.11);border-radius:7px}
+.landing-hero{display:flex;align-items:center;justify-content:flex-start;max-width:1320px}
+.landing-copy{max-width:820px}
+.landing-eyebrow{display:flex;align-items:center;gap:11px;margin-bottom:23px;color:#aaa9ba;font:700 9px "DM Sans",sans-serif;letter-spacing:2px}
+.landing-eyebrow>span{width:22px;height:1px;background:linear-gradient(90deg,#a99eff,#8bc9ff)}
+.landing-eyebrow b{color:#68697b;font-weight:500}
+.landing-copy h1{font-size:clamp(64px,9vw,124px);line-height:.98;letter-spacing:-.075em;margin:0 0 23px}
+.landing-copy h1 em{background:linear-gradient(100deg,#b6aaff 0%,#91bfff 48%,#a5efd5 100%);background-clip:text;-webkit-background-clip:text;color:transparent}
+.landing-description{max-width:500px;margin:0 0 34px;font-size:15px;line-height:1.75;color:#a5a6b5}
+.landing-actions{display:grid;justify-items:start;gap:13px}
+.landing-page .landing-signin{
+  position:relative;isolation:isolate;display:inline-flex;align-items:center;gap:16px;
+  min-height:66px;padding:7px 10px 7px 11px;border:1px solid rgba(191,181,255,.62);
+  border-radius:15px;background:linear-gradient(110deg,#f6f4ff 0%,#dedaff 48%,#c7dcff 100%);
+  color:#17152b!important;font:750 13px "DM Sans",sans-serif;letter-spacing:.05px;
+  box-shadow:0 10px 28px rgba(117,103,235,.20),inset 0 1px 0 rgba(255,255,255,.9);
+  transition:transform .22s ease,box-shadow .22s ease,filter .22s ease;
+}
+.landing-page .landing-signin::before{content:"";position:absolute;z-index:-1;inset:-1px;border-radius:inherit;background:linear-gradient(110deg,#a99eff,#8bc9ff,#a8f0d2);opacity:0;filter:blur(17px);transition:opacity .22s ease}
+.landing-page .landing-signin:hover{transform:translateY(-3px);filter:brightness(1.035);box-shadow:0 15px 40px rgba(117,103,235,.28),inset 0 1px 0 rgba(255,255,255,.95)}
+.landing-page .landing-signin:hover::before{opacity:.55}
+.landing-page .landing-signin:focus-visible{outline:3px solid rgba(169,158,255,.8);outline-offset:4px}
+.landing-page .landing-signin-icon{width:44px;height:44px;display:grid;place-items:center;border-radius:11px;background:linear-gradient(145deg,#282344,#484078);color:#f4f1ff;box-shadow:0 4px 12px rgba(28,24,61,.22)}
+.landing-page .landing-signin>span:nth-child(2){padding-left:1px}
+.landing-page .landing-signin-arrow{width:39px;height:39px;display:grid;place-items:center;margin-left:13px;border-radius:10px;background:rgba(33,29,66,.09);color:#292448;transition:transform .2s ease,background .2s ease}
+.landing-page .landing-signin:hover .landing-signin-arrow{transform:translate(2px,-2px);background:rgba(33,29,66,.14)}
+.landing-auth-note{display:flex;align-items:center;gap:8px;color:#858798;font-size:10px}
+.landing-auth-note svg{color:#8ed8b8}
+.landing-footer{height:68px;min-height:68px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(255,255,255,.1);color:#777889;font:600 9px "DM Sans",sans-serif;letter-spacing:.8px}
+.landing-powered{display:flex;align-items:center;gap:11px;color:#8e8fa0;font:600 9px "DM Sans",sans-serif;letter-spacing:.8px}
+.landing-veyro-logo{display:block;width:auto;height:27px;max-width:130px;object-fit:contain;object-position:left center}
+@media(max-width:680px){
+ .landing-page{height:100svh;min-height:520px;padding:0 22px}
+ .landing-header{height:68px;min-height:68px}
+ .landing-vb-logo{height:35px;max-width:160px}
+ .landing-version{font-size:7px;padding:7px 8px}
+ .landing-hero{display:flex;align-items:center;justify-content:center;padding:24px 0}
+ .landing-eyebrow{font-size:8px;letter-spacing:1.5px;margin-bottom:18px}
+ .landing-copy h1{font-size:clamp(49px,12vw,76px);line-height:1.02;margin-bottom:17px;letter-spacing:-.075em}
+ .landing-description{font-size:12px;margin-bottom:25px}
+ .landing-page .landing-signin{width:100%;min-height:61px;gap:11px;border-radius:13px;font-size:11px}
+ .landing-page .landing-signin-icon{width:41px;height:41px}
+ .landing-page .landing-signin-arrow{margin-left:auto;width:35px;height:35px}
+ .landing-auth-note{font-size:9px}
+ .landing-footer{height:55px;min-height:55px;font-size:7px}
+ .landing-powered{gap:7px;font-size:8px}
+ .landing-veyro-logo{height:23px;max-width:105px}
+}
+@media(max-height:650px) and (min-width:681px){
+ .landing-header{height:65px;min-height:65px}
+ .landing-copy h1{font-size:clamp(55px,7vw,88px)}
+ .landing-description{margin-bottom:22px}
+ .landing-footer{height:52px;min-height:52px}
+}
+@media(prefers-reduced-motion:reduce){.landing-page .landing-signin,.landing-page .landing-signin::before,.landing-page .landing-signin-arrow{transition:none}.landing-page .landing-signin:hover{transform:none}}
