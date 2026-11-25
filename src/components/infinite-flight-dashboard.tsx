@@ -529,7 +529,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
       <Link href="/" className="landing-brand" aria-label="Virtual Blue home">
         <Image src={vbLogo} alt="Virtual Blue" className="landing-vb-logo" priority/>
       </Link>
-      <span className="landing-version">LIVE OPERATIONS</span>
+      <div className="landing-header-veyro" aria-label="Powered by Veyro"><Image src={veyroLiveLogo} alt="Veyro" priority/></div>
     </header>
     <section className="landing-hero">
       <div className="landing-copy">
