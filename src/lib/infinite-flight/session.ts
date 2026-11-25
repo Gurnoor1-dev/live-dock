@@ -19,6 +19,8 @@ export type IFIdentity = {
   displayName: string | null;
 };
 
+const refreshInFlight = new Map<string, Promise<IFSession | null>>();
+
 export type IFSession = {
   accessToken: string;
   refreshToken?: string;
@@ -201,18 +203,32 @@ export async function getIFSession(): Promise<IFSession | null> {
     client_secret: clientSecret,
     refresh_token: session.refreshToken
   });
-  const response = await fetch(AUTH_BASE + "/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: form,
-    cache: "no-store",
-    signal: AbortSignal.timeout(15_000)
-  });
-  const payload = await response.json().catch(() => ({})) as TokenResponse;
-  if (!response.ok || !payload.access_token) {
-    clearSessionCookies(store);
-    return null;
-  }
+  const existingRefresh = refreshInFlight.get(session.refreshToken);
+  if (existingRefresh) return existingRefresh;
+
+  const refreshPromise = (async (): Promise<IFSession | null> => {
+    let response: Response;
+    try {
+      response = await fetch(AUTH_BASE + "/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: form,
+        cache: "no-store",
+        signal: AbortSignal.timeout(15_000)
+      });
+    } catch {
+      // A transient network failure must not destroy a still-refreshable login.
+      throw new Error("Infinite Flight account verification is temporarily unavailable. Your saved session has been retained.");
+    }
+    const payload = await response.json().catch(() => ({})) as TokenResponse;
+    if (!response.ok || !payload.access_token) {
+      const invalidGrant = response.status === 400 || response.status === 401;
+      if (invalidGrant) {
+        clearSessionCookies(store);
+        return null;
+      }
+      throw new Error("Infinite Flight account verification is temporarily unavailable (HTTP " + response.status + "). Your saved session has been retained.");
+    }
 
   let identity: IFIdentity;
   try {
@@ -229,7 +245,14 @@ export async function getIFSession(): Promise<IFSession | null> {
     identity
   };
   await saveIFSession(refreshed);
-  return refreshed;
+    return refreshed;
+  })();
+  refreshInFlight.set(session.refreshToken, refreshPromise);
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshInFlight.delete(session.refreshToken);
+  }
 }
 
 export async function getIFDeviceId() {
