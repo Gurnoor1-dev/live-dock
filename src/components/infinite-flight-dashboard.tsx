@@ -527,42 +527,28 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     <div className="landing-ambient landing-ambient-b" aria-hidden="true"/>
     <header className="landing-header">
       <Link href="/" className="landing-brand" aria-label="Virtual Blue home">
-        <span className="landing-brand-mark">VB</span>
-        <span className="landing-brand-copy"><b>VIRTUAL BLUE</b><small>FLEET OPERATIONS</small></span>
+        <Image src={vbLogo} alt="Virtual Blue" className="landing-vb-logo" priority/>
       </Link>
-      <div className="landing-header-right">
-        <span className="landing-secure"><i/> INFINITE FLIGHT CONNECT</span>
-        <span className="landing-version">LIVE API V3</span>
-      </div>
+      <span className="landing-version">LIVE OPERATIONS</span>
     </header>
     <section className="landing-hero">
       <div className="landing-copy">
-        <div className="landing-kicker"><span/> VIRTUAL BLUE <b>/</b> FLEET OPERATIONS</div>
-        <h1>Flight operations,<br/><em>in perfect sync.</em></h1>
-        <p className="landing-description">One focused workspace for your fleet, schedules and crew. Stay connected to every operation with live data from Infinite Flight.</p>
+        <div className="landing-eyebrow"><span/> VIRTUAL BLUE <b>×</b> VEYRO</div>
+        <h1><em>Feel Connected.</em></h1>
+        <p className="landing-description">Your airline. Your crew. Every flight, connected.</p>
         <div className="landing-actions">
           <button className="landing-signin" onClick={()=>window.location.assign("/api/auth/if/login")}>
-            <span className="landing-signin-icon"><ArrowUpRight size={18}/></span>
+            <span className="landing-signin-icon"><Plane size={19}/></span>
             <span>Continue with Infinite Flight</span>
-            <ArrowUpRight className="landing-signin-arrow" size={17}/>
+            <span className="landing-signin-arrow"><ArrowUpRight size={19}/></span>
           </button>
-          <span className="landing-auth-note"><ShieldCheck size={14}/> Secure OAuth 2.0 <span>·</span> No separate password</span>
+          <span className="landing-auth-note"><ShieldCheck size={14}/> Secure sign-in with Infinite Flight</span>
         </div>
-      </div>
-      <div className="landing-showcase" aria-label="Virtual Blue fleet operations features">
-        <div className="landing-showcase-top"><span>OPERATIONS OVERVIEW</span><span><i/> SYSTEM READY</span></div>
-        <div className="landing-showcase-title"><span className="landing-showcase-mark">VB</span><div><b>Virtual Blue</b><small>LIVE FLEET WORKSPACE</small></div></div>
-        <div className="landing-showcase-rule"/>
-        <div className="landing-feature-row"><span className="landing-feature-icon"><RadioTower size={17}/></span><span><b>Live fleet visibility</b><small>Aircraft positions and operational status</small></span><ArrowUpRight size={15}/></div>
-        <div className="landing-feature-row"><span className="landing-feature-icon"><Compass size={17}/></span><span><b>Schedule management</b><small>Routes, crew and flight coordination</small></span><ArrowUpRight size={15}/></div>
-        <div className="landing-feature-row"><span className="landing-feature-icon"><Activity size={17}/></span><span><b>Pilot flight activity</b><small>One connected operational picture</small></span><ArrowUpRight size={15}/></div>
-        <div className="landing-showcase-bottom"><span>BUILT FOR VIRTUAL AIRLINES</span><span>01 — 03</span></div>
       </div>
     </section>
     <footer className="landing-footer">
       <span>© {new Date().getFullYear()} Virtual Blue</span>
-      <span className="landing-powered">A Veyro product <b>·</b> <strong>VEYRO</strong></span>
-      <span><i/> CONNECTED EXPERIENCE</span>
+      <span className="landing-powered"><span>Powered by</span><Image src={veyroLiveLogo} alt="Veyro" className="landing-veyro-logo"/></span>
     </footer>
   </main>;
 
