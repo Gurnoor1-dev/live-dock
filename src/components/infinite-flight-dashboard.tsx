@@ -523,31 +523,47 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
 
   if(auth==="checking")return <main className="auth-page"><div className="auth-card"><Image src={vbLogo} alt="Virtual Blue" className="brand-logo" priority/><h1>Preparing your flight deck</h1><p className="muted">Checking your Infinite Flight session…</p></div></main>;
   if(auth==="signed-out")return <main className="landing-page">
-    <div className="landing-glow landing-glow-one"/><div className="landing-glow landing-glow-two"/>
+    <div className="landing-ambient landing-ambient-a" aria-hidden="true"/>
+    <div className="landing-ambient landing-ambient-b" aria-hidden="true"/>
     <header className="landing-header">
-      <Link href="/" className="landing-brand"><Image src={vbLogo} alt="Virtual Blue" priority/><span><b>VIRTUAL BLUE</b><small>FLEET OPERATIONS</small></span></Link>
-      <div className="landing-header-right"><span className="landing-secure"><i/> INFINITE FLIGHT CONNECT</span><span className="landing-version">LIVE API V3</span></div>
+      <Link href="/" className="landing-brand" aria-label="Virtual Blue home">
+        <span className="landing-brand-mark">VB</span>
+        <span className="landing-brand-copy"><b>VIRTUAL BLUE</b><small>FLEET OPERATIONS</small></span>
+      </Link>
+      <div className="landing-header-right">
+        <span className="landing-secure"><i/> INFINITE FLIGHT CONNECT</span>
+        <span className="landing-version">LIVE API V3</span>
+      </div>
     </header>
     <section className="landing-hero">
       <div className="landing-copy">
-        <div className="landing-kicker"><span/> THE VIRTUAL BLUE FLIGHT DECK <b>·</b> LIVE</div>
-        <h1>Every aircraft.<br/><em>One clear view.</em></h1>
-        <p className="landing-description">Your airline, in motion. Follow the Virtual Blue fleet in real time, explore aircraft details and keep every operation in sync with Infinite Flight.</p>
+        <div className="landing-kicker"><span/> VIRTUAL BLUE <b>/</b> FLEET OPERATIONS</div>
+        <h1>Flight operations,<br/><em>in perfect sync.</em></h1>
+        <p className="landing-description">One focused workspace for your fleet, schedules and crew. Stay connected to every operation with live data from Infinite Flight.</p>
         <div className="landing-actions">
-          <button className="landing-signin" onClick={()=>window.location.assign("/api/auth/if/login")}><span className="landing-signin-icon"><ArrowUpRight size={18}/></span>Sign in with Infinite Flight<ArrowUpRight className="landing-signin-arrow" size={17}/></button>
-          <span className="landing-auth-note"><ShieldCheck size={14}/> Secure OAuth 2.0 · No separate password</span>
+          <button className="landing-signin" onClick={()=>window.location.assign("/api/auth/if/login")}>
+            <span className="landing-signin-icon"><ArrowUpRight size={18}/></span>
+            <span>Continue with Infinite Flight</span>
+            <ArrowUpRight className="landing-signin-arrow" size={17}/>
+          </button>
+          <span className="landing-auth-note"><ShieldCheck size={14}/> Secure OAuth 2.0 <span>·</span> No separate password</span>
         </div>
-        <div className="landing-divider"/>
-        <div className="landing-highlights"><div><span className="landing-highlight-icon"><RadioTower size={16}/></span><span><b>Live fleet tracking</b><small>Aircraft positions and status</small></span></div><div><span className="landing-highlight-icon"><Compass size={16}/></span><span><b>Flight operations</b><small>Schedules, crew and history</small></span></div><div><span className="landing-highlight-icon"><Activity size={16}/></span><span><b>Always in sync</b><small>Powered by Infinite Flight Live</small></span></div></div>
       </div>
-      <div className="landing-art" aria-hidden="true">
-        <div className="landing-orbit landing-orbit-one"/><div className="landing-orbit landing-orbit-two"/>
-        <img className="landing-globe" src="https://raw.githubusercontent.com/Gurnoor1-dev/live-dock/main/example/fleet-globe.png" alt=""/>
-        <img className="landing-yoke" src="https://raw.githubusercontent.com/Gurnoor1-dev/live-dock/main/example/fleet-yoke.png" alt=""/>
-        <div className="landing-art-caption"><span>VB</span><div><b>VIRTUAL BLUE</b><small>BUILT FOR THE WAY YOU FLY</small></div></div>
+      <div className="landing-showcase" aria-label="Virtual Blue fleet operations features">
+        <div className="landing-showcase-top"><span>OPERATIONS OVERVIEW</span><span><i/> SYSTEM READY</span></div>
+        <div className="landing-showcase-title"><span className="landing-showcase-mark">VB</span><div><b>Virtual Blue</b><small>LIVE FLEET WORKSPACE</small></div></div>
+        <div className="landing-showcase-rule"/>
+        <div className="landing-feature-row"><span className="landing-feature-icon"><RadioTower size={17}/></span><span><b>Live fleet visibility</b><small>Aircraft positions and operational status</small></span><ArrowUpRight size={15}/></div>
+        <div className="landing-feature-row"><span className="landing-feature-icon"><Compass size={17}/></span><span><b>Schedule management</b><small>Routes, crew and flight coordination</small></span><ArrowUpRight size={15}/></div>
+        <div className="landing-feature-row"><span className="landing-feature-icon"><Activity size={17}/></span><span><b>Pilot flight activity</b><small>One connected operational picture</small></span><ArrowUpRight size={15}/></div>
+        <div className="landing-showcase-bottom"><span>BUILT FOR VIRTUAL AIRLINES</span><span>01 — 03</span></div>
       </div>
     </section>
-    <footer className="landing-footer"><span>© {new Date().getFullYear()} Virtual Blue</span><span>AN INFINITE FLIGHT VIRTUAL AIRLINE</span><span><i/> SYSTEM READY</span></footer>
+    <footer className="landing-footer">
+      <span>© {new Date().getFullYear()} Virtual Blue</span>
+      <span className="landing-powered">A Veyro product <b>·</b> <strong>VEYRO</strong></span>
+      <span><i/> CONNECTED EXPERIENCE</span>
+    </footer>
   </main>;
 
   return <div className="app-frame" data-theme={theme}>
