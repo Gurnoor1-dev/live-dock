@@ -592,7 +592,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
           {active==="User Management"&&<UserManagementPage/>}
           {active==="Feature Selection"&&<FeatureSelectionPage/>}
         </WorkspaceProvider>}
-        <footer className="footer"><span>© {new Date().getFullYear()} Virtual Blue</span><span>Powered by Infinite Flight PublicApi v3</span><span>Live data · No permanent API data storage</span></footer>
+        <footer className="footer"><span>© {new Date().getFullYear()} Virtual Blue</span><span className="dashboard-powered"><span>Powered by</span><Image src={veyroLiveLogo} alt="Veyro" className="dashboard-veyro-logo"/></span><span>Infinite Flight Public API v3 · Live data</span></footer>
       </div>
     </main>
   </div>;
