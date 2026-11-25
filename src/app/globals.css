@@ -787,3 +787,13 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
  .landing-footer{height:52px;min-height:52px}
 }
 @media(prefers-reduced-motion:reduce){.landing-page .landing-signin,.landing-page .landing-signin::before,.landing-page .landing-signin-arrow{transition:none}.landing-page .landing-signin:hover{transform:none}}
+
+
+/* Landing navbar brand pairing */
+.landing-vb-logo{height:52px;max-width:min(240px,48vw);filter:brightness(0) invert(1)}
+.landing-header-veyro{display:flex;align-items:center;justify-content:flex-end;min-width:0}
+.landing-header-veyro img{display:block;width:auto;height:34px;max-width:min(170px,38vw);object-fit:contain;object-position:right center}
+@media(max-width:680px){
+  .landing-vb-logo{height:43px;max-width:min(190px,48vw)}
+  .landing-header-veyro img{height:29px;max-width:min(135px,38vw)}
+}
