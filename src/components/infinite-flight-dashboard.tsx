@@ -46,6 +46,7 @@ let sharedWorkspacePromise:Promise<WorkspaceSnapshot>|null=null;
 let sharedAuthState:"unknown"|"signed-out"|"signed-in"="unknown";
 let sharedAuthCheckedAt=0;
 let sharedAuthPromise:Promise<boolean>|null=null;
+let sharedProfile:{username?:string;role?:number;discordUserId?:string;discordUsername?:string}|null=null;
 let sharedAuthState:"unknown"|"signed-out"|"signed-in"="unknown";
 let sharedAuthCheckedAt=0;
 let sharedAuthPromise:Promise<boolean>|null=null;
@@ -96,7 +97,7 @@ function haversineKm(a:{latitude:number;longitude:number},b:{latitude:number;lon
 
 export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}={}){
   const router=useRouter();
-  const [auth,setAuth]=useState<"checking"|"signed-out"|"signed-in">("checking");
+  const [auth,setAuth]=useState<"checking"|"signed-out"|"signed-in">(sharedAuthState==="signed-in"&&Date.now()-sharedAuthCheckedAt<5*60_000?"signed-in":sharedAuthState==="signed-out"&&Date.now()-sharedAuthCheckedAt<5*60_000?"signed-out":"checking");
   const [organization,setOrganization]=useState<Organization|null>(sharedWorkspaceSnapshot?.organization??null);
   const [aircraft,setAircraft]=useState<Aircraft[]>(sharedWorkspaceSnapshot?.aircraft??[]);
   const [aircraftTypes,setAircraftTypes]=useState<AircraftType[]>(sharedAircraftTypes);
@@ -260,8 +261,11 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
       }
       if(!mounted)return;if(!authenticated){setAuth("signed-out");return;}setAuth("signed-in");
       await loadOrganization();
-      const profileResponse=await fetch("/api/profile",{cache:"no-store",credentials:"same-origin"});
-      if(profileResponse.ok){const profile=await profileResponse.json();if(mounted){if(profile.username)setProfileName(profile.username);if(typeof profile.role==="number")setProfileRole(profile.role);setDiscordUserId(profile.discordUserId||"");setDiscordUsername(profile.discordUsername||"");}}
+      if(!sharedProfile){
+        const profileResponse=await fetch("/api/profile",{cache:"no-store",credentials:"same-origin"});
+        if(profileResponse.ok){const profile=await profileResponse.json();sharedProfile={username:profile.username,role:profile.role,discordUserId:profile.discordUserId||"",discordUsername:profile.discordUsername||""};}
+      }
+      if(mounted&&sharedProfile){if(sharedProfile.username)setProfileName(sharedProfile.username);if(typeof sharedProfile.role==="number")setProfileRole(sharedProfile.role);setDiscordUserId(sharedProfile.discordUserId||"");setDiscordUsername(sharedProfile.discordUsername||"");}
     }catch(e){if(mounted){setAuth(sharedAuthState==="signed-in"?"signed-in":"checking");setError(e instanceof Error?e.message:"Unable to verify your Infinite Flight session.");}}})();
     return()=>{mounted=false;};
   },[loadOrganization]);
@@ -510,7 +514,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     try{
       const response=await fetch("/api/auth/if/logout",{method:"POST",credentials:"same-origin",cache:"no-store"});
       if(!response.ok)throw new Error("Infinite Flight sign out failed. Please try again.");
-      setAuth("signed-out");setOrganization(null);setAircraft([]);setMembers([]);setSchedules([]);setPositions({});setSelectedAircraft(null);setFlightHistory([]);
+      sharedAuthState="signed-out";sharedAuthCheckedAt=Date.now();sharedAuthPromise=null;sharedProfile=null;sharedWorkspaceSnapshot=null;sharedWorkspacePromise=null;for(const key of Object.keys(sharedPositions))delete sharedPositions[key];positionsRefreshedAt=0;setAuth("signed-out");setOrganization(null);setAircraft([]);setMembers([]);setSchedules([]);setPositions({});setSelectedAircraft(null);setFlightHistory([]);
     }catch(e){setError(e instanceof Error?e.message:"Could not sign out of Infinite Flight.");}
     finally{setBusy(false);}
   }
