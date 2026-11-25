@@ -816,3 +816,39 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
  .app-frame .dashboard-powered{gap:7px;font-size:9px}
  .app-frame .dashboard-veyro-logo{height:20px;max-width:100px}
 }
+
+
+/* Final dashboard header polish */
+.app-frame[data-theme="dark"] .sidebar .brand-logo{
+  filter:brightness(0) invert(1)!important;
+}
+.app-frame[data-theme="light"] .sidebar .brand-logo{
+  filter:none!important;
+}
+.app-frame .topbar-brand-button{
+  text-decoration:none;
+  transition:opacity .18s ease,transform .18s ease;
+}
+.app-frame .topbar-brand-button:hover{opacity:.82;transform:translateY(-1px)}
+.app-frame .topbar-actions{gap:9px}
+.app-frame .topbar-actions>.icon-button{width:32px;height:32px;border-radius:10px}
+.app-frame .theme-switch{
+  width:66px;min-width:66px;height:34px;min-height:34px;
+  padding:3px 5px;gap:5px;justify-content:space-between;
+  border-radius:999px;background:var(--surface-2);
+}
+.app-frame .theme-switch-copy{min-width:0;width:22px;justify-content:center}
+.app-frame .theme-switch-icon{
+  width:22px;height:22px;border-radius:50%;
+  background:transparent;color:var(--ink);
+}
+.app-frame .theme-switch-track{width:29px;height:18px;padding:2px}
+.app-frame .theme-switch-thumb{width:14px;height:14px}
+.app-frame .theme-switch.dark .theme-switch-thumb{transform:translateX(11px)}
+@media(max-width:720px){
+ .app-frame .topbar-actions{gap:5px}
+ .app-frame .theme-switch{width:62px;min-width:62px;height:32px;min-height:32px}
+ .app-frame .theme-switch-track{width:27px;height:17px}
+ .app-frame .theme-switch-thumb{width:13px;height:13px}
+ .app-frame .theme-switch.dark .theme-switch-thumb{transform:translateX(10px)}
+}
