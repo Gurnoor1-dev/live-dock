@@ -12,14 +12,51 @@ const rateLimits = new Map<string, { isPro: boolean; remaining: number; updatedA
 const ifGetCache = new Map<string, { value: unknown; expiresAt: number }>();
 const ifGetInflight = new Map<string, Promise<unknown>>();
 const ifRateLimitCooldown = new Map<string, number>();
+type IFRequestWindow = { startedAt: number; count: number; isPro: boolean };
+const ifRequestWindows = new Map<string, IFRequestWindow>();
+
+export function takeIFRequestSlot(session: IFSession) {
+  const now = Date.now();
+  const key = session.accessToken;
+  const cooldownUntil = ifRateLimitCooldown.get(key) || 0;
+  if (cooldownUntil > now) return { allowed: false, retryAfterMs: cooldownUntil - now };
+  let window = ifRequestWindows.get(key);
+  if (!window || now - window.startedAt >= 60_000) {
+    window = { startedAt: now, count: 0, isPro: rateLimits.get(key)?.isPro ?? false };
+    ifRequestWindows.set(key, window);
+  }
+  const limit = window.isPro ? 20 : 5;
+  if (window.count >= limit) return { allowed: false, retryAfterMs: Math.max(1_000, 60_000 - (now - window.startedAt)) };
+  window.count += 1;
+  return { allowed: true, retryAfterMs: 0 };
+}
+
+export function recordIFRateLimitResponse(session: IFSession, response: Response) {
+  const key = session.accessToken;
+  const now = Date.now();
+  const window = ifRequestWindows.get(key);
+  const proHeader = response.headers.get("x-user-pro");
+  const isPro = proHeader === null ? (window?.isPro ?? false) : proHeader.toLowerCase() === "true";
+  if (window) window.isPro = isPro;
+  const remainingHeader = response.headers.get("x-rate-limit-remaining");
+  const remaining = remainingHeader === null ? (isPro ? 19 : 4) : Number(remainingHeader);
+  rateLimits.set(key, { isPro, remaining: Number.isFinite(remaining) ? remaining : (isPro ? 19 : 4), updatedAt: now });
+  if (response.status === 429) {
+    const retryAfter = response.headers.get("retry-after");
+    const seconds = retryAfter ? Number(retryAfter) : NaN;
+    const retryAt = Number.isFinite(seconds) && seconds > 0 ? now + seconds * 1000 : now + 60_000;
+    ifRateLimitCooldown.set(key, retryAt);
+  }
+}
 const IF_ERROR_NAMES: Record<number, string> = { 4: "Not authorized", 5: "Server not found", 6: "Flight not found", 7: "No ATIS available", 8: "Airport not found", 9: "Request exceeds maximum request size" };
 
 function ifCacheTtl(path: string) {
-  if (path.endsWith("/position")) return 90_000;
+  if (path.endsWith("/position")) return 120_000;
+  if (path.includes("/members")) return 5 * 60_000;
   if (path.endsWith("/flights")) return 5 * 60_000;
-  if (path.includes("/schedules")) return 20_000;
-  if (/^\/live\/organizations\/[^/]+$/.test(path)) return 90_000;
-  if (path.includes("/members") || path.includes("/aircraft")) return 90_000;
+  if (path.includes("/schedules")) return 120_000;
+  if (/^\/live\/organizations\/[^/]+$/.test(path)) return 120_000;
+  if (path.includes("/aircraft")) return 120_000;
   if (path.startsWith("/airport/") || path === "/airports" || path === "/aircraft") return 60 * 60_000;
   return 0;
 }
@@ -65,6 +102,10 @@ export async function ifFetch<T = unknown>(path: string, session: IFSession, ini
     if (cooldownUntil > Date.now()) {
       throw Object.assign(new Error("Infinite Flight rate limit reached (HTTP 429). Requests are paused until the quota window resets."), { status: 429, retryAfterMs: cooldownUntil - Date.now() });
     }
+    const slot = takeIFRequestSlot(session);
+    if (!slot.allowed) {
+      throw Object.assign(new Error("Infinite Flight request limit reached. LiveDock is pacing requests until the quota window resets."), { status: 429, retryAfterMs: slot.retryAfterMs });
+    }
     const response = await fetch("https://api.infiniteflight.com/public/v3" + path, {
       ...init,
       headers: {
@@ -74,19 +115,7 @@ export async function ifFetch<T = unknown>(path: string, session: IFSession, ini
       },
       cache: "no-store"
     });
-    if (response.status === 429) {
-      const retryAfterHeader = response.headers.get("retry-after");
-      const retrySeconds = retryAfterHeader ? Number(retryAfterHeader) : NaN;
-      const retryAt = Number.isFinite(retrySeconds) && retrySeconds > 0 ? Date.now() + retrySeconds * 1000 : Date.now() + 60_000;
-      ifRateLimitCooldown.set(session.accessToken, retryAt);
-    }
-    const remainingHeader = response.headers.get("x-rate-limit-remaining");
-    const remaining = remainingHeader === null ? 4 : Number(remainingHeader);
-    rateLimits.set(session.accessToken, {
-      isPro: (response.headers.get("x-user-pro") || "").toLowerCase() === "true",
-      remaining: Number.isFinite(remaining) ? remaining : 4,
-      updatedAt: Date.now()
-    });
+    recordIFRateLimitResponse(session, response);
     const payload = await response.json().catch(() => ({})) as { errorCode?: number; message?: string; result?: T };
     if (!response.ok || (typeof payload.errorCode === "number" && payload.errorCode !== 0)) {
       throw Object.assign(new Error((payload.message || "Infinite Flight API request failed (" + response.status + ").") + (typeof payload.errorCode === "number" ? " [Infinite Flight error " + payload.errorCode + (IF_ERROR_NAMES[payload.errorCode] ? ": " + IF_ERROR_NAMES[payload.errorCode] : "") + "]." : "")), {
