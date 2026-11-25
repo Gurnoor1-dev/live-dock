@@ -524,7 +524,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     try{
       // The organization aircraft list can change while this page is open.
       // Re-read it immediately before publishing so the selected organisation aircraft still exists. Hangar visibility is intentionally not used as a blocker.
-      const latestAircraft=await api("/live/organizations/"+ORGANIZATION_ID+"/aircraft") as Aircraft[];
+      const latestAircraft=await api("/live/organizations/"+ORGANIZATION_ID+"/aircraft",{headers:{"x-if-cache-bypass":"1"}}) as Aircraft[];
       if(Array.isArray(latestAircraft)){
         selected=latestAircraft.find(item=>item.id===aircraftId);
         setAircraft(latestAircraft);
