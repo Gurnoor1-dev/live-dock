@@ -907,3 +907,30 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 @media(max-width:680px){.landing-page .landing-hero{display:flex;flex-direction:column;align-items:stretch;gap:0;padding:12px 0 8px}.landing-page .landing-copy{order:1}.landing-globe-stage{order:2;width:min(74vw,330px);margin:-5px auto -18px}.landing-globe{width:68%}.globe-flight-chip{padding:6px 8px;font-size:7px}.globe-flight-chip small{font-size:7px}.chip-one{left:-5%}.chip-two{right:-5%}.globe-caption{font-size:6px;bottom:4%}.landing-page .landing-copy h1{font-size:clamp(45px,10vw,68px)}}
 @media(max-height:720px) and (min-width:681px){.landing-globe-stage{width:min(100%,430px)}.landing-page .landing-copy h1{font-size:clamp(52px,7vw,92px)}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+
+/* Minimal MapLibre globe — dark basemap, no geographic labels */
+.landing-globe-stage{position:relative;overflow:visible}
+.landing-maplibre-globe{
+  position:relative;width:78%;aspect-ratio:1;border-radius:50%;overflow:hidden;
+  background:#080d18;isolation:isolate;
+  box-shadow:inset -28px -18px 48px rgba(0,0,0,.48),0 0 0 1px rgba(150,180,235,.12),0 0 70px rgba(75,116,190,.17);
+  animation:globe-float 10s ease-in-out infinite;
+}
+.landing-maplibre-globe:after{
+  content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;z-index:2;
+  background:radial-gradient(ellipse at 32% 24%,rgba(150,183,255,.08),transparent 42%),linear-gradient(110deg,transparent 48%,rgba(0,0,0,.35) 100%);
+  box-shadow:inset -24px -12px 40px rgba(0,0,0,.42),inset 0 0 0 1px rgba(173,198,255,.12);
+}
+.landing-maplibre-globe canvas{outline:none}
+.landing-maplibre-globe .maplibregl-canvas-container,
+.landing-maplibre-globe .maplibregl-canvas{width:100%!important;height:100%!important;border-radius:50%}
+.landing-maplibre-globe .maplibregl-ctrl-attrib,
+.landing-maplibre-globe .maplibregl-ctrl-logo{display:none!important}
+.landing-globe-stage .globe-orbit{pointer-events:none}
+@media(max-width:680px){
+ .landing-maplibre-globe{width:72%}
+}
+@media(prefers-reduced-motion:reduce){
+ .landing-maplibre-globe{animation:none}
+}
