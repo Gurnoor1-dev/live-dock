@@ -42,6 +42,10 @@ type GalleryPhoto={id:string;url:string;altText:string;caption:string;credit:{na
 type GalleryManifest={settings:{maxPhotosPerAircraft:number;slideshowIntervalMs:number};aircraft:Record<string,{photos:GalleryPhoto[]}>};
 type WorkspaceSnapshot={organization:Organization|null;aircraft:Aircraft[];members:Member[];schedules:Schedule[];refreshedAt:number};
 let sharedWorkspaceSnapshot:WorkspaceSnapshot|null=null;
+let sharedWorkspacePromise:Promise<WorkspaceSnapshot>|null=null;
+let sharedAuthState:"unknown"|"signed-out"|"signed-in"="unknown";
+let sharedAuthCheckedAt=0;
+let sharedAuthPromise:Promise<boolean>|null=null;
 const sharedPositions:Record<string,Position>={};
 let positionsRefreshedAt=0;
 let sharedPositionCursor=0;
@@ -49,7 +53,7 @@ let sharedIsPro=false;
 let supportingDataLoaded=false;
 let sharedAircraftTypes:AircraftType[]=[];
 let sharedGallery:GalleryManifest|null=null;
-const WORKSPACE_REFRESH_MS=90_000;
+const WORKSPACE_REFRESH_MS=120_000;
 
 const ORGANIZATION_ID="d50dcc80-8dac-4608-970c-61d6a4739488";
 const PAGE_ROUTES:Record<Tab,string>={
@@ -285,12 +289,12 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     if(Object.keys(sharedPositions).length)setPositions(sharedPositions);
     let lastActivityAt=Date.now();
     const markActivity=()=>{lastActivityAt=Date.now();};
-    const positionRefreshMs=60_000;
+    const positionRefreshMs=120_000;
     const refreshPositions=async()=>{
       if(document.visibilityState!=="visible"||Date.now()-lastActivityAt>=15*60_000)return;
       if(Date.now()-positionsRefreshedAt<positionRefreshMs)return;
       // Free tokens allow 5 requests/minute; Pro tokens allow 20. Reserve room for other app actions.
-      const batchSize=sharedIsPro?8:1;
+      const batchSize=sharedIsPro?6:1;
       const batch=Array.from({length:Math.min(batchSize,aircraft.length)},(_,offset)=>aircraft[(sharedPositionCursor+offset)%aircraft.length]);
       if(!batch.length)return;
       sharedPositionCursor=(sharedPositionCursor+batch.length)%aircraft.length;
