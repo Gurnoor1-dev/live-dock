@@ -86,7 +86,19 @@ async function proxy(request: NextRequest, context: RouteContext) {
   // stored credential is never exposed to the browser.
   if (path.startsWith("/live/")) {
     const identity = await getIFIdentity(session);
-    const storedOperator = await getStoredOperatorSession(identity.id);
+    let storedOperator = null;
+    try {
+      storedOperator = await getStoredOperatorSession(identity.id);
+    } catch (storedSessionError) {
+      // A broken/temporarily unavailable saved operator connection must not
+      // take the whole organisation workspace offline. Fall back only when
+      // the currently signed-in account independently has admin permissions.
+      try {
+        await requireOrganizationAdmin(session);
+      } catch {
+        throw storedSessionError;
+      }
+    }
     if (storedOperator) session = storedOperator;
     else await requireOrganizationAdmin(session);
   }
