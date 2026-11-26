@@ -19,7 +19,8 @@ export async function GET(request:NextRequest){
   if(!schedule||![1,2,3,4].includes(schedule.status)||!(schedule.crew||[]).some(c=>c.userId===identity.id))throw Object.assign(new Error("This schedule is no longer assigned to your account."),{status:403});
   const xml=await fetchSimBriefOFP(ofpId),data=parseSimBriefXml(xml,ofpId);
   if(!data.origin||!data.destination)throw new Error("The SimBrief OFP is missing airport information.");
-  await getDb().insert(dispatchBriefings).values({scheduleId,pilotIfcUserId:identity.id,ofpId,rawXml:xml,data:data as unknown as Record<string,unknown>,syncStatus:"pending"}).onConflictDoNothing();
+  const [inserted]=await getDb().insert(dispatchBriefings).values({scheduleId,pilotIfcUserId:identity.id,ofpId,rawXml:xml,data:data as unknown as Record<string,unknown>,syncStatus:"pending"}).onConflictDoNothing().returning({scheduleId:dispatchBriefings.scheduleId});
+  if(!inserted)return NextResponse.redirect(new URL("/dispatch/"+scheduleId,request.url));
   let syncStatus="pending",syncError="";
   if(data.navlog.length>=2){
    try{
