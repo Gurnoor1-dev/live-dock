@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { requireIFSession,ifFetch,ORGANIZATION_ID } from "@/lib/infinite-flight/server";
-import { simBriefSignature } from "@/lib/simbrief/server";
+import { simBriefSignature,simBriefOFPId } from "@/lib/simbrief/server";
 import { getDb } from "@/lib/db";
 import { appUsers,dispatchBriefings } from "@/lib/db/schema";
 export const runtime="nodejs";
@@ -38,11 +38,11 @@ export async function POST(request:Request){
   const timestamp=String(Math.floor(Date.now()/1000)),appOrigin=new URL(request.url).origin;
   const outputPage=appOrigin+"/api/dispatch/callback?scheduleId="+encodeURIComponent(flight.id);
   const outputPageCalc=outputPage.replace("http://","");
-  const apicode=simBriefSignature(origin,dest,aircraftCode,timestamp,outputPageCalc);
+  const apicode=simBriefSignature(origin,dest,aircraftCode,timestamp,outputPageCalc),ofpId=simBriefOFPId(origin,dest,aircraftCode,timestamp);
   const date=flight.scheduledDepartureUtc?new Date(flight.scheduledDepartureUtc):new Date();
   const airline=(flight.callsign.match(/^[A-Z]{2,3}/i)?.[0]||"VBL").toUpperCase();
   const fltnum=flight.callsign.replace(/^[A-Z]{2,3}/i,"").replace(/[^0-9A-Z]/gi,"")||"001";
-  return NextResponse.json({workerUrl:"https://www.simbrief.com/ofp/ofp.loader.api.php",apicode,timestamp,outputPage:outputPageCalc,fields:{
+  return NextResponse.json({workerUrl:"https://www.simbrief.com/ofp/ofp.loader.api.php",apicode,timestamp,ofpId,outputPage:outputPageCalc,fields:{
    orig:origin,dest,type:aircraftCode,airline,fltnum,date:pad(date.getUTCDate())+date.toLocaleString("en-US",{month:"short",timeZone:"UTC"}).toUpperCase()+String(date.getUTCFullYear()).slice(-2),
    deph:pad(date.getUTCHours()),depm:pad(date.getUTCMinutes()),reg:assigned?.registration||"",units:"KGS",navlog:"1",notams:"1",maps:"detail",stepclimbs:"1",tlr:"1",etops:"0"
   }});
