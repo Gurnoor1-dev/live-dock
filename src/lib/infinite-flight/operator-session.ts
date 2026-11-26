@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { adminOperatorCredentials } from "@/lib/db/schema";
 import { getIFIdentityFromToken, type IFSession } from "@/lib/infinite-flight/session";
-import { ifFetch, requireOrganizationAdmin } from "@/lib/infinite-flight/server";
+import { requireOrganizationAdmin } from "@/lib/infinite-flight/server";
 import { openSecret, sealSecret } from "@/lib/security/secret-box";
 
 const TOKEN_URL = "https://api.infiniteflight.com/auth/v2/connect/token";
