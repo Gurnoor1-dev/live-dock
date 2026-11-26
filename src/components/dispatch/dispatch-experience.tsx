@@ -1,0 +1,49 @@
+"use client";
+import {useCallback,useEffect,useState} from "react";
+import Link from "next/link";
+import {ArrowLeft,ArrowUpRight,RefreshCw,FileText,Plane,Cloud,Wind,Weight,Clock,Route,Radio,CheckCircle2,AlertTriangle,Download,MapPin} from "lucide-react";
+import {RouteMap} from "./route-map";
+import {SeatMap} from "./seat-map";
+type Briefing={ofpId:string;callsign:string;airline:string;flightNumber:string;origin:string;destination:string;aircraftType:string;aircraftName:string;registration:string;route:string;alternate:string;departureTime:string;arrivalTime:string;enrouteTime:string;distance:string;cruiseAltitude:string;fuel:Record<string,string>;weights:Record<string,string>;weather:Record<string,string>;originMetar:string;destinationMetar:string;navlog:Array<{name:string;identifier:string;location:{latitude:number;longitude:number};altitude?:number}>;pdfUrl:string};
+function extractAtis(value:unknown):string{
+ if(typeof value==="string")return value;
+ if(!value||typeof value!=="object")return "No ATIS information was returned.";
+ const v=value as Record<string,unknown>,candidate=v.atis||v.lines||v.text||v.message||v.information;
+ if(Array.isArray(candidate))return candidate.map(String).join("\n");
+ if(typeof candidate==="string")return candidate;
+ return JSON.stringify(v,null,2);
+}
+export function DispatchExperience({scheduleId}:{scheduleId:string}){
+ const [briefing,setBriefing]=useState<Briefing|null>(null),[syncStatus,setSyncStatus]=useState("pending"),[syncError,setSyncError]=useState(""),[loading,setLoading]=useState(true),[error,setError]=useState(""),[syncing,setSyncing]=useState(false),[atis,setAtis]=useState<Record<string,string>>({}),[atisLoading,setAtisLoading]=useState(false),[atisError,setAtisError]=useState("");
+ const load=useCallback(async()=>{setLoading(true);try{const r=await fetch("/api/dispatch/"+scheduleId,{cache:"no-store"});const b=await r.json();if(!r.ok)throw new Error(b.error||"Unable to load dispatch.");setBriefing(b.briefing);setSyncStatus(b.syncStatus||"pending");setSyncError(b.syncError||"");}catch(e){setError(e instanceof Error?e.message:"Unable to load dispatch.");}finally{setLoading(false);}},[scheduleId]);
+ useEffect(()=>{void load();},[load]);
+ const sync=async()=>{setSyncing(true);setSyncError("");try{const r=await fetch("/api/dispatch/"+scheduleId+"/sync",{method:"POST"});const b=await r.json();if(!r.ok)throw new Error(b.error||"Schedule sync failed.");setSyncStatus("synced");}catch(e){setSyncError(e instanceof Error?e.message:"Schedule sync failed.");}finally{setSyncing(false);}};
+ const fetchAtis=async()=>{if(!briefing)return;setAtisLoading(true);setAtisError("");try{
+  const sr=await fetch("/api/if/sessions",{cache:"no-store"}),sb=await sr.json();if(!sr.ok)throw new Error(sb.error||"Unable to retrieve Infinite Flight sessions.");
+  const sessions=Array.isArray(sb.result)?sb.result:Array.isArray(sb.items)?sb.items:sb.result?.items||[];
+  if(!sessions.length)throw new Error("No active Infinite Flight sessions are currently available.");
+  const session=sessions[0],sessionId=session.id||session.sessionId;if(!sessionId)throw new Error("Infinite Flight did not return a session identifier.");
+  const next:Record<string,string>={};
+  for(const airport of [briefing.origin,briefing.destination]){
+   const r=await fetch("/api/if/sessions/"+encodeURIComponent(sessionId)+"/airport/"+encodeURIComponent(airport)+"/atis",{cache:"no-store"}),b=await r.json();
+   next[airport]=r.ok?extractAtis(b.result??b):"ATIS unavailable for this airport on the selected session.";
+  }
+  setAtis(next);
+ }catch(e){setAtisError(e instanceof Error?e.message:"Live ATIS could not be retrieved.");}finally{setAtisLoading(false);}};
+ const fmt=(value:string)=>value?value.replace("T"," ").replace("Z"," UTC"):"—";
+ if(loading)return <main className="dispatch-page"><div className="dispatch-loading"><div className="dispatch-spinner"/><b>Preparing your flight deck</b><span>Retrieving saved dispatch information…</span></div></main>;
+ return <main className="dispatch-page">
+  <div className="dispatch-topline"><Link href="/my-flights" className="dispatch-back"><ArrowLeft size={15}/> My Flights</Link><span className="dispatch-secure"><i/> PRIVATE PILOT BRIEFING</span></div>
+  {error&&<div className="dispatch-alert"><AlertTriangle size={17}/>{error}<button onClick={()=>void load()}>Retry</button></div>}
+  {!briefing?<div className="dispatch-empty"><div className="dispatch-empty-icon"><Plane size={24}/></div><span className="dispatch-kicker">FLIGHT DISPATCH</span><h1>No saved briefing yet</h1><p>Return to My Flights and select Dispatch on one of your future assigned flights to generate an OFP through your SimBrief account.</p><Link href="/my-flights" className="dispatch-primary">Back to My Flights <ArrowUpRight size={15}/></Link></div>:<>
+   <header className="dispatch-hero"><div><span className="dispatch-kicker">VIRTUAL BLUE · DISPATCH RELEASE</span><h1>{briefing.origin} <span>→</span> {briefing.destination}</h1><p>{briefing.callsign||briefing.airline+briefing.flightNumber||"Scheduled service"} · {briefing.aircraftName||briefing.aircraftType.toUpperCase()} {briefing.registration&&"· "+briefing.registration}</p></div><div className="dispatch-hero-actions"><span className="dispatch-status"><CheckCircle2 size={14}/> OFP SAVED</span><a className="dispatch-primary" href={briefing.pdfUrl} target="_blank" rel="noreferrer"><Download size={15}/> OFP PDF</a></div></header>
+   <div className="dispatch-metrics"><div><Clock/><small>EST. ENROUTE</small><b>{briefing.enrouteTime||"—"}</b></div><div><Route/><small>DISTANCE</small><b>{briefing.distance?briefing.distance+" NM":"—"}</b></div><div><Plane/><small>CRUISE LEVEL</small><b>{briefing.cruiseAltitude||"—"}</b></div><div><MapPin/><small>ALTERNATE</small><b>{briefing.alternate||"—"}</b></div></div>
+   <section className="dispatch-card"><div className="dispatch-card-head"><div><span className="dispatch-kicker">FLIGHT MANAGEMENT</span><h2>Filed route</h2><p>Georeferenced SimBrief navigation log</p></div><span className="dispatch-chip">{briefing.navlog.length} WAYPOINTS</span></div><div className="dispatch-route-text">{briefing.route||"Route details were not returned by SimBrief."}</div><RouteMap points={briefing.navlog} origin={briefing.origin} destination={briefing.destination}/><div className="dispatch-waypoints">{briefing.navlog.slice(0,14).map((p,i)=><span key={p.identifier+i}><b>{p.identifier}</b><small>{p.location.latitude.toFixed(2)}°, {p.location.longitude.toFixed(2)}°</small></span>)}</div></section>
+   <div className="dispatch-two-col"><section className="dispatch-card"><div className="dispatch-card-head"><div><span className="dispatch-kicker">WEATHER & ATC</span><h2>Weather & ATIS</h2><p>OFP weather plus live Infinite Flight ATIS on demand</p></div><Cloud size={20}/></div><div className="dispatch-metar"><small>SIMBRIEF WEATHER · {briefing.origin}</small><b>{briefing.originMetar||"METAR not included in this OFP"}</b></div><div className="dispatch-metar"><small>SIMBRIEF WEATHER · {briefing.destination}</small><b>{briefing.destinationMetar||"METAR not included in this OFP"}</b></div><div className="dispatch-info-row"><span><Wind size={15}/> Average wind</span><b>{briefing.weather.avg_wind||"—"}</b></div><div className="dispatch-info-row"><span><Cloud size={15}/> Average temperature</span><b>{briefing.weather.avg_temp||"—"}</b></div><button className="dispatch-secondary" onClick={()=>void fetchAtis()} disabled={atisLoading}><Radio size={14}/>{atisLoading?"Requesting live ATIS…":"Retrieve live Infinite Flight ATIS"}</button>{atisError&&<p className="dispatch-sync-error">{atisError}</p>}{Object.entries(atis).map(([airport,value])=><div className="dispatch-live-atis" key={airport}><small>LIVE SIMULATOR ATIS · {airport}</small><pre>{value}</pre></div>)}</section>
+    <section className="dispatch-card"><div className="dispatch-card-head"><div><span className="dispatch-kicker">LOADSHEET</span><h2>Fuel & weights</h2><p>Planning figures from the OFP</p></div><Weight size={20}/></div><div className="dispatch-info-row"><span>Ramp fuel</span><b>{briefing.fuel.ramp||"—"}</b></div><div className="dispatch-info-row"><span>Trip fuel</span><b>{briefing.fuel.flt||"—"}</b></div><div className="dispatch-info-row"><span>Contingency</span><b>{briefing.fuel.contingency||"—"}</b></div><div className="dispatch-info-row"><span>Operating empty weight</span><b>{briefing.weights.oew||"—"}</b></div><div className="dispatch-info-row"><span>Takeoff weight</span><b>{briefing.weights.tow||"—"}</b></div><div className="dispatch-info-row"><span>Landing weight</span><b>{briefing.weights.ldw||"—"}</b></div></section></div>
+   <SeatMap aircraftType={briefing.aircraftType||"A320"} scheduleId={scheduleId}/>
+   <section className="dispatch-card dispatch-sync-card"><div><span className="dispatch-kicker">INFINITE FLIGHT · SCHEDULE INTEGRATION</span><h2>Flight plan synchronisation</h2><p>{syncStatus==="synced"?"The structured waypoint route has been saved to the Infinite Flight schedule.":"The OFP is saved in LiveDock. Schedule updates require an organisation owner/admin token with live:schedules.write."}</p>{syncError&&<small className="dispatch-sync-error">{syncError}</small>}</div><div className="dispatch-sync-action"><span className={"dispatch-sync-state "+(syncStatus==="synced"?"is-synced":"")}>{syncStatus==="synced"?"SYNCED":"PENDING"}</span><button className="dispatch-secondary" onClick={()=>void sync()} disabled={syncing||syncStatus==="synced"}><RefreshCw size={14} className={syncing?"spin":""}/>{syncing?"Syncing…":"Retry sync"}</button></div></section>
+   <div className="dispatch-footnote"><FileText size={14}/> OFP {briefing.ofpId} · Saved to LiveDock for repeat access. <span>Opened {fmt(new Date().toISOString())}</span></div>
+  </>}
+ </main>;
+}
