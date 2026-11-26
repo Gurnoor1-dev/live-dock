@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { dispatchBriefings } from "@/lib/db/schema";
 import { requireIFSession,ifFetch,ORGANIZATION_ID } from "@/lib/infinite-flight/server";
 import { fetchSimBriefOFP,parseSimBriefXml } from "@/lib/simbrief/server";
+import { getScheduleWriterSession } from "@/lib/infinite-flight/operator";
 export const runtime="nodejs";
 type Schedule={id:string;status:number;crew?:Array<{userId:string}>};
 export async function GET(request:NextRequest){
@@ -22,7 +23,9 @@ export async function GET(request:NextRequest){
   let syncStatus="pending",syncError="";
   if(data.navlog.length>=2){
    try{
-    await ifFetch("/live/schedules/"+scheduleId+"/flightplan",session,{method:"PUT",body:JSON.stringify({flightPlan:{flightPlanItems:data.navlog.slice(0,500).map(p=>({name:p.name,identifier:p.identifier,location:p.location,altitude:p.altitude??-1}))}})});
+    const writer=await getScheduleWriterSession(session);
+    if(!writer)throw new Error("Connect a Virtual Blue organisation owner/admin account with live:schedules.write in Admin → Operator Account to enable automatic schedule synchronisation.");
+    await ifFetch("/live/schedules/"+scheduleId+"/flightplan",writer,{method:"PUT",body:JSON.stringify({flightPlan:{flightPlanItems:data.navlog.slice(0,500).map(p=>({name:p.name,identifier:p.identifier,location:p.location,altitude:p.altitude??-1}))}})});
     syncStatus="synced";
    }catch(error){syncError=error instanceof Error?error.message:"Infinite Flight rejected the flight-plan update.";syncStatus="permission_required";}
   }else syncError="SimBrief did not return enough geocoded navlog points to safely update the Infinite Flight schedule.";
