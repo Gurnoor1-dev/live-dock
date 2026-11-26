@@ -48,7 +48,7 @@ export function recordIFRateLimitResponse(session: IFSession, response: Response
     ifRateLimitCooldown.set(key, retryAt);
   }
 }
-const IF_ERROR_NAMES: Record<number, string> = { 4: "Not authorized", 5: "Server not found", 6: "Flight not found", 7: "No ATIS available", 8: "Airport not found", 9: "Request exceeds maximum request size" };
+const IF_ERROR_NAMES: Record<number, string> = { 1: "User not found", 2: "Missing request parameters", 3: "Endpoint error", 4: "Not authorized", 5: "Server not found", 6: "Flight not found", 7: "No ATIS available", 8: "Airport not found", 9: "Request exceeds maximum request size", 10: "Schedule already has three crew members", 11: "Crew member is not assigned" };
 
 function ifCacheTtl(path: string) {
   if (path === "/aircraft" || path === "/aircraft/liveries" || /^\/aircraft\/[^/]+\/liveries$/.test(path)) return 60 * 60_000;
@@ -117,11 +117,15 @@ export async function ifFetch<T = unknown>(path: string, session: IFSession, ini
       cache: "no-store"
     });
     recordIFRateLimitResponse(session, response);
-    const payload = await response.json().catch(() => ({})) as { errorCode?: number; message?: string; result?: T };
+    const payload = await response.json().catch(() => ({})) as { errorCode?: number; message?: string; error?: string; details?: unknown; errors?: unknown; result?: T };
     if (!response.ok || (typeof payload.errorCode === "number" && payload.errorCode !== 0)) {
-      throw Object.assign(new Error((payload.message || "Infinite Flight API request failed (" + response.status + ").") + (typeof payload.errorCode === "number" ? " [Infinite Flight error " + payload.errorCode + (IF_ERROR_NAMES[payload.errorCode] ? ": " + IF_ERROR_NAMES[payload.errorCode] : "") + "]." : "")), {
+      const diagnostic = payload.message || payload.error || (payload.details ? JSON.stringify(payload.details) : payload.errors ? JSON.stringify(payload.errors) : "");
+      const suffix = typeof payload.errorCode === "number" ? " [Infinite Flight error " + payload.errorCode + (IF_ERROR_NAMES[payload.errorCode] ? ": " + IF_ERROR_NAMES[payload.errorCode] : "") + "]." : "";
+      const detail = diagnostic ? " Details: " + String(diagnostic).slice(0, 700) : "";
+      throw Object.assign(new Error((diagnostic || "Infinite Flight API request failed (" + response.status + ").") + suffix + detail), {
         status: response.status,
-        errorCode: payload.errorCode
+        errorCode: payload.errorCode,
+        apiDetails: payload.details ?? payload.errors ?? payload.error ?? null
       });
     }
     return payload.result as T;
