@@ -25,7 +25,7 @@ function decodeSession(encryptedSession: string): IFSession {
   return session;
 }
 
-async function refreshSession(ifcUserId: string, initialEncryptedSession: string): Promise<IFSession | null> {
+async function refreshSession(ifcUserId: string): Promise<IFSession | null> {
   const db = getDb();
   const startedAt = Date.now();
 
@@ -135,9 +135,9 @@ export async function getStoredOperatorSession(ifcUserId: string): Promise<IFSes
     .where(eq(adminOperatorCredentials.ifcUserId, ifcUserId)).limit(1);
   if (!row) return null;
 
-  let session = decodeSession(row.encryptedSession);
+  let session: IFSession | null = decodeSession(row.encryptedSession);
   if (session.expiresAt <= Date.now() + 90_000) {
-    session = await refreshSession(ifcUserId, row.encryptedSession) as IFSession | null;
+    session = await refreshSession(ifcUserId);
     if (!session) return null;
   }
 
