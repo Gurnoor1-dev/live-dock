@@ -1,9 +1,9 @@
 import "server-only";
 import { createHash } from "node:crypto";
-export type SimBriefWaypoint = { name: string; identifier: string; location: { latitude: number; longitude: number }; altitude?: number };
+export type SimBriefWaypoint = { name: string; identifier: string; location: { latitude: number; longitude: number }; altitude?: number; isSidStar?: boolean; stage?: string; viaAirway?: string };
 export type SimBriefData = {
  ofpId:string;callsign:string;airline:string;flightNumber:string;origin:string;destination:string;aircraftType:string;aircraftName:string;registration:string;route:string;alternate:string;departureTime:string;arrivalTime:string;enrouteTime:string;distance:string;cruiseAltitude:string;
- fuel:Record<string,string>;weights:Record<string,string>;weather:Record<string,string>;originMetar:string;destinationMetar:string;navlog:SimBriefWaypoint[];pdfUrl:string;
+ fuel:Record<string,string>;weights:Record<string,string>;weather:Record<string,string>;originMetar:string;destinationMetar:string;sidIdent:string;starIdent:string;navlog:SimBriefWaypoint[];pdfUrl:string;
 };
 const decode=(s:string)=>s.replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&#(\d+);/g,(_,n)=>String.fromCharCode(Number(n)));
 function tag(xml:string,name:string,scope=xml):string {const m=scope.match(new RegExp("<"+name+"(?:\\s[^>]*)?>([\\s\\S]*?)</"+name+">","i"));return m?decode(m[1].replace(/<[^>]+>/g,"").trim()):"";}
@@ -13,7 +13,7 @@ export function parseSimBriefXml(xml:string,ofpId:string):SimBriefData {
  const general=section(xml,"general"),origin=section(xml,"origin"),destination=section(xml,"destination"),aircraft=section(xml,"aircraft"),fuel=section(xml,"fuel"),weights=section(xml,"weights"),weather=section(xml,"weather"),nav=section(xml,"navlog");
  const navlog:SimBriefWaypoint[]=[];
  const blocks=[...nav.matchAll(/<(?:fix|point|waypoint)(?:\s[^>]*)?>([\s\S]*?)<\/(?:fix|point|waypoint)>/gi)];
- for(const m of blocks){const b=m[1],name=tag(b,"name")||tag(b,"ident")||tag(b,"identifier"),lat=Number(tag(b,"pos_lat")||tag(b,"lat")),lon=Number(tag(b,"pos_long")||tag(b,"lon"));if(name&&Number.isFinite(lat)&&Number.isFinite(lon)&&Math.abs(lat)<=90&&Math.abs(lon)<=180&&!(lat===0&&lon===0))navlog.push({name,identifier:tag(b,"ident")||name,location:{latitude:lat,longitude:lon},altitude:Number(tag(b,"altitude_feet")||tag(b,"altitude"))||undefined});}
+ for(const m of blocks){const b=m[1],name=tag(b,"name")||tag(b,"ident")||tag(b,"identifier"),lat=Number(tag(b,"pos_lat")||tag(b,"lat")),lon=Number(tag(b,"pos_long")||tag(b,"lon")),altitude=Number(tag(b,"altitude_feet")||tag(b,"altitude"));if(name&&Number.isFinite(lat)&&Number.isFinite(lon)&&Math.abs(lat)<=90&&Math.abs(lon)<=180&&!(lat===0&&lon===0))navlog.push({name,identifier:tag(b,"ident")||name,location:{latitude:lat,longitude:lon},altitude:Number.isFinite(altitude)&&altitude>0?altitude:undefined,isSidStar:/^(1|true|yes)$/i.test(tag(b,"is_sid_star")),stage:tag(b,"stage").toUpperCase(),viaAirway:tag(b,"via_airway").trim()});}
  const originCode=tag(origin,"icao_code")||tag(origin,"icao"),destinationCode=tag(destination,"icao_code")||tag(destination,"icao");
  const originLat=Number(tag(origin,"pos_lat")),originLon=Number(tag(origin,"pos_long")),destinationLat=Number(tag(destination,"pos_lat")),destinationLon=Number(tag(destination,"pos_long"));
  const validPoint=(lat:number,lon:number)=>Number.isFinite(lat)&&Number.isFinite(lon)&&Math.abs(lat)<=90&&Math.abs(lon)<=180&&!(lat===0&&lon===0);
@@ -24,36 +24,87 @@ export function parseSimBriefXml(xml:string,ofpId:string):SimBriefData {
  origin:originCode,destination:destinationCode,aircraftType:tag(aircraft,"icaocode")||tag(aircraft,"icaotype"),aircraftName:tag(aircraft,"name")||tag(aircraft,"icaotype"),registration:tag(aircraft,"reg"),route:tag(general,"route"),alternate:tag(section(xml,"alternate"),"icao_code")||tag(section(xml,"alternate"),"icao"),
  departureTime:tag(general,"sched_out")||tag(general,"orig_time"),arrivalTime:tag(general,"sched_in")||tag(general,"dest_time"),enrouteTime:tag(general,"ete"),distance:tag(general,"distance"),cruiseAltitude:tag(general,"initial_altitude")||tag(general,"cruise_altitude"),
  fuel:collect(fuel,["plan_ramp","plan_takeoff","plan_landing","plan_min","plan_flt","plan_taxi","plan_alternate","plan_reserve","plan_contingency"]),weights:collect(weights,["oew","mzfw","mtow","mlw","zfw","tow","ldw","payload"]),weather:collect(weather,["avg_wind","avg_temp","avg_trop","isa_dev"]),
- originMetar:tag(origin,"metar"),destinationMetar:tag(destination,"metar"),navlog,pdfUrl:"https://www.simbrief.com/ofp/flightplans/"+encodeURIComponent(ofpId)+".pdf"};
+ originMetar:tag(origin,"metar"),destinationMetar:tag(destination,"metar"),sidIdent:tag(general,"sid_ident")||tag(general,"sid"),starIdent:tag(general,"star_ident")||tag(general,"star"),navlog,pdfUrl:"https://www.simbrief.com/ofp/flightplans/"+encodeURIComponent(ofpId)+".pdf"};
 }
 export type IFFlightPlanItem = {
  name:string;
+ type:number;
+ children:IFFlightPlanItem[]|null;
  identifier:string;
- location:{latitude:number;longitude:number};
+ altitude:number;
+ location:{latitude:number;longitude:number;altitude:number};
 };
 export type IFStructuredFlightPlan = {flightPlanItems:IFFlightPlanItem[]};
+const IF_SID=0,IF_STAR=1;
+function normalizedIdent(value:string|undefined):string{return (value||"").trim().toUpperCase();}
+function toIFWaypoint(point:SimBriefWaypoint):IFFlightPlanItem {
+ const identifier=normalizedIdent(point.identifier||point.name);
+ return {name:(point.name||identifier).trim(),type:0,children:null,identifier,altitude:Number.isFinite(point.altitude)&&Number(point.altitude)>0?Math.round(Number(point.altitude)):-1,location:{latitude:point.location.latitude,longitude:point.location.longitude,altitude:0}};
+}
 export function buildSimBriefFlightPlan(data:SimBriefData):IFStructuredFlightPlan {
- const origin=data.origin.trim().toUpperCase(),destination=data.destination.trim().toUpperCase();
+ const origin=normalizedIdent(data.origin),destination=normalizedIdent(data.destination);
  if(!origin||!destination)throw new Error("The SimBrief XML is missing the origin or destination.");
- const valid=(point:SimBriefWaypoint)=>Number.isFinite(point.location?.latitude)&&Number.isFinite(point.location?.longitude)&&Math.abs(point.location.latitude)<=90&&Math.abs(point.location.longitude)<=180&&!(point.location.latitude===0&&point.location.longitude===0);
+ const valid=(point:SimBriefWaypoint)=>!!point&&!!point.location&&Number.isFinite(point.location.latitude)&&Number.isFinite(point.location.longitude)&&Math.abs(point.location.latitude)<=90&&Math.abs(point.location.longitude)<=180&&!(point.location.latitude===0&&point.location.longitude===0)&&!!normalizedIdent(point.identifier||point.name);
  const source=data.navlog.filter(valid);
+ if(!source.length)throw new Error("SimBrief did not provide coordinate-based navigation log waypoints.");
+ if(normalizedIdent(source[0].identifier||source[0].name)!==origin)throw new Error("SimBrief's navigation log is missing coordinates for origin "+origin+". The structured flight plan cannot be sent without airport coordinates.");
+ if(normalizedIdent(source[source.length-1].identifier||source[source.length-1].name)!==destination)throw new Error("SimBrief's navigation log is missing coordinates for destination "+destination+". The structured flight plan cannot be sent without airport coordinates.");
+ const sid=normalizedIdent(data.sidIdent),star=normalizedIdent(data.starIdent);
+ // SimBrief marks navlog fixes that belong to SID/STAR procedures. Its final
+ // procedure fix can be unmarked, so only marked contiguous endpoint runs are
+ // grouped; we never guess by swallowing ordinary en-route fixes.
+ let sidEnd=-1;
+ if(sid){for(let i=1;i<source.length-1&&source[i].isSidStar;i++)sidEnd=i;}
+ let starStart=source.length;
+ if(star){for(let i=source.length-2;i>0&&source[i].isSidStar;i--)starStart=i;}
+ // Do not allow overlapping groups to consume the whole route or each other.
+ if(sidEnd>=starStart){sidEnd=-1;starStart=source.length;}
+ const grouped=new Set<number>();
  const items:IFFlightPlanItem[]=[];
- const add=(point:SimBriefWaypoint)=>{const identifier=(point.identifier||point.name).trim().toUpperCase();if(!identifier)return;if(items[items.length-1]?.identifier===identifier)return;items.push({name:(point.name||identifier).trim(),identifier,location:{latitude:point.location.latitude,longitude:point.location.longitude}});};
- for(const point of source)add(point);
- if(items[0]?.identifier!==origin)throw new Error("SimBrief's navigation log is missing coordinates for origin "+origin+". The structured flight plan cannot be sent without airport coordinates.");
- if(items[items.length-1]?.identifier!==destination)throw new Error("SimBrief's navigation log is missing coordinates for destination "+destination+". The structured flight plan cannot be sent without airport coordinates.");
- if(items.length<2)throw new Error("The SimBrief navigation log does not contain enough coordinate-based waypoints to build a flight plan.");
- return {flightPlanItems:items};
+ const addProcedure=(ident:string,type:number,points:SimBriefWaypoint[])=>{
+  const children=points.map(toIFWaypoint);
+  if(!ident||!children.length)return;
+  const first=children[0];
+  items.push({name:ident,type,children,identifier:ident,altitude:-1,location:{...first.location}});
+ };
+ if(sidEnd>=1){
+  const children=source.slice(1,sidEnd+1);
+  addProcedure(sid,IF_SID,children);
+  for(let i=1;i<=sidEnd;i++)grouped.add(i);
+ }
+ for(let i=0;i<source.length;i++){
+  if(grouped.has(i))continue;
+  if(i===starStart&&starStart<source.length-1){
+   const children=source.slice(starStart,source.length-1);
+   addProcedure(star,IF_STAR,children);
+   for(let j=starStart;j<source.length-1;j++)grouped.add(j);
+  }
+  if(grouped.has(i))continue;
+  items.push(toIFWaypoint(source[i]));
+ }
+ if(items.length<2)throw new Error("The SimBrief navigation log does not contain enough flight-plan items.");
+ if(items.length>500)throw new Error("The generated flight plan exceeds Infinite Flight's 500 top-level item limit.");
+ const plan:IFStructuredFlightPlan={flightPlanItems:items};
+ if(JSON.stringify(plan).length>16000)throw new Error("The generated flight plan exceeds Infinite Flight's 16,000-character limit. Reduce the route detail in SimBrief and dispatch again.");
+ return plan;
 }
 export function isSimBriefFlightPlanSynced(actual:unknown,expected:IFStructuredFlightPlan):boolean {
  let value:unknown=actual;
- // Live API v3 serializes Schedule.flightPlan as a JSON string in Schedule responses.
  if(typeof value==="string"){try{value=JSON.parse(value);}catch{return false;}}
  if(!value||typeof value!=="object")return false;
  const items=(value as {flightPlanItems?:unknown}).flightPlanItems;
  if(!Array.isArray(items))return false;
- const normalize=(entries:unknown[])=>entries.map(item=>{if(!item||typeof item!=="object")return "";const p=item as IFFlightPlanItem;return [String(p.identifier||p.name||"").trim().toUpperCase(),Number(p.location?.latitude).toFixed(5),Number(p.location?.longitude).toFixed(5)].join("|");});
- const left=normalize(items),right=normalize(expected.flightPlanItems);
+ const signature=(entries:unknown[]):string[]=>entries.map(raw=>{
+  if(!raw||typeof raw!=="object")return "invalid";
+  const item=raw as Partial<IFFlightPlanItem>;
+  const id=normalizedIdent(item.identifier||item.name);
+  const location=item.location;
+  const coords=location&&Number.isFinite(location.latitude)&&Number.isFinite(location.longitude)
+   ?Number(location.latitude).toFixed(5)+"|"+Number(location.longitude).toFixed(5):"no-location";
+  const children=Array.isArray(item.children)?signature(item.children):[];
+  return [id,String(Number(item.type??0)),coords,children.join("~")].join("|");
+ });
+ const left=signature(items),right=signature(expected.flightPlanItems);
  return left.length===right.length&&left.every((item,index)=>item===right[index]);
 }
 export function simBriefOFPId(orig:string,dest:string,type:string,timestamp:string):string {
