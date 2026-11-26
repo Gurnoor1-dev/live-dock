@@ -15,7 +15,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{scheduleId:
   if(!schedule||!(schedule.crew||[]).some(c=>c.userId===identity.id))return NextResponse.json({error:"This briefing is only available to pilots assigned to the flight."},{status:403});
   let expected:IFStructuredFlightPlan|null=null;
   try{expected=buildSimBriefFlightPlan(row.data as unknown as SimBriefData);}catch{}
-  const confirmed=Boolean(expected)&&isSimBriefFlightPlanSynced(schedule.flightPlan,expected);
+  const confirmed=expected!==null&&isSimBriefFlightPlanSynced(schedule.flightPlan,expected);
   const syncError=confirmed?"":(row.syncError||"Infinite Flight does not currently show this SimBrief route on the schedule. Please re-sync.");
   return NextResponse.json({briefing:row.data,ofpId:row.ofpId,syncStatus:confirmed?"synced":row.syncStatus==="failed"?"failed":"pending",syncError,createdAt:row.createdAt},{headers:{"Cache-Control":"no-store"}});
  }catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Unable to load dispatch briefing."},{status:Number((error as {status?:number})?.status)||500})}
