@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { and,eq } from "drizzle-orm";
 import { requireIFSession,ifFetch,ORGANIZATION_ID } from "@/lib/infinite-flight/server";
 import { simBriefSignature } from "@/lib/simbrief/server";
 import { getDb } from "@/lib/db";
-import { appUsers } from "@/lib/db/schema";
+import { appUsers,dispatchBriefings } from "@/lib/db/schema";
 export const runtime="nodejs";
 type Crew={userId:string};type Schedule={id:string;status:number;callsign:string;aircraftId:string;originIcao:string;destinationIcao:string;isTimeless:boolean;scheduledDepartureUtc?:string;crew?:Crew[]};
 type FleetAircraft={id:string;aircraftId:string;registration:string};type AircraftType={id:string;icao?:string;icaoCode?:string;name?:string};
@@ -15,6 +15,8 @@ export async function POST(request:Request){
   if(!user?.onboardingCompletedAt)return NextResponse.json({error:"Complete pilot verification before dispatching."},{status:403});
   const body=await request.json().catch(()=>({})) as {scheduleId?:string};
   if(!body.scheduleId||!/^[0-9a-f-]{36}$/i.test(body.scheduleId))return NextResponse.json({error:"Choose a valid scheduled flight."},{status:400});
+  const [saved]=await getDb().select({scheduleId:dispatchBriefings.scheduleId}).from(dispatchBriefings).where(and(eq(dispatchBriefings.scheduleId,body.scheduleId),eq(dispatchBriefings.pilotIfcUserId,identity.id))).limit(1);
+  if(saved)return NextResponse.json({alreadyDispatched:true,scheduleId:body.scheduleId});
   const [schedules,fleet,types]=await Promise.all([
    ifFetch<Schedule[]|{items?:Schedule[]}>("/live/organizations/"+ORGANIZATION_ID+"/schedules?page=1&pageSize=100",session),
    ifFetch<FleetAircraft[]>("/live/organizations/"+ORGANIZATION_ID+"/aircraft",session),
