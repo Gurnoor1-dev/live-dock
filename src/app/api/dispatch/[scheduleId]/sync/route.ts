@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { dispatchBriefings } from "@/lib/db/schema";
 import { requireIFSession,ifFetch,ORGANIZATION_ID } from "@/lib/infinite-flight/server";
-import type { SimBriefData } from "@/lib/simbrief/server";
+import { buildSimBriefFlightPlan,isSimBriefFlightPlanSynced,type SimBriefData } from "@/lib/simbrief/server";
 import { getScheduleWriterSession } from "@/lib/infinite-flight/operator";
 export const runtime="nodejs";
 export async function POST(_request:Request,{params}:{params:Promise<{scheduleId:string}>}){
@@ -15,12 +15,18 @@ export async function POST(_request:Request,{params}:{params:Promise<{scheduleId
   const list=Array.isArray(schedules)?schedules:schedules.items||[],schedule=list.find(s=>s.id===scheduleId);
   if(!schedule||!(schedule.crew||[]).some(c=>c.userId===identity.id))return NextResponse.json({error:"Only assigned flight crew can synchronise this briefing."},{status:403});
   const data=row.data as unknown as SimBriefData;
-  const points=(data.navlog||[]).filter(p=>p.name&&Number.isFinite(p.location?.latitude)&&Number.isFinite(p.location?.longitude)&&!(p.location.latitude===0&&p.location.longitude===0)).slice(0,500);
-  if(points.length<2)return NextResponse.json({error:"The saved OFP does not contain enough geocoded route points to update the schedule."},{status:422});
+  const flightPlan=buildSimBriefFlightPlan(data);
   const writer=await getScheduleWriterSession(session);
   if(!writer)throw new Error("Connect a Virtual Blue organisation owner/admin account with live:schedules.write in Admin → Operator Account to enable schedule synchronisation.");
-  await ifFetch("/live/schedules/"+scheduleId+"/flightplan",writer,{method:"PUT",body:JSON.stringify({flightPlan:{flightPlanItems:points.map(p=>({name:p.name,identifier:p.identifier||p.name,location:p.location,...(p.altitude?{altitude:p.altitude}:{})}))}})});
-  await getDb().update(dispatchBriefings).set({syncStatus:"synced",syncError:"",updatedAt:new Date()}).where(eq(dispatchBriefings.scheduleId,scheduleId));
-  return NextResponse.json({success:true});
+  try{
+   const updated=await ifFetch<{flightPlan?:string|null}>("/live/schedules/"+scheduleId+"/flightplan",writer,{method:"PUT",body:JSON.stringify({flightPlan})});
+   if(!isSimBriefFlightPlanSynced(updated?.flightPlan,flightPlan))throw new Error("Infinite Flight did not confirm that the SimBrief route was saved. The schedule is not marked as synced.");
+   await getDb().update(dispatchBriefings).set({syncStatus:"synced",syncError:"",updatedAt:new Date()}).where(eq(dispatchBriefings.scheduleId,scheduleId));
+   return NextResponse.json({success:true,syncStatus:"synced",flightPlan});
+  }catch(error){
+   const message=error instanceof Error?error.message:"Infinite Flight rejected the flight-plan update.";
+   await getDb().update(dispatchBriefings).set({syncStatus:"failed",syncError:message,updatedAt:new Date()}).where(eq(dispatchBriefings.scheduleId,scheduleId));
+   throw error;
+  }
  }catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Infinite Flight could not update this schedule."},{status:Number((error as {status?:number})?.status)||500})}
 }
