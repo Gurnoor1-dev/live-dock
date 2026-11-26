@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { and,eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { requireIFSession,ifFetch,ORGANIZATION_ID } from "@/lib/infinite-flight/server";
 import { simBriefSignature } from "@/lib/simbrief/server";
 import { getDb } from "@/lib/db";
