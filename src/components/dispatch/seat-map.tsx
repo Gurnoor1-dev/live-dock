@@ -23,7 +23,7 @@ export function SeatMap({aircraftType,scheduleId}:{aircraftType:string;scheduleI
   for(let row=1;row<=cfg.rows;row++){
    const zone=row<=cfg.businessRows?"Business":row<=cfg.premiumRows?"Premium Economy":"Economy";
    const columns=zone==="Business"?cfg.businessColumns:zone==="Premium Economy"?cfg.premiumColumns:cfg.columns;
-   for(const col of columns){const id=String(row)+col,h=hash(scheduleId+":"+id);out.push({id,occupied:h%100<(zone==="Business"?52:zone==="Premium Economy"?68:71),name:first[h%first.length]+" "+last[(h>>>5)%last.length],zone});}
+   for(const col of columns){const id=String(row)+col,h=hash(scheduleId+":"+id);out.push({id,occupied:h%100<(zone==="Business"?52:zone==="Premium Economy"?68:71),name:(h%3===0?"Ms. ":h%3===1?"Mr. ":"Mx. ")+first[h%first.length]+" "+last[(h>>>5)%last.length],zone});}
   }
   return out;
  },[cfg,scheduleId]);
