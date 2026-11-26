@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { BlobPreconditionFailedError, del, head, list, put } from "@vercel/blob";
 import { randomUUID } from "node:crypto";
 import { getIFDeviceId, getIFSession } from "@/lib/infinite-flight/session";
-import { recordIFRateLimitResponse, takeIFRequestSlot } from "@/lib/infinite-flight/server";
+import { getIFIdentity, recordIFRateLimitResponse, requireOrganizationAdmin, takeIFRequestSlot } from "@/lib/infinite-flight/server";
+import { getStoredOperatorSession } from "@/lib/infinite-flight/operator-session";
 
 export const runtime = "nodejs";
 const API_BASE = "https://api.infiniteflight.com/public/v3";
@@ -71,7 +72,7 @@ async function proxy(request: NextRequest, context: RouteContext) {
   const now = Date.now();
   for (const [key, entry] of cache) if (now >= entry.expiresAt) cache.delete(key);
   for (const [key, until] of rateLimitUntil) if (now >= until) rateLimitUntil.delete(key);
-  const session = await getIFSession();
+  let session = await getIFSession();
   if (!session) return NextResponse.json({ error: "Sign in with Infinite Flight to continue." }, { status: 401, headers: { "Cache-Control": "no-store" } });
 
   const { path: parts } = await context.params;
@@ -79,6 +80,16 @@ async function proxy(request: NextRequest, context: RouteContext) {
   if (!parts?.length || parts.some(part => part === "." || part === ".." || !/^[A-Za-z0-9._-]+$/.test(part))) return NextResponse.json({ error: "Invalid API path." }, { status: 400 });
   const path = "/" + parts.join("/");
   if (!allowed(request.method, path)) return NextResponse.json({ error: "This Infinite Flight API operation is not enabled in this app." }, { status: 405 });
+
+  // Admin schedule operations always use the durable Neon operator session.
+  // The signed-in user must independently be an organisation admin; the
+  // stored credential is never exposed to the browser.
+  if (path.startsWith("/live/")) {
+    await requireOrganizationAdmin(session);
+    const identity = await getIFIdentity(session);
+    const storedOperator = await getStoredOperatorSession(identity.id);
+    if (storedOperator) session = storedOperator;
+  }
 
   // A leading slash in URL() would discard the /public/v3 base path.
   const target = new URL(`${API_BASE}${path}`);
