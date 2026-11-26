@@ -85,10 +85,10 @@ async function proxy(request: NextRequest, context: RouteContext) {
   // The signed-in user must independently be an organisation admin; the
   // stored credential is never exposed to the browser.
   if (path.startsWith("/live/")) {
-    await requireOrganizationAdmin(session);
     const identity = await getIFIdentity(session);
     const storedOperator = await getStoredOperatorSession(identity.id);
     if (storedOperator) session = storedOperator;
+    else await requireOrganizationAdmin(session);
   }
 
   // A leading slash in URL() would discard the /public/v3 base path.
