@@ -1,4 +1,4 @@
-# Virtual Blue — Infinite Flight API v3 Setup Guide
+# Virtual Blue — Live Organisation Setup Guide
 
 This application uses **Infinite Flight PublicApi v3 as the source of truth** for Virtual Blue's Live organisation, fleet, members, schedules, schedule crew and flight records.
 
