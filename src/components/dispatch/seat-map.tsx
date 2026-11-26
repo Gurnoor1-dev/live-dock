@@ -2,14 +2,15 @@
 import {useMemo,useState} from "react";
 const first=["Hannah","Oliver","Amelia","Noah","Mia","Ethan","Sofia","Leo","Grace","Lucas","Ella","Jack","Chloe","James","Ava","Henry","Lily","Oscar","Isla","Theo","Zoe","Mason","Aria","Finn"];
 const last=["Mitchell","Carter","Bennett","Morgan","Reed","Parker","Brooks","Hayes","Turner","Cooper","Foster","Ward","Collins","Price","Murphy","Bailey"];
-type Layout={columns:string[];rows:number;businessRows:number;premiumRows:number};
+type Layout={columns:string[];rows:number;businessRows:number;premiumRows:number;aisles:number[]};
 function layoutFor(type:string):Layout{
  const t=type.toUpperCase();
- if(/A380|B748|B747/.test(t))return{columns:["A","B","C","D","E","F","G","H","J","K"],rows:34,businessRows:5,premiumRows:8};
- if(/B77|B78|A33|A35/.test(t))return{columns:["A","B","C","D","E","F","G","H","J","K"],rows:30,businessRows:5,premiumRows:7};
- if(/A32|B73|B38|B39/.test(t))return{columns:["A","B","C","D","E","F"],rows:28,businessRows:4,premiumRows:0};
- if(/E17|E19|CRJ/.test(t))return{columns:["A","B","C","D"],rows:24,businessRows:3,premiumRows:0};
- return{columns:["A","B","C","D","E","F"],rows:24,businessRows:3,premiumRows:0};
+ if(/A380|B748|B747|B77/.test(t))return{columns:["A","B","C","D","E","F","G","H","J","K"],rows:34,businessRows:5,premiumRows:8,aisles:[2,6]};
+ if(/B78|A35/.test(t))return{columns:["A","B","C","D","E","F","G","H","J"],rows:30,businessRows:5,premiumRows:7,aisles:[2,5]};
+ if(/A33|A34/.test(t))return{columns:["A","C","D","E","F","G","H","K"],rows:30,businessRows:5,premiumRows:0,aisles:[1,5]};
+ if(/A32|B73|B38|B39/.test(t))return{columns:["A","B","C","D","E","F"],rows:28,businessRows:4,premiumRows:0,aisles:[2]};
+ if(/E17|E19|CRJ/.test(t))return{columns:["A","B","C","D"],rows:24,businessRows:3,premiumRows:0,aisles:[1]};
+ return{columns:["A","B","C","D","E","F"],rows:24,businessRows:3,premiumRows:0,aisles:[2]};
 }
 function hash(s:string){let h=2166136261;for(let i=0;i<s.length;i++)h=Math.imul(h^s.charCodeAt(i),16777619);return h>>>0;}
 export function SeatMap({aircraftType,scheduleId}:{aircraftType:string;scheduleId:string}){
@@ -26,7 +27,7 @@ export function SeatMap({aircraftType,scheduleId}:{aircraftType:string;scheduleI
   <div className="seat-summary"><span><b>{occupied}</b><small>Occupied</small></span><span><b>{seats.length-occupied}</b><small>Available</small></span><span><b>{Math.round(occupied/seats.length*100)}%</b><small>Load factor</small></span></div>
   <div className="seat-legend"><span><i className="seat-dot occupied"/> Passenger assigned</span><span><i className="seat-dot available"/> Available</span><span><i className="seat-dot selected"/> Selected</span></div>
   <div className="seat-map-shell"><div className="seat-nose"><span>FLIGHT DECK</span><b>✦</b></div>
-   {zones.map(zone=>{const zoneSeats=seats.filter(s=>s.zone===zone);if(!zoneSeats.length)return null;return <div className="seat-zone" key={zone}><div className="seat-zone-title">{zone}</div>{Array.from(new Set(zoneSeats.map(s=>Number(s.id.slice(0,-1))))).map(row=><div className="seat-row" key={row}><small>{row}</small>{cfg.columns.map((col,i)=>{const seat=zoneSeats.find(s=>s.id===row+col);const aisle=(cfg.columns.length===10&&(i===3||i===7))||(cfg.columns.length===6&&i===3)||(cfg.columns.length===4&&i===2);return <span key={col} className={"seat-position"+(aisle?" aisle-gap":"")}>{seat&&<button type="button" title={seat.id+(seat.occupied?" · "+seat.name:" · Available")} aria-label={seat.id+(seat.occupied?" occupied":" available")} onClick={()=>setSelected(seat.id)} className={"seat "+(seat.occupied?"is-occupied":"is-available")+(selected===seat.id?" is-selected":"")}>{col}</button>}</span>;})}</div>)}</div>})}
+   {zones.map(zone=>{const zoneSeats=seats.filter(s=>s.zone===zone);if(!zoneSeats.length)return null;return <div className="seat-zone" key={zone}><div className="seat-zone-title">{zone}</div>{Array.from(new Set(zoneSeats.map(s=>Number(s.id.slice(0,-1))))).map(row=><div className="seat-row" key={row}><small>{row}</small>{cfg.columns.map((col,i)=>{const seat=zoneSeats.find(s=>s.id===row+col);const aisle=cfg.aisles.includes(i);return <span key={col} className={"seat-position"+(aisle?" aisle-gap":"")}>{seat&&<button type="button" title={seat.id+(seat.occupied?" · "+seat.name:" · Available")} aria-label={seat.id+(seat.occupied?" occupied":" available")} onClick={()=>setSelected(seat.id)} className={"seat "+(seat.occupied?"is-occupied":"is-available")+(selected===seat.id?" is-selected":"")}>{col}</button>}</span>;})}</div>)}</div>})}
    <div className="seat-tail">REAR GALLEY · LAVATORIES</div>
   </div>
   <div className="seat-passenger-detail">{chosen?<><div className="seat-passenger-avatar">{chosen.occupied?chosen.name.split(" ").map(n=>n[0]).join(""):"—"}</div><div><small>SEAT {chosen.id} · {chosen.zone.toUpperCase()}</small><b>{chosen.occupied?chosen.name:"Available seat"}</b><span>{chosen.occupied?"Sample passenger · fictional assignment":"No passenger assigned"}</span></div><button type="button" onClick={()=>setSelected(null)}>Close</button></>:<p>Select any seat to view its passenger assignment.</p>}</div>
