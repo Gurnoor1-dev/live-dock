@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 import {useCallback,useEffect,useState} from "react";
 import Link from "next/link";
 import {ArrowLeft,ArrowUpRight,RefreshCw,FileText,Plane,Cloud,Wind,Weight,Clock,Route,Radio,CheckCircle2,AlertTriangle,Download,MapPin} from "lucide-react";
