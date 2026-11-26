@@ -6,7 +6,7 @@ import { requireIFSession,ifFetch,ORGANIZATION_ID } from "@/lib/infinite-flight/
 import { fetchSimBriefOFP,parseSimBriefXml } from "@/lib/simbrief/server";
 import { getScheduleWriterSession } from "@/lib/infinite-flight/operator";
 export const runtime="nodejs";
-type Schedule={id:string;status:number;crew?:Array<{userId:string}>};
+type Schedule={id:string;status:number;originIcao:string;destinationIcao:string;crew?:Array<{userId:string}>};
 export async function GET(request:NextRequest){
  const scheduleId=request.nextUrl.searchParams.get("scheduleId")||"",ofpId=request.nextUrl.searchParams.get("ofp_id")||"";
  try{
@@ -16,9 +16,10 @@ export async function GET(request:NextRequest){
   if(existing)return NextResponse.redirect(new URL("/dispatch/"+scheduleId,request.url));
   const schedules=await ifFetch<Schedule[]|{items?:Schedule[]}>("/live/organizations/"+ORGANIZATION_ID+"/schedules?page=1&pageSize=100",session);
   const list=Array.isArray(schedules)?schedules:schedules.items||[],schedule=list.find(s=>s.id===scheduleId);
-  if(!schedule||![1,2,3,4].includes(schedule.status)||!(schedule.crew||[]).some(c=>c.userId===identity.id))throw Object.assign(new Error("This schedule is no longer assigned to your account."),{status:403});
+  if(!schedule||![1,2,3,4,6].includes(schedule.status)||!(schedule.crew||[]).some(c=>c.userId===identity.id))throw Object.assign(new Error("This schedule is no longer assigned to your account."),{status:403});
   const xml=await fetchSimBriefOFP(ofpId),data=parseSimBriefXml(xml,ofpId);
   if(!data.origin||!data.destination)throw new Error("The SimBrief OFP is missing airport information.");
+  if(data.origin.toUpperCase()!==schedule.originIcao.toUpperCase()||data.destination.toUpperCase()!==schedule.destinationIcao.toUpperCase())throw new Error("The generated OFP airports do not match this Infinite Flight schedule. The briefing was not saved.");
   const [inserted]=await getDb().insert(dispatchBriefings).values({scheduleId,pilotIfcUserId:identity.id,ofpId,rawXml:xml,data:data as unknown as Record<string,unknown>,syncStatus:"pending"}).onConflictDoNothing().returning({scheduleId:dispatchBriefings.scheduleId});
   if(!inserted)return NextResponse.redirect(new URL("/dispatch/"+scheduleId,request.url));
   let syncStatus="pending",syncError="";
