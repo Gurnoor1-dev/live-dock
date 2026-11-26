@@ -10,7 +10,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{scheduleId:
   const {session,identity}=await requireIFSession(),{scheduleId}=await params;
   const [row]=await getDb().select({data:dispatchBriefings.data,ofpId:dispatchBriefings.ofpId,syncStatus:dispatchBriefings.syncStatus,syncError:dispatchBriefings.syncError,createdAt:dispatchBriefings.createdAt}).from(dispatchBriefings).where(eq(dispatchBriefings.scheduleId,scheduleId)).limit(1);
   if(!row)return NextResponse.json({briefing:null});
-  const schedules=await ifFetch<Array<{id:string;flightPlan?:unknown;crew?:Array<{userId:string}>}>|{items?:Array<{id:string;flightPlan?:string|null;crew?:Array<{userId:string}>}>}>("/live/organizations/"+ORGANIZATION_ID+"/schedules?page=1&pageSize=100",session);
+  const schedules=await ifFetch<Array<{id:string;flightPlan?:unknown;crew?:Array<{userId:string}>}>|{items?:Array<{id:string;flightPlan?:string|null;crew?:Array<{userId:string}>}>}>("/live/organizations/"+ORGANIZATION_ID+"/schedules?page=1&pageSize=100",session,{}, {bypassCache:true});
   const list=Array.isArray(schedules)?schedules:schedules.items||[],schedule=list.find(s=>s.id===scheduleId);
   if(!schedule||!(schedule.crew||[]).some(c=>c.userId===identity.id))return NextResponse.json({error:"This briefing is only available to pilots assigned to the flight."},{status:403});
   let expected:IFStructuredFlightPlan|null=null;
