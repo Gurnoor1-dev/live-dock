@@ -51,13 +51,14 @@ export function recordIFRateLimitResponse(session: IFSession, response: Response
 const IF_ERROR_NAMES: Record<number, string> = { 4: "Not authorized", 5: "Server not found", 6: "Flight not found", 7: "No ATIS available", 8: "Airport not found", 9: "Request exceeds maximum request size" };
 
 function ifCacheTtl(path: string) {
+  if (path === "/aircraft" || path === "/aircraft/liveries" || /^\/aircraft\/[^/]+\/liveries$/.test(path)) return 60 * 60_000;
   if (path.endsWith("/position")) return 120_000;
   if (path.includes("/members")) return 5 * 60_000;
   if (path.endsWith("/flights")) return 5 * 60_000;
   if (path.includes("/schedules")) return 120_000;
   if (/^\/live\/organizations\/[^/]+$/.test(path)) return 120_000;
   if (path.includes("/aircraft")) return 120_000;
-  if (path.startsWith("/airport/") || path === "/airports" || path === "/aircraft") return 60 * 60_000;
+  if (path.startsWith("/airport/") || path === "/airports") return 60 * 60_000;
   return 0;
 }
 
