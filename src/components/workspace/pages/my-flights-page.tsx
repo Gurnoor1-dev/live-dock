@@ -9,7 +9,7 @@ import { useWorkspace } from "../workspace-context";
 type Flight={id:string;callsign?:string;originIcao?:string|null;destinationIcao?:string|null;actualDepartureUtc?:string|null;actualArrivalUtc?:string|null;scheduledDepartureUtc?:string;isTimeless?:boolean;aircraftRegistration?:string;flightTimeMinutes?:number};
 type Coverage={checked:number;total:number;complete:boolean;limited:boolean};
 
-function FlightGroup({title,description,icon,flights,empty}:{title:string;description:string;icon:ReactNode;flights:Flight[];empty:string;showDispatch?:boolean}){
+function FlightGroup({title,description,icon,flights,empty,showDispatch}:{title:string;description:string;icon:ReactNode;flights:Flight[];empty:string;showDispatch?:boolean}){
  const [page,setPage]=useState(1);
  const pageSize=10;
  const pages=Math.max(1,Math.ceil(flights.length/pageSize));
