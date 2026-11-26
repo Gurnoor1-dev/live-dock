@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
+import { getDb } from "@/lib/db";
+import { adminOperatorCredentials } from "@/lib/db/schema";
 import { IF_STATE_COOKIE, IF_VERIFIER_COOKIE, getIFIdentityFromToken, saveIFSession } from "@/lib/infinite-flight/session";
 
 const TOKEN_URL = "https://api.infiniteflight.com/auth/v2/connect/token";
@@ -82,6 +85,18 @@ export async function GET(request: NextRequest) {
     expiresAt: Date.now() + Math.max(60, expiresIn) * 1000,
     identity
   }, response);
+
+  // Restore the lightweight, HTTP-only operator reference at every new
+  // sign-in when this Infinite Flight account has an attached Neon record.
+  try {
+    const [operator] = await getDb().select({ ifcUserId: adminOperatorCredentials.ifcUserId })
+      .from(adminOperatorCredentials).where(eq(adminOperatorCredentials.ifcUserId, identity.id)).limit(1);
+    if (operator) response.cookies.set("vb_admin_operator_ref", identity.id, {
+      httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 30
+    });
+  } catch {
+    // Login must remain available if the optional operator cache is unavailable.
+  }
 
   const cookieOptions = {
     httpOnly: true,
