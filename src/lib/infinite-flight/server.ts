@@ -122,7 +122,7 @@ export async function ifFetch<T = unknown>(path: string, session: IFSession, ini
       const diagnostic = payload.message || payload.error || (payload.details ? JSON.stringify(payload.details) : payload.errors ? JSON.stringify(payload.errors) : "");
       const suffix = typeof payload.errorCode === "number" ? " [Infinite Flight error " + payload.errorCode + (IF_ERROR_NAMES[payload.errorCode] ? ": " + IF_ERROR_NAMES[payload.errorCode] : "") + "]." : "";
       const detail = diagnostic ? " Details: " + String(diagnostic).slice(0, 700) : "";
-      throw Object.assign(new Error((diagnostic || "Infinite Flight API request failed (" + response.status + ").") + suffix + detail), {
+      throw Object.assign(new Error(method + " " + path + ": " + (diagnostic || "Infinite Flight API request failed (" + response.status + ").") + suffix + detail), {
         status: response.status,
         errorCode: payload.errorCode,
         apiDetails: payload.details ?? payload.errors ?? payload.error ?? null
