@@ -16,7 +16,7 @@ function extractAtis(value:unknown):string{
 export function DispatchExperience({scheduleId}:{scheduleId:string}){
  const [briefing,setBriefing]=useState<Briefing|null>(null),[syncStatus,setSyncStatus]=useState("pending"),[syncError,setSyncError]=useState(""),[loading,setLoading]=useState(true),[error,setError]=useState(""),[syncing,setSyncing]=useState(false),[atis,setAtis]=useState<Record<string,string>>({}),[atisLoading,setAtisLoading]=useState(false),[atisError,setAtisError]=useState("");
  const load=useCallback(async()=>{setLoading(true);try{const r=await fetch("/api/dispatch/"+scheduleId,{cache:"no-store"});const b=await r.json();if(!r.ok)throw new Error(b.error||"Unable to load dispatch.");setBriefing(b.briefing);setSyncStatus(b.syncStatus||"pending");setSyncError(b.syncError||"");}catch(e){setError(e instanceof Error?e.message:"Unable to load dispatch.");}finally{setLoading(false);}},[scheduleId]);
- useEffect(()=>{void load();},[load]);
+ useEffect(()=>{const message=new URLSearchParams(window.location.search).get("dispatchError");if(message)setError(message);void load();},[load]);
  const sync=async()=>{setSyncing(true);setSyncError("");try{const r=await fetch("/api/dispatch/"+scheduleId+"/sync",{method:"POST"});const b=await r.json();if(!r.ok)throw new Error(b.error||"Schedule sync failed.");setSyncStatus("synced");}catch(e){setSyncError(e instanceof Error?e.message:"Schedule sync failed.");}finally{setSyncing(false);}};
  const fetchAtis=async()=>{if(!briefing)return;setAtisLoading(true);setAtisError("");try{
   const sr=await fetch("/api/if/sessions",{cache:"no-store"}),sb=await sr.json();if(!sr.ok)throw new Error(sb.error||"Unable to retrieve Infinite Flight sessions.");
