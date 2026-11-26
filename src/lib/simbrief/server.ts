@@ -32,7 +32,7 @@ export async function fetchSimBriefOFP(ofpId:string):Promise<string>{
  if(!/^\d{10}_[A-Za-z0-9]{10}$/.test(ofpId))throw new Error("Invalid SimBrief OFP identifier.");
  const url="https://www.simbrief.com/ofp/flightplans/xml/"+encodeURIComponent(ofpId)+".xml";
  let lastStatus=0;
- for(let attempt=0;attempt<4;attempt++){
+ for(let attempt=0;attempt<8;attempt++){
   const response=await fetch(url,{cache:"no-store",signal:AbortSignal.timeout(8000)});
   if(response.ok){const xml=await response.text();if(xml.length>8000000)throw new Error("SimBrief OFP is larger than the supported size.");return xml;}
   lastStatus=response.status;
