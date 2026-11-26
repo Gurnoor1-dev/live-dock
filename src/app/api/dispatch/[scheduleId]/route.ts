@@ -6,7 +6,7 @@ import { requireIFSession,ifFetch,ORGANIZATION_ID } from "@/lib/infinite-flight/
 export const runtime="nodejs";
 export async function GET(_request:Request,{params}:{params:Promise<{scheduleId:string}>}){
  try{
-  const {identity}=await requireIFSession(),{scheduleId}=await params;
+  const {session,identity}=await requireIFSession(),{scheduleId}=await params;
   const [row]=await getDb().select({data:dispatchBriefings.data,ofpId:dispatchBriefings.ofpId,syncStatus:dispatchBriefings.syncStatus,syncError:dispatchBriefings.syncError,createdAt:dispatchBriefings.createdAt}).from(dispatchBriefings).where(eq(dispatchBriefings.scheduleId,scheduleId)).limit(1);
   if(!row)return NextResponse.json({briefing:null});
   const schedules=await ifFetch<Array<{id:string;crew?:Array<{userId:string}>}>|{items?:Array<{id:string;crew?:Array<{userId:string}>}>}>("/live/organizations/"+ORGANIZATION_ID+"/schedules?page=1&pageSize=100",session);
