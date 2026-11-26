@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { BlobPreconditionFailedError, del, head, list, put } from "@vercel/blob";
 import { randomUUID } from "node:crypto";
-import { getIFDeviceId, getIFSession } from "@/lib/infinite-flight/session";
+import { getIFDeviceId, getIFSession, type IFSession } from "@/lib/infinite-flight/session";
 import { getIFIdentity, recordIFRateLimitResponse, requireOrganizationAdmin, takeIFRequestSlot } from "@/lib/infinite-flight/server";
 import { getStoredOperatorSession } from "@/lib/infinite-flight/operator-session";
 
@@ -86,7 +86,7 @@ async function proxy(request: NextRequest, context: RouteContext) {
   // stored credential is never exposed to the browser.
   if (path.startsWith("/live/")) {
     const identity = await getIFIdentity(session);
-    let storedOperator = null;
+    let storedOperator: IFSession | null = null;
     try {
       storedOperator = await getStoredOperatorSession(identity.id);
     } catch (storedSessionError) {
