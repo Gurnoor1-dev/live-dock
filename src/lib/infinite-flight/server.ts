@@ -85,10 +85,10 @@ export async function requireIFSession() {
   return { session, identity };
 }
 
-export async function ifFetch<T = unknown>(path: string, session: IFSession, init: RequestInit = {}): Promise<T> {
+export async function ifFetch<T = unknown>(path: string, session: IFSession, init: RequestInit = {}, options: { bypassCache?: boolean } = {}): Promise<T> {
   const method = (init.method || "GET").toUpperCase();
   const cacheKey = method === "GET" ? session.accessToken + ":" + path : "";
-  const ttl = method === "GET" ? ifCacheTtl(path) : 0;
+  const ttl = method === "GET" && !options.bypassCache ? ifCacheTtl(path) : 0;
 
   if (ttl > 0) {
     const cached = ifGetCache.get(cacheKey);
