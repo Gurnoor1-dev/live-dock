@@ -21,6 +21,9 @@ export function parseSimBriefXml(xml:string,ofpId:string):SimBriefData {
  fuel:collect(fuel,["plan_ramp","plan_takeoff","plan_landing","plan_min","plan_flt","plan_taxi","plan_alternate","plan_reserve","plan_contingency"]),weights:collect(weights,["oew","mzfw","mtow","mlw","zfw","tow","ldw","payload"]),weather:collect(weather,["avg_wind","avg_temp","avg_trop","isa_dev"]),
  originMetar:tag(origin,"metar"),destinationMetar:tag(destination,"metar"),navlog,pdfUrl:"https://www.simbrief.com/ofp/flightplans/"+encodeURIComponent(ofpId)+".pdf"};
 }
+export function simBriefOFPId(orig:string,dest:string,type:string,timestamp:string):string {
+ return timestamp+"_"+createHash("md5").update(orig+dest+type).digest("hex").toUpperCase().slice(0,10);
+}
 export function simBriefSignature(orig:string,dest:string,type:string,timestamp:string,outputPage:string):string {
  const key=process.env.SIMBRIEF_API_KEY;if(!key)throw new Error("SIMBRIEF_API_KEY is not configured in the server environment.");
  return createHash("md5").update(key+orig+dest+type+timestamp+outputPage).digest("hex");
