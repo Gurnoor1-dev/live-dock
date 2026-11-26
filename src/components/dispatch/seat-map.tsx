@@ -12,7 +12,7 @@ function layoutFor(type:string):Layout{
  if(/B75/.test(t))return{columns:["A","B","C","D","E","F"],rows:26,businessRows:4,premiumRows:0,aisles:[2],businessColumns:["A","C","D","F"],businessAisles:[1],premiumColumns:[],premiumAisles:[]};
  if(/B76/.test(t))return{columns:["A","C","D","E","F","H","K"],rows:26,businessRows:4,premiumRows:0,aisles:[1,4],businessColumns:["A","C","D","G","H","K"],businessAisles:[1,3],premiumColumns:[],premiumAisles:[]};
  if(/BCS|A22/.test(t))return{columns:["A","C","D","E","F"],rows:25,businessRows:3,premiumRows:0,aisles:[1],businessColumns:["A","C","D","F"],businessAisles:[1],premiumColumns:[],premiumAisles:[]};
- if(/E17|E19|CRJ/.test(t))return{columns:["A","B","C","D"],rows:24,businessRows:3,premiumRows:0,aisles:[1],businessColumns:["A","B","C","D"],businessAisles:[1],premiumColumns:[],premiumAisles:[]};
+ if(/E17|E19|E75|E90|E95|CRJ|AT4|AT7|DH8/.test(t))return{columns:["A","B","C","D"],rows:24,businessRows:3,premiumRows:0,aisles:[1],businessColumns:["A","B","C","D"],businessAisles:[1],premiumColumns:[],premiumAisles:[]};
  return{columns:["A","B","C","D","E","F"],rows:24,businessRows:3,premiumRows:0,aisles:[2],businessColumns:["A","C","D","F"],businessAisles:[1],premiumColumns:[],premiumAisles:[]};
 }
 function hash(s:string){let h=2166136261;for(let i=0;i<s.length;i++)h=Math.imul(h^s.charCodeAt(i),16777619);return h>>>0;}
