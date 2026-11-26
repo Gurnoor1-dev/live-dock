@@ -27,8 +27,11 @@ export async function GET(request:NextRequest){
    const flightPlan=buildSimBriefFlightPlan(data);
    const writer=await getScheduleWriterSession(session);
    if(!writer)throw new Error("Connect a Virtual Blue organisation owner/admin account with live:schedules.write in Admin → Operator Account to enable automatic schedule synchronisation.");
-   const updatedSchedule=await ifFetch<{id?:string;flightPlan?:unknown}>("/live/schedules/"+scheduleId+"/flightplan",writer,{method:"PUT",body:JSON.stringify({flightPlan})});
-   if(updatedSchedule?.id!==scheduleId||!isSimBriefFlightPlanSynced(updatedSchedule.flightPlan,flightPlan))throw new Error("Infinite Flight did not return the submitted flight plan in its updated Schedule response. The schedule is NOT marked as synced.");
+   await ifFetch<unknown>("/live/schedules/"+scheduleId+"/flightplan",writer,{method:"PUT",body:JSON.stringify({flightPlan})});
+   const freshSchedules=await ifFetch<Array<{id:string;flightPlan?:unknown}>|{items?:Array<{id:string;flightPlan?:unknown}>}>("/live/organizations/"+ORGANIZATION_ID+"/schedules?page=1&pageSize=100",writer,{}, {bypassCache:true});
+   const freshList=Array.isArray(freshSchedules)?freshSchedules:freshSchedules.items||[];
+   const savedSchedule=freshList.find(item=>item.id===scheduleId);
+   if(!savedSchedule||!isSimBriefFlightPlanSynced(savedSchedule.flightPlan,flightPlan))throw new Error("Infinite Flight accepted the update request but its freshly retrieved schedule still does not contain the submitted waypoints. The schedule is NOT marked as synced.");
    syncStatus="synced";
   }catch(error){syncError=error instanceof Error?error.message:"Infinite Flight rejected the flight-plan update.";syncStatus="failed";}
   await getDb().update(dispatchBriefings).set({syncStatus,syncError,updatedAt:new Date()}).where(eq(dispatchBriefings.scheduleId,scheduleId));
