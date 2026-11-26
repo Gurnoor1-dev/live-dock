@@ -9,7 +9,7 @@ export function DispatchButton({scheduleId}:{scheduleId:string}){
   if(!popup){setError("Allow pop-ups for LiveDock to open SimBrief.");setBusy(false);return;}
   try{
    const response=await fetch("/api/dispatch/start",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({scheduleId})});
-   const result=await response.json();if(!response.ok)throw new Error(result.error||"Unable to start dispatch.");
+   const result=await response.json();if(!response.ok)throw new Error(result.error||"Unable to start dispatch.");if(result.alreadyDispatched){popup.close();window.location.href="/dispatch/"+scheduleId;return;}
    const form=document.createElement("form");form.method="GET";form.action=result.workerUrl;form.target="simbrief_dispatch";
    const values:Record<string,string>={...result.fields,apicode:result.apicode,outputpage:result.outputPage,timestamp:result.timestamp};
    for(const [name,value] of Object.entries(values)){const input=document.createElement("input");input.type="hidden";input.name=name;input.value=String(value??"");form.appendChild(input);}
