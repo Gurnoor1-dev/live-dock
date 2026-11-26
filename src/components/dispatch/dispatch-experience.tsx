@@ -27,7 +27,7 @@ export function DispatchExperience({scheduleId}:{scheduleId:string}){
   const next:Record<string,string>={};
   for(const airport of [briefing.origin,briefing.destination]){
    const r=await fetch("/api/if/sessions/"+encodeURIComponent(sessionId)+"/airport/"+encodeURIComponent(airport)+"/atis",{cache:"no-store"}),b=await r.json();
-   next[airport]=r.ok?extractAtis(b.result??b):"ATIS unavailable for this airport on the selected session.";
+   next[airport]=r.ok?(b.error?String(b.error):extractAtis(b.result??b)):"ATIS unavailable for this airport on the selected session.";
   }
   setAtis(next);
  }catch(e){setAtisError(e instanceof Error?e.message:"Live ATIS could not be retrieved.");}finally{setAtisLoading(false);}};
