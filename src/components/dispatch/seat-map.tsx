@@ -8,7 +8,10 @@ function layoutFor(type:string):Layout{
  if(/A380|B748|B747|B77/.test(t))return{columns:["A","B","C","D","E","F","G","H","J","K"],rows:34,businessRows:5,premiumRows:8,aisles:[2,6],businessColumns:["A","D","G","K"],businessAisles:[0,2],premiumColumns:["A","C","D","E","F","H","K"],premiumAisles:[1,4]};
  if(/B78|A35/.test(t))return{columns:["A","B","C","D","E","F","G","H","J"],rows:30,businessRows:5,premiumRows:7,aisles:[2,5],businessColumns:["A","D","G","J"],businessAisles:[0,2],premiumColumns:["A","C","D","E","G","H","J"],premiumAisles:[1,4]};
  if(/A33|A34/.test(t))return{columns:["A","C","D","E","F","G","H","K"],rows:30,businessRows:5,premiumRows:0,aisles:[1,5],businessColumns:["A","C","D","G","H","K"],businessAisles:[1,3],premiumColumns:[],premiumAisles:[]};
- if(/A32|B73|B38|B39/.test(t))return{columns:["A","B","C","D","E","F"],rows:28,businessRows:4,premiumRows:0,aisles:[2],businessColumns:["A","C","D","F"],businessAisles:[1],premiumColumns:[],premiumAisles:[]};
+ if(/A20N|A21N|A32|B73|B38|B39/.test(t))return{columns:["A","B","C","D","E","F"],rows:28,businessRows:4,premiumRows:0,aisles:[2],businessColumns:["A","C","D","F"],businessAisles:[1],premiumColumns:[],premiumAisles:[]};
+ if(/B75/.test(t))return{columns:["A","B","C","D","E","F"],rows:26,businessRows:4,premiumRows:0,aisles:[2],businessColumns:["A","C","D","F"],businessAisles:[1],premiumColumns:[],premiumAisles:[]};
+ if(/B76/.test(t))return{columns:["A","C","D","E","F","H","K"],rows:26,businessRows:4,premiumRows:0,aisles:[1,4],businessColumns:["A","C","D","G","H","K"],businessAisles:[1,3],premiumColumns:[],premiumAisles:[]};
+ if(/BCS|A22/.test(t))return{columns:["A","C","D","E","F"],rows:25,businessRows:3,premiumRows:0,aisles:[1],businessColumns:["A","C","D","F"],businessAisles:[1],premiumColumns:[],premiumAisles:[]};
  if(/E17|E19|CRJ/.test(t))return{columns:["A","B","C","D"],rows:24,businessRows:3,premiumRows:0,aisles:[1],businessColumns:["A","B","C","D"],businessAisles:[1],premiumColumns:[],premiumAisles:[]};
  return{columns:["A","B","C","D","E","F"],rows:24,businessRows:3,premiumRows:0,aisles:[2],businessColumns:["A","C","D","F"],businessAisles:[1],premiumColumns:[],premiumAisles:[]};
 }
