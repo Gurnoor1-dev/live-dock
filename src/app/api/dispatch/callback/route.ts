@@ -1,5 +1,5 @@
 import { NextRequest,NextResponse } from "next/server";
-import { and,eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { dispatchBriefings } from "@/lib/db/schema";
 import { requireIFSession,ifFetch,ORGANIZATION_ID } from "@/lib/infinite-flight/server";
