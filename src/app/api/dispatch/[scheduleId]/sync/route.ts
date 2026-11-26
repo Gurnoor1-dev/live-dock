@@ -14,7 +14,8 @@ export async function POST(_request:Request,{params}:{params:Promise<{scheduleId
   const schedules=await ifFetch<Array<{id:string;crew?:Array<{userId:string}>}>|{items?:Array<{id:string;crew?:Array<{userId:string}>}>}>("/live/organizations/"+ORGANIZATION_ID+"/schedules?page=1&pageSize=100",session);
   const list=Array.isArray(schedules)?schedules:schedules.items||[],schedule=list.find(s=>s.id===scheduleId);
   if(!schedule||!(schedule.crew||[]).some(c=>c.userId===identity.id))return NextResponse.json({error:"Only assigned flight crew can synchronise this briefing."},{status:403});
-  // Re-parse the original OFP on every sync so older saved briefings also gain the current SID/STAR metadata parser.\n  const data=parseSimBriefXml(row.rawXml,row.ofpId);
+  // Re-parse the original OFP on every sync so older saved briefings also gain the current SID/STAR metadata parser.
+  const data=parseSimBriefXml(row.rawXml,row.ofpId);
   const flightPlan=buildSimBriefFlightPlan(data);
   const writer=await getScheduleWriterSession(session);
   if(!writer)throw new Error("Connect a Virtual Blue organisation owner/admin account with live:schedules.write in Admin → Operator Account to enable schedule synchronisation.");
