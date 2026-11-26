@@ -39,7 +39,8 @@ export async function POST(request:Request){
   const outputPage=appOrigin+"/api/dispatch/callback?scheduleId="+encodeURIComponent(flight.id);
   const outputPageCalc=outputPage.replace("http://","");
   const apicode=simBriefSignature(origin,dest,aircraftCode,timestamp,outputPageCalc),ofpId=simBriefOFPId(origin,dest,aircraftCode,timestamp);
-  const date=flight.scheduledDepartureUtc?new Date(flight.scheduledDepartureUtc):new Date();
+  const scheduledDate=flight.scheduledDepartureUtc?new Date(flight.scheduledDepartureUtc):null;
+  const date=flight.isTimeless||!scheduledDate||scheduledDate.getUTCFullYear()<2000?new Date():scheduledDate;
   const airline=(flight.callsign.match(/^[A-Z]{2,3}/i)?.[0]||"VBL").toUpperCase();
   const fltnum=flight.callsign.replace(/^[A-Z]{2,3}/i,"").replace(/[^0-9A-Z]/gi,"")||"001";
   return NextResponse.json({workerUrl:"https://www.simbrief.com/ofp/ofp.loader.api.php",apicode,timestamp,ofpId,outputPage:outputPageCalc,fields:{
