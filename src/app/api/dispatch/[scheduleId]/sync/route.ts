@@ -19,8 +19,11 @@ export async function POST(_request:Request,{params}:{params:Promise<{scheduleId
   const writer=await getScheduleWriterSession(session);
   if(!writer)throw new Error("Connect a Virtual Blue organisation owner/admin account with live:schedules.write in Admin → Operator Account to enable schedule synchronisation.");
   try{
-   const updated=await ifFetch<{flightPlan?:unknown}>("/live/schedules/"+scheduleId+"/flightplan",writer,{method:"PUT",body:JSON.stringify({flightPlan})});
-   if(!isSimBriefFlightPlanSynced(updated?.flightPlan,flightPlan))throw new Error("Infinite Flight did not confirm that the SimBrief route was saved. The schedule is not marked as synced.");
+   await ifFetch<unknown>("/live/schedules/"+scheduleId+"/flightplan",writer,{method:"PUT",body:JSON.stringify({flightPlan})});
+   const verifiedSchedules=await ifFetch<Array<{id:string;flightPlan?:unknown}>|{items?:Array<{id:string;flightPlan?:unknown}>}>("/live/organizations/"+ORGANIZATION_ID+"/schedules?page=1&pageSize=100",writer);
+   const verifiedList=Array.isArray(verifiedSchedules)?verifiedSchedules:verifiedSchedules.items||[];
+   const persistedSchedule=verifiedList.find(item=>item.id===scheduleId);
+   if(!persistedSchedule||!isSimBriefFlightPlanSynced(persistedSchedule.flightPlan,flightPlan))throw new Error("Infinite Flight accepted the update request but the schedule read-back did not contain the submitted SimBrief flight plan. LiveDock has not marked it as synced.");
    await getDb().update(dispatchBriefings).set({syncStatus:"synced",syncError:"",updatedAt:new Date()}).where(eq(dispatchBriefings.scheduleId,scheduleId));
    return NextResponse.json({success:true,syncStatus:"synced",flightPlan});
   }catch(error){
