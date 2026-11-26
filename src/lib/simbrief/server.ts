@@ -26,20 +26,32 @@ export function parseSimBriefXml(xml:string,ofpId:string):SimBriefData {
  fuel:collect(fuel,["plan_ramp","plan_takeoff","plan_landing","plan_min","plan_flt","plan_taxi","plan_alternate","plan_reserve","plan_contingency"]),weights:collect(weights,["oew","mzfw","mtow","mlw","zfw","tow","ldw","payload"]),weather:collect(weather,["avg_wind","avg_temp","avg_trop","isa_dev"]),
  originMetar:tag(origin,"metar"),destinationMetar:tag(destination,"metar"),navlog,pdfUrl:"https://www.simbrief.com/ofp/flightplans/"+encodeURIComponent(ofpId)+".pdf"};
 }
-export function buildSimBriefFlightPlan(data:SimBriefData):string {
+export type IFFlightPlanItem = {
+ name:string;
+ identifier:string;
+ location:{latitude:number;longitude:number};
+};
+export type IFStructuredFlightPlan = {flightPlanItems:IFFlightPlanItem[]};
+export function buildSimBriefFlightPlan(data:SimBriefData):IFStructuredFlightPlan {
  const origin=data.origin.trim().toUpperCase(),destination=data.destination.trim().toUpperCase();
  if(!origin||!destination)throw new Error("The SimBrief XML is missing the origin or destination.");
- let route=data.route.trim().replace(/\s+/g," ");
- let tokens=route?route.split(" ").filter(Boolean):data.navlog.map(point=>point.identifier||point.name).filter(Boolean);
- if(tokens[0]?.toUpperCase()===origin)tokens=tokens.slice(1);
- if(tokens[tokens.length-1]?.toUpperCase()===destination)tokens=tokens.slice(0,-1);
- if(!tokens.length)throw new Error("The SimBrief XML does not contain a usable route between the scheduled airports.");
- const flightPlan=[origin,...tokens,destination].join(" ").replace(/\s+/g," ").trim();
- if(flightPlan.length>16000)throw new Error("The SimBrief route exceeds Infinite Flight's 16,000-character flight-plan limit.");
- return flightPlan;
+ const valid=(point:SimBriefWaypoint)=>Number.isFinite(point.location?.latitude)&&Number.isFinite(point.location?.longitude)&&Math.abs(point.location.latitude)<=90&&Math.abs(point.location.longitude)<=180&&!(point.location.latitude===0&&point.location.longitude===0);
+ const source=data.navlog.filter(valid);
+ const items:IFFlightPlanItem[]=[];
+ const add=(point:SimBriefWaypoint)=>{const identifier=(point.identifier||point.name).trim().toUpperCase();if(!identifier)return;if(items[items.length-1]?.identifier===identifier)return;items.push({name:(point.name||identifier).trim(),identifier,location:{latitude:point.location.latitude,longitude:point.location.longitude}});};
+ for(const point of source)add(point);
+ if(items[0]?.identifier!==origin)throw new Error("SimBrief's navigation log is missing coordinates for origin "+origin+". The structured flight plan cannot be sent without airport coordinates.");
+ if(items[items.length-1]?.identifier!==destination)throw new Error("SimBrief's navigation log is missing coordinates for destination "+destination+". The structured flight plan cannot be sent without airport coordinates.");
+ if(items.length<2)throw new Error("The SimBrief navigation log does not contain enough coordinate-based waypoints to build a flight plan.");
+ return {flightPlanItems:items};
 }
-export function isSimBriefFlightPlanSynced(actual:string|undefined|null,expected:string):boolean {
- return typeof actual==="string"&&actual.trim().replace(/\s+/g," ").toUpperCase()===expected.trim().replace(/\s+/g," ").toUpperCase();
+export function isSimBriefFlightPlanSynced(actual:unknown,expected:IFStructuredFlightPlan):boolean {
+ if(!actual||typeof actual!=="object")return false;
+ const value=actual as {flightPlanItems?:unknown};
+ if(!Array.isArray(value.flightPlanItems))return false;
+ const normalize=(items:unknown[])=>items.map(item=>{if(!item||typeof item!=="object")return "";const p=item as IFFlightPlanItem;return [String(p.identifier||p.name||"").trim().toUpperCase(),Number(p.location?.latitude).toFixed(5),Number(p.location?.longitude).toFixed(5)].join("|");});
+ const left=normalize(value.flightPlanItems),right=normalize(expected.flightPlanItems);
+ return left.length===right.length&&left.every((item,index)=>item===right[index]);
 }
 export function simBriefOFPId(orig:string,dest:string,type:string,timestamp:string):string {
  return timestamp+"_"+createHash("md5").update(orig+dest+type).digest("hex").toUpperCase().slice(0,10);
