@@ -46,11 +46,14 @@ export function buildSimBriefFlightPlan(data:SimBriefData):IFStructuredFlightPla
  return {flightPlanItems:items};
 }
 export function isSimBriefFlightPlanSynced(actual:unknown,expected:IFStructuredFlightPlan):boolean {
- if(!actual||typeof actual!=="object")return false;
- const value=actual as {flightPlanItems?:unknown};
- if(!Array.isArray(value.flightPlanItems))return false;
- const normalize=(items:unknown[])=>items.map(item=>{if(!item||typeof item!=="object")return "";const p=item as IFFlightPlanItem;return [String(p.identifier||p.name||"").trim().toUpperCase(),Number(p.location?.latitude).toFixed(5),Number(p.location?.longitude).toFixed(5)].join("|");});
- const left=normalize(value.flightPlanItems),right=normalize(expected.flightPlanItems);
+ let value:unknown=actual;
+ // Live API v3 serializes Schedule.flightPlan as a JSON string in Schedule responses.
+ if(typeof value==="string"){try{value=JSON.parse(value);}catch{return false;}}
+ if(!value||typeof value!=="object")return false;
+ const items=(value as {flightPlanItems?:unknown}).flightPlanItems;
+ if(!Array.isArray(items))return false;
+ const normalize=(entries:unknown[])=>entries.map(item=>{if(!item||typeof item!=="object")return "";const p=item as IFFlightPlanItem;return [String(p.identifier||p.name||"").trim().toUpperCase(),Number(p.location?.latitude).toFixed(5),Number(p.location?.longitude).toFixed(5)].join("|");});
+ const left=normalize(items),right=normalize(expected.flightPlanItems);
  return left.length===right.length&&left.every((item,index)=>item===right[index]);
 }
 export function simBriefOFPId(orig:string,dest:string,type:string,timestamp:string):string {
