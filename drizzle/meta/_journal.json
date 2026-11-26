@@ -15,6 +15,13 @@
       "when": 1795420800000,
       "tag": "0001_virtual_blue_operations",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795690800000,
+      "tag": "0002_simbrief_dispatch",
+      "breakpoints": true
     }
   ]
 }
