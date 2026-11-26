@@ -54,9 +54,9 @@ export function buildSimBriefFlightPlan(data:SimBriefData):IFStructuredFlightPla
  // procedure fix can be unmarked, so only marked contiguous endpoint runs are
  // grouped; we never guess by swallowing ordinary en-route fixes.
  let sidEnd=-1;
- if(sid){for(let i=1;i<source.length-1&&source[i].isSidStar;i++)sidEnd=i;}
+ if(sid){for(let i=1;i<source.length-1&&(source[i].isSidStar||normalizedIdent(source[i].viaAirway)===sid);i++)sidEnd=i;}
  let starStart=source.length;
- if(star){for(let i=source.length-2;i>0&&source[i].isSidStar;i--)starStart=i;}
+ if(star){for(let i=source.length-2;i>0&&(source[i].isSidStar||normalizedIdent(source[i].viaAirway)===star);i--)starStart=i;}
  // Do not allow overlapping groups to consume the whole route or each other.
  if(sidEnd>=starStart){sidEnd=-1;starStart=source.length;}
  const grouped=new Set<number>();
