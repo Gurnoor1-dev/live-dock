@@ -29,17 +29,17 @@ export function parseSimBriefXml(xml:string,ofpId:string):SimBriefData {
 export function buildSimBriefFlightPlan(data:SimBriefData):string {
  const origin=data.origin.trim().toUpperCase(),destination=data.destination.trim().toUpperCase();
  if(!origin||!destination)throw new Error("The SimBrief XML is missing the origin or destination.");
- let route=data.route.trim().replace(/\\s+/g," ");
+ let route=data.route.trim().replace(/\s+/g," ");
  let tokens=route?route.split(" ").filter(Boolean):data.navlog.map(point=>point.identifier||point.name).filter(Boolean);
  if(tokens[0]?.toUpperCase()===origin)tokens=tokens.slice(1);
  if(tokens[tokens.length-1]?.toUpperCase()===destination)tokens=tokens.slice(0,-1);
  if(!tokens.length)throw new Error("The SimBrief XML does not contain a usable route between the scheduled airports.");
- const flightPlan=[origin,...tokens,destination].join(" ").replace(/\\s+/g," ").trim();
+ const flightPlan=[origin,...tokens,destination].join(" ").replace(/\s+/g," ").trim();
  if(flightPlan.length>16000)throw new Error("The SimBrief route exceeds Infinite Flight's 16,000-character flight-plan limit.");
  return flightPlan;
 }
 export function isSimBriefFlightPlanSynced(actual:string|undefined|null,expected:string):boolean {
- return typeof actual==="string"&&actual.trim().replace(/\\s+/g," ").toUpperCase()===expected.trim().replace(/\\s+/g," ").toUpperCase();
+ return typeof actual==="string"&&actual.trim().replace(/\s+/g," ").toUpperCase()===expected.trim().replace(/\s+/g," ").toUpperCase();
 }
 export function simBriefOFPId(orig:string,dest:string,type:string,timestamp:string):string {
  return timestamp+"_"+createHash("md5").update(orig+dest+type).digest("hex").toUpperCase().slice(0,10);
