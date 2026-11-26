@@ -11,7 +11,7 @@ export async function GET(request:NextRequest){
  try{
   const {session,identity}=await requireIFSession();
   if(!/^[0-9a-f-]{36}$/i.test(scheduleId)||!/^\d{10}_[A-Za-z0-9]{10}$/.test(ofpId))throw Object.assign(new Error("The SimBrief return link is invalid. Please dispatch again."),{status:400});
-  const [existing]=await getDb().select({scheduleId:dispatchBriefings.scheduleId}).from(dispatchBriefings).where(and(eq(dispatchBriefings.scheduleId,scheduleId),eq(dispatchBriefings.pilotIfcUserId,identity.id))).limit(1);
+  const [existing]=await getDb().select({scheduleId:dispatchBriefings.scheduleId}).from(dispatchBriefings).where(eq(dispatchBriefings.scheduleId,scheduleId)).limit(1);
   if(existing)return NextResponse.redirect(new URL("/dispatch/"+scheduleId,request.url));
   const schedules=await ifFetch<Schedule[]|{items?:Schedule[]}>("/live/organizations/"+ORGANIZATION_ID+"/schedules?page=1&pageSize=100",session);
   const list=Array.isArray(schedules)?schedules:schedules.items||[],schedule=list.find(s=>s.id===scheduleId);
