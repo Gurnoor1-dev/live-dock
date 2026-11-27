@@ -3,7 +3,7 @@ import { list } from "@vercel/blob";
 import { eq,inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { appSettings,appUsers,applicationCodes,adminOperatorCredentials,crewRequests,discordIntegrations,featureSettings } from "@/lib/db/schema";
-import { getIFRateLimit,ifFetch,invalidateIFGetCache,ORGANIZATION_ID,requireIFSession } from "@/lib/infinite-flight/server";
+import { getIFRateLimit,getIFRequestCount,ifFetch,invalidateIFGetCache,ORGANIZATION_ID,requireIFSession } from "@/lib/infinite-flight/server";
 import { stickyCrewStatus } from "@/lib/automation/sticky-crew";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -28,6 +28,7 @@ export async function GET(request:Request){
   let cached=force?null:cacheGet<Record<string,unknown>>(key);
   if(!cached&&!force){const [stored]=await getDb().select({value:appSettings.value}).from(appSettings).where(eq(appSettings.key,"workspace_snapshot:"+identity.id)).limit(1);const saved=stored?.value as {expiresAt?:number;snapshot?:Record<string,unknown>}|undefined;if(saved?.snapshot&&Number(saved.expiresAt)>Date.now())cached=saved.snapshot;}
   if(cached){cacheSet(key,cached);return NextResponse.json({...cached,refreshedAt:Date.now(),cache:"HIT"},{headers:{"Cache-Control":"private, no-store","X-LiveDock-Snapshot-Cache":"HIT"}})}
+  const requestCountAtStart=getIFRequestCount(session);
   const [organization,aircraftRaw,membersRaw,schedulesRaw]=await Promise.all([
    ifFetch<Record<string,unknown>>("/live/organizations/"+ORGANIZATION_ID,session),
    ifFetch<Aircraft[]>("/live/organizations/"+ORGANIZATION_ID+"/aircraft",session),
@@ -79,6 +80,7 @@ export async function GET(request:Request){
   const pilot=userRows.find(u=>u.ifcUserId===identityId);
   const integration=integrationRows[0]||null;
   const sticky=stickyRows[0]?.value as {channelId?:string}|undefined;
+  const actualIFRequests=Math.max(0,getIFRequestCount(session)-requestCountAtStart);
   const result={
    authenticated:true,identity:{id:identity.id,username:identity.username||null},
    profile:{ifcUserId:identity.id,username:identity.username||null,role:null,onboardingRequired:!pilot?.onboardingCompletedAt,discordUserId:pilot?.discordUserId??null,discordUsername:pilot?.discordUsername??null},
@@ -86,11 +88,11 @@ export async function GET(request:Request){
    myFlights:{live:live.map(s=>({...s,aircraftRegistration:registration.get(s.aircraftId)})),future:future.map(s=>({...s,aircraftRegistration:registration.get(s.aircraftId)})),past,pastCoverage:{checked:historyRows.length,total:flyable.length,complete:historyRows.length>=flyable.length,limited:historyRows.length<flyable.length}},
    activity,airportPoints,requests,flightHistoryByAircraft:Object.fromEntries(historyRows.map(({aircraft:a,flights})=>[a.id,flights])),
    admin:canManage?{registered,pending,connected:Boolean(operatorRows[0]),codes:codeRows,integrations:{...(integration||{}),stickyCrewChannelId:sticky?.channelId||""},features,stickyPanel}:{registered:[],pending:[],connected:false,codes:[],integrations:{},features:[],stickyPanel},
-   requestUsage:{initial:4,additional:used,total:4+used,limit:18,quota:{isPro:quota.isPro,remaining:quota.remaining}},
+   requestUsage:{actual:actualIFRequests,plannedSlots:4+used,limit:quota.isPro?18:5,quota:{isPro:quota.isPro,remaining:quota.remaining}},
    refreshedAt:Date.now(),cache:"MISS"
   };
   cacheSet(key,result);
   await getDb().insert(appSettings).values({key:"workspace_snapshot:"+identity.id,value:{expiresAt:Date.now()+CACHE_MS,snapshot:result},updatedAt:new Date()}).onConflictDoUpdate({target:appSettings.key,set:{value:{expiresAt:Date.now()+CACHE_MS,snapshot:result},updatedAt:new Date()}});
-  return NextResponse.json(result,{headers:{"Cache-Control":"private, no-store","X-LiveDock-Snapshot-Cache":"MISS","X-LiveDock-IF-Requests":String(4+used)}});
+  return NextResponse.json(result,{headers:{"Cache-Control":"private, no-store","X-LiveDock-Snapshot-Cache":"MISS","X-LiveDock-IF-Requests":String(actualIFRequests)}});
  }catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Unable to load the unified workspace snapshot."},{status:Number((error as {status?:number})?.status)||500,headers:{"Cache-Control":"no-store"}})}
 }
