@@ -390,8 +390,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
       const response=await fetch("/api/if/gallery/photo",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({registration,photoId}),credentials:"same-origin"});
       const payload=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(payload.error||"Could not delete aircraft photo.");
-      const manifestResponse=await fetch("/api/if/gallery",{cache:"no-store"});
-      if(manifestResponse.ok)setGallery(await manifestResponse.json());
+      await loadOrganization(true);
       setNotice("Photo deleted from Blob and removed from the manifest.");
     }catch(e){setError(e instanceof Error?e.message:"Could not delete aircraft photo.");}
     finally{setGalleryLoading(false);}
