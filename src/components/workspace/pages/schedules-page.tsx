@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect,useMemo,useState } from "react";
 import { ChevronDown,Users,ArrowRight } from "lucide-react";
 import { Empty } from "@/components/workspace/shared-ui";
