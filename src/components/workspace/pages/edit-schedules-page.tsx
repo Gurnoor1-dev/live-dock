@@ -237,7 +237,7 @@ export function EditSchedulesPage() {
       run: async () => {
         await api("/live/schedules/" + selected.id, { method: "PUT", body: JSON.stringify(payload) });
         setNotice("Schedule details updated in Infinite Flight.");
-        await refreshWorkspace();
+        await refreshWorkspace(true);
       }
     });
   };
@@ -256,7 +256,7 @@ export function EditSchedulesPage() {
         });
         setNotice(flightPlanText.trim() ? "Flight plan updated in Infinite Flight." : "Stored flight plan cleared.");
         setDirtyFlightPlan(false);
-        await refreshWorkspace();
+        await refreshWorkspace(true);
       }
     });
   };
@@ -273,7 +273,7 @@ export function EditSchedulesPage() {
         await api("/live/schedules/" + selected.id, { method: "DELETE" });
         setNotice("Schedule deleted from Infinite Flight.");
         setSelectedId("");
-        await refreshWorkspace();
+        await refreshWorkspace(true);
       }
     });
   };
@@ -295,7 +295,7 @@ export function EditSchedulesPage() {
         });
         setNotice("Crew assignment updated in Infinite Flight.");
         setCrewUserId("");
-        await refreshWorkspace();
+        await refreshWorkspace(true);
       }
     });
   };
@@ -310,7 +310,7 @@ export function EditSchedulesPage() {
       run: async () => {
         await api("/live/schedules/" + selected.id + "/crew/" + crew.userId, { method: "DELETE" });
         setNotice("Crew member removed from the schedule.");
-        await refreshWorkspace();
+        await refreshWorkspace(true);
       }
     });
   };
@@ -335,7 +335,7 @@ export function EditSchedulesPage() {
           method: "PUT", body: JSON.stringify({ scheduleId: schedule.id, afterId })
         });
         setNotice("Schedule order updated in Infinite Flight.");
-        await refreshWorkspace();
+        await refreshWorkspace(true);
       }
     });
   };
@@ -360,7 +360,7 @@ export function EditSchedulesPage() {
   return <div className={styles.editor}>
     <div className={styles.hero}>
       <div><p className={styles.eyebrow}>ADMINISTRATION / LIVE SCHEDULES</p><h2>Schedule Editor</h2><p>Review, refine, sequence and manage the schedules published to Infinite Flight.</p></div>
-      <div className={styles.heroActions}><span className={styles.liveTag}><i/> LIVE DATA</span><button className={styles.secondaryButton} onClick={() => void refreshWorkspace()} disabled={busy}><RefreshCw size={15}/> Refresh schedules</button></div>
+      <div className={styles.heroActions}><span className={styles.liveTag}><i/> LIVE DATA</span><button className={styles.secondaryButton} onClick={() => void refreshWorkspace(true)} disabled={busy}><RefreshCw size={15}/> Refresh schedules</button></div>
     </div>
 
     <div className={styles.metrics}>
