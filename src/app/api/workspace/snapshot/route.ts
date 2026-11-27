@@ -60,6 +60,7 @@ export async function GET(request:Request){
   const airportPoints:Record<string,{latitude:number;longitude:number}>={};
   const hubs=[...new Set(schedules.flatMap(s=>[String(s.originIcao||""),String(s.destinationIcao||"")]).filter(Boolean))].slice(0,3);
   for(const code of hubs){const value=airports.find(a=>(a.icao||a.icaoCode||a.code)===code);if(value){const latitude=Number(value.latitude??value.location?.latitude),longitude=Number(value.longitude??value.location?.longitude);if(Number.isFinite(latitude)&&Number.isFinite(longitude))airportPoints[code]={latitude,longitude};}}
+  const canManage=Number(organization.role)===1||Number(organization.role)===2;
   const [userRows,requests,codeRows,integrationRows,features,operatorRows,stickyRows,stickyPanel]=await Promise.all([
    getDb().select().from(appUsers),
    getDb().select({scheduleId:crewRequests.scheduleId,seat:crewRequests.seat,status:crewRequests.status}).from(crewRequests).where(inArray(crewRequests.status,["pending","processing"])),
@@ -68,7 +69,7 @@ export async function GET(request:Request){
    getDb().select().from(featureSettings),
    getDb().select({ifcUserId:adminOperatorCredentials.ifcUserId,connectedAt:adminOperatorCredentials.connectedAt}).from(adminOperatorCredentials).where(eq(adminOperatorCredentials.ifcUserId,identityId)).limit(1),
    getDb().select().from(appSettings).where(eq(appSettings.key,"sticky_crew_config")).limit(1),
-   stickyCrewStatus().catch(()=>({exists:false,reason:"verification_unavailable"}))
+   canManage?stickyCrewStatus().catch(()=>({exists:false,reason:"verification_unavailable"})):Promise.resolve({exists:false,reason:"not_admin"})
   ]);
   const registry=new Map(userRows.map(u=>[u.ifcUserId,u]));
   const registered=members.filter(m=>Boolean(registry.get(m.userId)?.onboardingCompletedAt)).map(m=>({...m,appUser:registry.get(m.userId)}));
@@ -82,7 +83,7 @@ export async function GET(request:Request){
    organization,aircraft,members,schedules,aircraftTypes,airports,positions,
    myFlights:{live:live.map(s=>({...s,aircraftRegistration:registration.get(s.aircraftId)})),future:future.map(s=>({...s,aircraftRegistration:registration.get(s.aircraftId)})),past,pastCoverage:{checked:historyRows.length,total:flyable.length,complete:historyRows.length>=flyable.length,limited:historyRows.length<flyable.length}},
    activity,airportPoints,requests,flightHistoryByAircraft:Object.fromEntries(historyRows.map(({aircraft:a,flights})=>[a.id,flights])),
-   admin:{registered,pending,connected:Boolean(operatorRows[0]),codes:codeRows,integrations:{...(integration||{}),stickyCrewChannelId:sticky?.channelId||""},features,stickyPanel},
+   admin:canManage?{registered,pending,connected:Boolean(operatorRows[0]),codes:codeRows,integrations:{...(integration||{}),stickyCrewChannelId:sticky?.channelId||""},features,stickyPanel}:{registered:[],pending:[],connected:false,codes:[],integrations:{},features:[],stickyPanel},
    requestUsage:{initial:4,additional:used,total:4+used,limit:18,quota:{isPro:quota.isPro,remaining:quota.remaining}},
    refreshedAt:Date.now(),cache:"MISS"
   };
