@@ -7,7 +7,7 @@ import { useWorkspace } from "../workspace-context";
 type Pilot={userId:string;username:string|null;role:number;joinedAt:string;activeLifts:number;hasLoggedIn?:boolean;appUser?:{discordUserId?:string|null;discordUsername?:string|null;onboardingCompletedAt?:string|null}};
 export function UserManagementPage(){
  const {active,snapshotData,refreshWorkspace}=useWorkspace();const [registered,setRegistered]=useState<Pilot[]>(snapshotData.admin?.registered||[]);const [pending,setPending]=useState<Pilot[]>(snapshotData.admin?.pending||[]);const [connected,setConnected]=useState(Boolean(snapshotData.admin?.connected));const [loading,setLoading]=useState(false);const [error,setError]=useState("");const [success,setSuccess]=useState("");
- async function load(){await refreshWorkspace();}
+ async function load(){await refreshWorkspace(true);}
  useEffect(()=>{setRegistered(snapshotData.admin?.registered||[]);setPending(snapshotData.admin?.pending||[]);setConnected(Boolean(snapshotData.admin?.connected))},[active,snapshotData.admin]);
  async function connect(){setLoading(true);setError("");setSuccess("");try{const r=await fetch("/api/admin/operator-account",{method:"POST"});const d=await r.json();if(!r.ok)throw new Error(d.error||"Could not connect this admin account.");setConnected(true);setSuccess("This administrator's current Infinite Flight session is securely connected for Discord approvals.")}catch(e){setError(e instanceof Error?e.message:"Could not connect admin account.")}finally{setLoading(false)}}
  if(active!=="User Management")return null;
