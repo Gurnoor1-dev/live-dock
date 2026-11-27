@@ -14,11 +14,15 @@ type Position={id:string;state:number;isOnGround:boolean;latitude:number;longitu
 type AircraftType={id:string;name:string};
 type GalleryPhoto={id:string;url:string;altText:string;caption:string;credit:{name:string;url:string;displayText:string};displayOrder:number;isVisible:boolean};
 type GalleryManifest={settings:{maxPhotosPerAircraft:number;slideshowIntervalMs:number};aircraft:Record<string,{photos:GalleryPhoto[]}>};
+type Airport={icao?:string;icaoCode?:string;code?:string;name?:string;latitude?:number;longitude?:number;location?:{latitude?:number;longitude?:number}};
+type Flight={id:string;callsign?:string;originIcao?:string|null;destinationIcao?:string|null;actualDepartureUtc?:string|null;actualArrivalUtc?:string|null;scheduledDepartureUtc?:string;isTimeless?:boolean;aircraftRegistration?:string;flightTimeMinutes?:number};
+type AdminSnapshot={registered:Array<any>;pending:Array<any>;connected:boolean;codes:Array<any>;integrations:Record<string,any>;features:Array<{featureKey:string;enabled:boolean}>;stickyPanel:{exists:boolean;reason:string}};
+type WorkspaceSnapshotData={airports:Airport[];airportPoints:Record<string,{latitude:number;longitude:number}>;requests:Array<{scheduleId:string;seat:string;status:string}>;myFlights:{live:Flight[];future:Flight[];past:Flight[];pastCoverage:{checked:number;total:number;complete:boolean;limited:boolean}};activity:Array<any>;admin:AdminSnapshot;requestUsage:{initial:number;additional:number;total:number;limit:number;quota:{isPro:boolean;remaining:number}}};
 
 export interface WorkspaceContextValue {
   active:string;
   refreshWorkspace:()=>Promise<void>;
-  organization:Organization|null;
+  organization:Organization|null;\n  snapshotData:WorkspaceSnapshotData;
   aircraft:Aircraft[];
   aircraftTypes:AircraftType[];
   members:Member[];
