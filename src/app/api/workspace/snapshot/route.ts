@@ -30,14 +30,18 @@ export async function GET(request:Request){
   if(!cached&&!force){const [stored]=await getDb().select({value:appSettings.value}).from(appSettings).where(eq(appSettings.key,"workspace_snapshot:"+identity.id)).limit(1);const saved=stored?.value as {expiresAt?:number;snapshot?:Record<string,unknown>}|undefined;if(saved?.snapshot&&Number(saved.expiresAt)>Date.now())cached=saved.snapshot;}
   if(cached){cacheSet(key,cached);return NextResponse.json({...cached,refreshedAt:Date.now(),cache:"HIT"},{headers:{"Cache-Control":"private, no-store","X-LiveDock-Snapshot-Cache":"HIT"}})}
   const requestCountAtStart=getIFRequestCount(session);
-  const [organization,aircraftRaw,membersRaw,schedulesRaw]=await Promise.all([
-   ifFetch<Record<string,unknown>>("/live/organizations/"+ORGANIZATION_ID,session),
+  const [aircraftRaw,membersRaw,schedulesRaw]=await Promise.all([
    ifFetch<Aircraft[]>("/live/organizations/"+ORGANIZATION_ID+"/aircraft",session),
    ifFetch<Array<{userId:string;username:string|null;role:number;joinedAt:string;activeLifts:number}>>("/live/organizations/"+ORGANIZATION_ID+"/members",session),
    ifFetch<Schedule[]|{items?:Schedule[]}>("/live/organizations/"+ORGANIZATION_ID+"/schedules?page=1&pageSize=100",session)
   ]);
   const aircraft=Array.isArray(aircraftRaw)?aircraftRaw:[],members=Array.isArray(membersRaw)?membersRaw:[],schedules=unwrap(schedulesRaw);
+  const initialQuota=getIFRateLimit(session);
+  const organization=initialQuota.isPro
+   ? await ifFetch<Record<string,unknown>>("/live/organizations/"+ORGANIZATION_ID,session)
+   : {id:ORGANIZATION_ID,name:"Virtual Blue",role:members.find(m=>m.userId===identity.id)?.role??0,description:null,worldType:0,operationType:0};
   const quota=getIFRateLimit(session);
+  const baseSlots=initialQuota.isPro?4:3;
   const additionalBudget=quota.isPro?Math.max(0,Math.min(14,quota.remaining-1)):Math.max(0,Math.min(1,quota.remaining-1));
   let used=0;
   const safe=async <T,>(path:string):Promise<T|null>=>{if(used>=additionalBudget)return null;used++;try{return await ifFetch<T>(path,session);}catch{return null;}};
@@ -89,7 +93,7 @@ export async function GET(request:Request){
    myFlights:{live:live.map(s=>({...s,aircraftRegistration:registration.get(s.aircraftId)})),future:future.map(s=>({...s,aircraftRegistration:registration.get(s.aircraftId)})),past,pastCoverage:{checked:historyRows.length,total:flyable.length,complete:historyRows.length>=flyable.length,limited:historyRows.length<flyable.length}},
    activity,airportPoints,requests,flightHistoryByAircraft:Object.fromEntries(historyRows.map(({aircraft:a,flights})=>[a.id,flights])),
    admin:canManage?{registered,pending,connected:Boolean(operatorRows[0]),codes:codeRows,integrations:{...(integration||{}),stickyCrewChannelId:sticky?.channelId||""},features,stickyPanel}:{registered:[],pending:[],connected:false,codes:[],integrations:{},features:[],stickyPanel},
-   requestUsage:{actual:actualIFRequests,plannedSlots:4+used,limit:quota.isPro?18:5,quota:{isPro:quota.isPro,remaining:quota.remaining}},
+   requestUsage:{actual:actualIFRequests,plannedSlots:baseSlots+used,limit:quota.isPro?18:4,quota:{isPro:quota.isPro,remaining:quota.remaining}},
    refreshedAt:Date.now(),cache:"MISS"
   };
   cacheSet(key,result);
