@@ -7,7 +7,8 @@ import {RouteMap} from "./route-map";
 import {SeatMap} from "./seat-map";
 type Briefing={ofpId:string;callsign:string;airline:string;flightNumber:string;origin:string;destination:string;aircraftType:string;aircraftName:string;registration:string;route:string;alternate:string;departureTime:string;arrivalTime:string;enrouteTime:string;distance:string;cruiseAltitude:string;fuel:Record<string,string>;weights:Record<string,string>;weather:Record<string,string>;originMetar:string;destinationMetar:string;navlog:Array<{name:string;identifier:string;location:{latitude:number;longitude:number};altitude?:number}>;pdfUrl:string};
 type DispatchSchedule={id:string;aircraftId:string|null;callsign:string;status:number;originIcao:string;destinationIcao:string;scheduledDepartureUtc:string;scheduledArrivalUtc:string};
-type LivePosition={latitude:number;longitude:number;altitude:number;heading:number;speed:number;verticalSpeed:number;updatedAt:string;isOnGround:boolean;lastPilotUsername?:string;airportIcao?:string};\nfunction extractAtis(value:unknown):string{
+type LivePosition={latitude:number;longitude:number;altitude:number;heading:number;speed:number;verticalSpeed:number;updatedAt:string;isOnGround:boolean;lastPilotUsername?:string;airportIcao?:string};
+function extractAtis(value:unknown):string{
  if(typeof value==="string")return value;
  if(!value||typeof value!=="object")return "No ATIS information was returned.";
  const v=value as Record<string,unknown>,candidate=v.atis||v.lines||v.text||v.message||v.information;
