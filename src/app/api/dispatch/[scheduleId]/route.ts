@@ -17,7 +17,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{scheduleId:
   try{expected=buildSimBriefFlightPlan(row.data as unknown as SimBriefData);}catch{}
   const confirmed=expected!==null&&isSimBriefFlightPlanSynced(schedule.flightPlan,expected);
   let livePosition:unknown=null;
-  if(schedule.aircraftId){try{livePosition=await ifFetch("/live/aircraft/"+schedule.aircraftId+"/position",session,{}, {bypassCache:true});}catch{/* Position is optional when the aircraft is offline or unavailable. */}}
+  if(schedule.aircraftId){try{livePosition=await ifFetch("/live/aircraft/"+schedule.aircraftId+"/position",session);}catch{/* Position is optional when the aircraft is offline or unavailable. */}}
   const syncError=confirmed?"":(row.syncError||"Infinite Flight does not currently show this SimBrief route on the schedule. Please re-sync.");
   return NextResponse.json({briefing:row.data,ofpId:row.ofpId,schedule:{id:schedule.id,aircraftId:schedule.aircraftId||null,callsign:schedule.callsign||"",status:schedule.status??0,originIcao:schedule.originIcao||"",destinationIcao:schedule.destinationIcao||"",scheduledDepartureUtc:schedule.scheduledDepartureUtc||"",scheduledArrivalUtc:schedule.scheduledArrivalUtc||""},livePosition,syncStatus:confirmed?"synced":row.syncStatus==="failed"?"failed":"pending",syncError,createdAt:row.createdAt},{headers:{"Cache-Control":"no-store"}});
  }catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Unable to load dispatch briefing."},{status:Number((error as {status?:number})?.status)||500})}
