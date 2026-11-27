@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { eq,inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { appSettings,appUsers,applicationCodes,adminOperatorCredentials,crewRequests,discordIntegrations,featureSettings } from "@/lib/db/schema";
-import { getIFRateLimit,ifFetch,ORGANIZATION_ID,requireIFSession } from "@/lib/infinite-flight/server";
+import { getIFRateLimit,ifFetch,invalidateIFGetCache,ORGANIZATION_ID,requireIFSession } from "@/lib/infinite-flight/server";
 import { stickyCrewStatus } from "@/lib/automation/sticky-crew";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -20,7 +20,9 @@ export async function GET(request:Request){
  try{
   const {session,identity}=await requireIFSession();
   const key="workspace:"+identity.id;
-  const force=new URL(request.url).searchParams.get("refresh")==="1";
+  const params=new URL(request.url).searchParams;
+  const force=params.get("refresh")==="1";
+  if(params.get("invalidate")==="1")invalidateIFGetCache(session);
   let cached=force?null:cacheGet<Record<string,unknown>>(key);
   if(!cached&&!force){const [stored]=await getDb().select({value:appSettings.value}).from(appSettings).where(eq(appSettings.key,"workspace_snapshot:"+identity.id)).limit(1);const saved=stored?.value as {expiresAt?:number;snapshot?:Record<string,unknown>}|undefined;if(saved?.snapshot&&Number(saved.expiresAt)>Date.now())cached=saved.snapshot;}
   if(cached){cacheSet(key,cached);return NextResponse.json({...cached,refreshedAt:Date.now(),cache:"HIT"},{headers:{"Cache-Control":"private, no-store","X-LiveDock-Snapshot-Cache":"HIT"}})}
