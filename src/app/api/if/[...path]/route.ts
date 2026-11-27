@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { BlobPreconditionFailedError, del, head, list, put } from "@vercel/blob";
 import { randomUUID } from "node:crypto";
 import { getIFDeviceId, getIFSession, type IFSession } from "@/lib/infinite-flight/session";
-import { getIFIdentity, recordIFRateLimitResponse, requireOrganizationAdmin, takeIFRequestSlot } from "@/lib/infinite-flight/server";
+import { getIFIdentity, invalidateIFGetCache, recordIFRateLimitResponse, requireOrganizationAdmin, takeIFRequestSlot } from "@/lib/infinite-flight/server";
 import { getStoredOperatorSession } from "@/lib/infinite-flight/operator-session";
 
 export const runtime = "nodejs";
@@ -169,6 +169,7 @@ async function proxy(request: NextRequest, context: RouteContext) {
 
   if (["POST", "PUT", "DELETE"].includes(request.method) && path.startsWith("/live/")) {
     for (const key of cache.keys()) if (key.startsWith(tokenKey + ":")) cache.delete(key);
+    invalidateIFGetCache(session);
   }
   return response(text, upstream.status, headers);
 }
