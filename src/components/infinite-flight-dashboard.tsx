@@ -331,7 +331,6 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
   useEffect(()=>{if(selectedAircraft)setPhotoIndex(0);},[selectedAircraft]);
 
   useEffect(()=>{
-    let alive=true;
     const schedule=selectedActiveSchedule;
     const position=selectedPosition;
     if(!schedule||!position){setRouteProgress(null);return;}
@@ -342,7 +341,6 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
       const travelled=haversineKm(originPoint,{latitude:position.latitude,longitude:position.longitude});
       setRouteProgress(total>0?Math.max(0,Math.min(100,Math.round(travelled/total*100))):null);
     }else setRouteProgress(null);
-    return()=>{alive=false;};
   },[selectedActiveSchedule?.id,selectedPosition?.latitude,selectedPosition?.longitude,snapshotData.airportPoints]);
 
   useEffect(()=>{
