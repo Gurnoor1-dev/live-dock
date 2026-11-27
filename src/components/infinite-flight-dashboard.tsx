@@ -511,7 +511,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
   </main>;
 
   return <div className="app-frame" data-theme={theme}>
-    <OnboardingGate/>
+    <OnboardingGate initialProfile={snapshotData.profile||null}/>
     <aside className={`sidebar ${mobileNav?"open":""}`}>
       <div className="brand"><Image src={vbLogo} alt="Virtual Blue" className="brand-logo" priority/><span>VIRTUAL BLUE<small>FLEET OPERATIONS</small></span><button className="icon-button mobile-close" onClick={()=>setMobileNav(false)} aria-label="Close menu"><X size={18}/></button></div>
       <button className="user-row sidebar-account sidebar-profile-button" onClick={()=>setProfileOpen(true)}><div className="avatar">{(profileName||"IF").slice(0,2).toUpperCase()}</div><span><b>{profileName}</b><small>{profileRole!==null?roleName(profileRole):organization?roleName(organization.role):"Member"}</small></span><UserRoundCog size={16}/></button>
