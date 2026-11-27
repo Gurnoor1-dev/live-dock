@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { list } from "@vercel/blob";
 import { eq,inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { appSettings,appUsers,applicationCodes,adminOperatorCredentials,crewRequests,discordIntegrations,featureSettings } from "@/lib/db/schema";
@@ -7,6 +8,7 @@ import { stickyCrewStatus } from "@/lib/automation/sticky-crew";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 const CACHE_MS=120_000;
+async function readGallerySnapshot(){try{const result=await list({prefix:"aircraft-gallery/manifest.json",limit:1});const blob=result.blobs.find(item=>item.pathname==="aircraft-gallery/manifest.json");if(!blob)return null;const response=await fetch(blob.url+"?v="+Date.now(),{cache:"no-store"});if(!response.ok)return null;const data=await response.json();return data&&typeof data==="object"&&data.aircraft?data:null;}catch{return null;}}
 type Aircraft={id:string;aircraftId:string;registration:string;status:number;visibility:number;isFleetActiveSlot:boolean;[key:string]:unknown};
 type Schedule={id:string;aircraftId:string;callsign:string;status:number;crew?:Array<{userId:string;username?:string;role:number}>;[key:string]:unknown};
 type Flight={id:string;aircraftId?:string;callsign?:string;originIcao?:string|null;destinationIcao?:string|null;actualDepartureUtc?:string|null;actualArrivalUtc?:string|null;status:number;flightTimeMinutes?:number;crew?:Array<{userId:string;username?:string}>;pilotFlightTimes?:Array<{userId:string;username?:string;flightTimeSeconds?:number}>};
@@ -63,7 +65,7 @@ export async function GET(request:Request){
   const hubs=[...new Set(schedules.flatMap(s=>[String(s.originIcao||""),String(s.destinationIcao||"")]).filter(Boolean))].slice(0,3);
   for(const code of hubs){const value=airports.find(a=>(a.icao||a.icaoCode||a.code)===code);if(value){const latitude=Number(value.latitude??value.location?.latitude),longitude=Number(value.longitude??value.location?.longitude);if(Number.isFinite(latitude)&&Number.isFinite(longitude))airportPoints[code]={latitude,longitude};}}
   const canManage=Number(organization.role)===1||Number(organization.role)===2;
-  const [userRows,requests,codeRows,integrationRows,features,operatorRows,stickyRows,stickyPanel]=await Promise.all([
+  const [userRows,requests,codeRows,integrationRows,features,operatorRows,stickyRows,stickyPanel,gallery]=await Promise.all([
    getDb().select().from(appUsers),
    getDb().select({scheduleId:crewRequests.scheduleId,seat:crewRequests.seat,status:crewRequests.status}).from(crewRequests).where(inArray(crewRequests.status,["pending","processing"])),
    getDb().select({id:applicationCodes.id,issuedToIfcUserId:applicationCodes.issuedToIfcUserId,createdAt:applicationCodes.createdAt,expiresAt:applicationCodes.expiresAt,usedAt:applicationCodes.usedAt,usedByIfcUserId:applicationCodes.usedByIfcUserId,revokedAt:applicationCodes.revokedAt}).from(applicationCodes).orderBy(applicationCodes.createdAt),
@@ -71,7 +73,8 @@ export async function GET(request:Request){
    getDb().select().from(featureSettings),
    getDb().select({ifcUserId:adminOperatorCredentials.ifcUserId,connectedAt:adminOperatorCredentials.connectedAt}).from(adminOperatorCredentials).where(eq(adminOperatorCredentials.ifcUserId,identityId)).limit(1),
    getDb().select().from(appSettings).where(eq(appSettings.key,"sticky_crew_config")).limit(1),
-   canManage?stickyCrewStatus().catch(()=>({exists:false,reason:"verification_unavailable"})):Promise.resolve({exists:false,reason:"not_admin"})
+   canManage?stickyCrewStatus().catch(()=>({exists:false,reason:"verification_unavailable"})):Promise.resolve({exists:false,reason:"not_admin"}),
+   readGallerySnapshot()
   ]);
   const registry=new Map(userRows.map(u=>[u.ifcUserId,u]));
   const registered=members.filter(m=>Boolean(registry.get(m.userId)?.onboardingCompletedAt)).map(m=>({...m,appUser:registry.get(m.userId)}));
@@ -82,7 +85,7 @@ export async function GET(request:Request){
   const result={
    authenticated:true,identity:{id:identity.id,username:identity.username||null},
    profile:{ifcUserId:identity.id,username:identity.username||null,role:null,onboardingRequired:!pilot?.onboardingCompletedAt,discordUserId:pilot?.discordUserId??null,discordUsername:pilot?.discordUsername??null},
-   organization,aircraft,members,schedules,aircraftTypes,airports,positions,
+   organization,aircraft,members,schedules,aircraftTypes,airports,positions,gallery,
    myFlights:{live:live.map(s=>({...s,aircraftRegistration:registration.get(s.aircraftId)})),future:future.map(s=>({...s,aircraftRegistration:registration.get(s.aircraftId)})),past,pastCoverage:{checked:historyRows.length,total:flyable.length,complete:historyRows.length>=flyable.length,limited:historyRows.length<flyable.length}},
    activity,airportPoints,requests,flightHistoryByAircraft:Object.fromEntries(historyRows.map(({aircraft:a,flights})=>[a.id,flights])),
    admin:canManage?{registered,pending,connected:Boolean(operatorRows[0]),codes:codeRows,integrations:{...(integration||{}),stickyCrewChannelId:sticky?.channelId||""},features,stickyPanel}:{registered:[],pending:[],connected:false,codes:[],integrations:{},features:[],stickyPanel},
