@@ -410,7 +410,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     finally{setProfileSaving(false);}
   }
 
-  async function refresh(invalidateIFCache=false){await loadOrganization(invalidateIFCache,invalidateIFCache);}
+  async function refresh(forceSnapshot=false,invalidateIFCache=false){await loadOrganization(forceSnapshot,invalidateIFCache);}
   async function signOut(){
     setBusy(true);setError("");
     try{
@@ -438,14 +438,14 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
       await api(`/live/aircraft/${aircraftId}/schedules`,{method:"POST",body:JSON.stringify(payload)});
       setNotice("Schedule published to Infinite Flight.");
       setCallsign("");setOrigin("");setDestination("");setDeparture("");setArrival("");setBriefing("");
-      await refresh(true);
+      await refresh(true,true);
     }catch(e){setError(e instanceof Error?e.message:"Could not publish schedule.");}
     finally{setBusy(false);}
   }
   async function deleteSchedule(id:string){
     if(!canManage)return;
     setBusy(true);setError("");setNotice("");
-    try{await api(`/live/schedules/${id}`,{method:"DELETE"});setNotice("Schedule deleted in Infinite Flight.");await refresh(true);}
+    try{await api(`/live/schedules/${id}`,{method:"DELETE"});setNotice("Schedule deleted in Infinite Flight.");await refresh(true,true);}
     catch(e){setError(e instanceof Error?e.message:"Could not delete schedule.");}
     finally{setBusy(false);}
   }
@@ -455,7 +455,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     setBusy(true);setError("");setNotice("");
     try{
       await api(`/live/schedules/${schedule.id}/crew/${userId}`,{method:"PUT",body:JSON.stringify({role:Number(crewRoles[schedule.id]??0)})});
-      setNotice("Crew assignment saved to Infinite Flight.");await refresh(true);
+      setNotice("Crew assignment saved to Infinite Flight.");await refresh(true,true);
     }catch(e){setError(e instanceof Error?e.message:"Could not assign crew.");}
     finally{setBusy(false);}
   }
@@ -530,7 +530,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     </aside>
     {mobileNav&&<button className="mobile-scrim" onClick={()=>setMobileNav(false)} aria-label="Close navigation"/>}
     <main className="main-area">
-      <header className="topbar"><div className="topbar-left"><button className="icon-button mobile-menu" onClick={()=>setMobileNav(true)} aria-label="Open menu"><Menu size={19}/></button><a className="topbar-brand-button" href="https://community.infiniteflight.com/t/veyro-pilot-and-atc-analytics-for-infinite-flight/1294083" target="_blank" rel="noopener noreferrer" aria-label="Visit Veyro on the Infinite Flight Community" title="Veyro · Infinite Flight Community"><Image src={veyroLiveLogo} alt="Veyro Live" priority/></a></div><div className="topbar-actions"><button className="icon-button" onClick={()=>void refresh()} aria-label="Refresh Infinite Flight data" title="Refresh"><RefreshCw size={16}/></button><button className={`theme-switch ${theme}`} onClick={()=>setTheme(theme==="light"?"dark":"light")} aria-label={`Switch to ${theme==="light"?"dark":"light"} theme`} aria-pressed={theme==="dark"} title={`Switch to ${theme==="light"?"dark":"light"} theme`}><span className="theme-switch-copy"><span className="theme-switch-icon">{theme==="light"?<Sun size={15}/>:<Moon size={15}/>}</span></span><span className="theme-switch-track" aria-hidden="true"><span className="theme-switch-thumb"/></span></button></div></header>
+      <header className="topbar"><div className="topbar-left"><button className="icon-button mobile-menu" onClick={()=>setMobileNav(true)} aria-label="Open menu"><Menu size={19}/></button><a className="topbar-brand-button" href="https://community.infiniteflight.com/t/veyro-pilot-and-atc-analytics-for-infinite-flight/1294083" target="_blank" rel="noopener noreferrer" aria-label="Visit Veyro on the Infinite Flight Community" title="Veyro · Infinite Flight Community"><Image src={veyroLiveLogo} alt="Veyro Live" priority/></a></div><div className="topbar-actions"><button className="icon-button" onClick={()=>void refresh(true)} aria-label="Refresh Infinite Flight data" title="Refresh"><RefreshCw size={16}/></button><button className={`theme-switch ${theme}`} onClick={()=>setTheme(theme==="light"?"dark":"light")} aria-label={`Switch to ${theme==="light"?"dark":"light"} theme`} aria-pressed={theme==="dark"} title={`Switch to ${theme==="light"?"dark":"light"} theme`}><span className="theme-switch-copy"><span className="theme-switch-icon">{theme==="light"?<Sun size={15}/>:<Moon size={15}/>}</span></span><span className="theme-switch-track" aria-hidden="true"><span className="theme-switch-thumb"/></span></button></div></header>
       {profileOpen&&<><button className="profile-popover-backdrop" aria-label="Close profile menu" onClick={()=>setProfileOpen(false)}/><div className="profile-popover"><button className="profile-popover-close" aria-label="Close profile menu" onClick={()=>setProfileOpen(false)}><X size={16}/></button><div className="profile-popover-head"><span className="avatar">{(profileName||"IF").slice(0,2).toUpperCase()}</span><div><b>{profileName}</b><small>{profileRole!==null?roleName(profileRole):"Virtual Blue member"}</small></div></div><form className="profile-link-form" onSubmit={saveDiscordProfile}><label>Discord User ID<input required inputMode="numeric" pattern="[0-9]{17,20}" value={discordUserId} onChange={event=>setDiscordUserId(event.target.value)} placeholder="17–20 digit Discord ID"/></label><label>Discord username<input value={discordUsername} onChange={event=>setDiscordUsername(event.target.value)} placeholder="@username"/></label><button className="primary-button" type="submit" disabled={profileSaving}>{profileSaving?"Saving…":"Save Discord account"}</button>{profileNotice&&<small className="profile-inline-notice">{profileNotice}</small>}</form><button className="signout-button" onClick={signOut} disabled={busy}><LogOut size={15}/> Sign out</button></div></>}
       <div className="content">
         <div className="page-heading"><div><p className="eyebrow">VIRTUAL BLUE · INFINITE FLIGHT LIVE</p><h1>{active==="Admin Schedules"?"Schedules":active==="Edit Schedules"?"Edit Schedules":active}</h1><p className="muted">{active==="Home"?"Your Virtual Blue operations overview and live fleet picture.":active==="Schedules"?"Explore published Virtual Blue schedules and available crew positions.":active==="My Flights"?"Your flight activity, crew assignments and booked upcoming legs.":active==="Organisation Dock"?"Your organisation profile, airline information and operational reference.":active==="Admin Schedules"?"Publish schedules and operate schedule automations.":active==="Edit Schedules"?"Advanced editing, flight plans, crew assignments and aircraft schedule sequencing.":active==="Integrations"?"Configure Discord connections, channels and automated operational messages.":active==="Applications"?"Review pilot applications and approve eligible Infinite Flight usernames.":active==="User Management"?"Manage approved app accounts and the wider organisation pilot directory.":active==="Feature Selection"?"Enable or disable optional premium organisation features.":"Aircraft flight history."}</p></div><div className="heading-actions"><span className="date-chip"><CalendarDays size={15}/>{new Intl.DateTimeFormat("en",{dateStyle:"medium"}).format(new Date())}</span></div></div>
