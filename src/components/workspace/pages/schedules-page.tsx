@@ -28,7 +28,7 @@ export function SchedulesPage(){
  const [requests,setRequests]=useState<SeatRequest[]>(snapshotData.requests||[]);
  const [choice,setChoice]=useState<{scheduleId:string;seat:"captain"|"first_officer"}|null>(null);
  const [loading,setLoading]=useState(false),[error,setError]=useState(""),[success,setSuccess]=useState("");
- useEffect(()=>{if(active!=="Schedules")return;let alive=true;const load=()=>fetch("/api/schedules/requests",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(d=>{if(alive&&d?.requests)setRequests(d.requests)}).catch(()=>{});void load();const timer=window.setInterval(load,30000);return()=>{alive=false;window.clearInterval(timer)}},[active]);
+
  const fleet=useMemo(()=>aircraft.filter(item=>schedules.some(schedule=>schedule.aircraftId===item.id&&schedule.status!==9)),[aircraft,schedules]);
  const typeName=(id:string)=>aircraftTypes.find(t=>t.id===id)?.name||"Aircraft type";
  async function submitRequest(){if(!choice)return;setLoading(true);setError("");setSuccess("");try{const r=await fetch("/api/schedules/requests",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(choice)});const d=await r.json();if(!r.ok)throw new Error(d.error||"Could not send request.");setRequests(v=>[...v,{...choice,status:"pending"}]);setSuccess("Your seat request was sent to the organisation administrators.");setChoice(null)}catch(e){setError(e instanceof Error?e.message:"Could not send request.")}finally{setLoading(false)}}
