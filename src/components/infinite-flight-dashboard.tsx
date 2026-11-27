@@ -38,16 +38,13 @@ type Tab="Home"|"Schedules"|"My Flights"|"Organisation Dock"|"Admin Schedules"|"
 type Position={id:string;state:number;isOnGround:boolean;latitude:number;longitude:number;altitude:number;heading:number;speed:number;verticalSpeed:number;lastPilotId?:string;lastPilotUsername?:string;updatedAt:string;airportIcao?:string;airportName?:string};
 type AircraftType={id:string;name:string};
 type AirportRecord={icao?:string;icaoCode?:string;code?:string;name?:string;latitude?:number;longitude?:number;location?:{latitude?:number;longitude?:number}};
-type AirportCandidate={icao:string;name:string;latitude:number;longitude:number;distance:number};
 type GalleryPhoto={id:string;url:string;altText:string;caption:string;credit:{name:string;url:string;displayText:string};displayOrder:number;isVisible:boolean};
 type GalleryManifest={settings:{maxPhotosPerAircraft:number;slideshowIntervalMs:number};aircraft:Record<string,{photos:GalleryPhoto[]}>};
 type WorkspaceSnapshot={organization:Organization|null;aircraft:Aircraft[];members:Member[];schedules:Schedule[];refreshedAt:number};
 let sharedWorkspaceSnapshot:WorkspaceSnapshot|null=null;
-let sharedWorkspacePromise:Promise<WorkspaceSnapshot>|null=null;
 let sharedSnapshotData:any=null;
 let sharedAuthState:"unknown"|"signed-out"|"signed-in"="unknown";
 let sharedAuthCheckedAt=0;
-let sharedAuthPromise:Promise<boolean>|null=null;
 let sharedProfile:{username?:string;role?:number;discordUserId?:string;discordUsername?:string}|null=null;
 const sharedPositions:Record<string,Position>={};
 let sharedIsPro=false;
@@ -56,7 +53,6 @@ let sharedAircraftTypes:AircraftType[]=[];
 let sharedGallery:GalleryManifest|null=null;
 const WORKSPACE_REFRESH_MS=120_000;
 
-const ORGANIZATION_ID="d50dcc80-8dac-4608-970c-61d6a4739488";
 const PAGE_ROUTES:Record<Tab,string>={
   "Home":"/home",
   "Schedules":"/schedules",
@@ -409,7 +405,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     try{
       const response=await fetch("/api/auth/if/logout",{method:"POST",credentials:"same-origin",cache:"no-store"});
       if(!response.ok)throw new Error("Infinite Flight sign out failed. Please try again.");
-      sharedAuthState="signed-out";sharedAuthCheckedAt=Date.now();sharedAuthPromise=null;sharedProfile=null;sharedWorkspaceSnapshot=null;sharedWorkspacePromise=null;sharedSnapshotData=null;for(const key of Object.keys(sharedPositions))delete sharedPositions[key];setAuth("signed-out");setOrganization(null);setAircraft([]);setMembers([]);setSchedules([]);setPositions({});setSelectedAircraft(null);setFlightHistory([]);
+      sharedAuthState="signed-out";sharedAuthCheckedAt=Date.now();sharedProfile=null;sharedWorkspaceSnapshot=null;sharedSnapshotData=null;for(const key of Object.keys(sharedPositions))delete sharedPositions[key];setAuth("signed-out");setOrganization(null);setAircraft([]);setMembers([]);setSchedules([]);setPositions({});setSelectedAircraft(null);setFlightHistory([]);
     }catch(e){setError(e instanceof Error?e.message:"Could not sign out of Infinite Flight.");}
     finally{setBusy(false);}
   }
