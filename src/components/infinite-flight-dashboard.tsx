@@ -244,6 +244,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
       if(profile.username)setProfileName(profile.username);if(typeof profile.role==="number")setProfileRole(profile.role);setDiscordUserId(profile.discordUserId||"");setDiscordUsername(profile.discordUsername||"");
       setAuth("signed-in");
     }catch(e){
+      setAuth("signed-in");
       setError(e instanceof Error?e.message:"Unable to refresh the Virtual Blue workspace.");
       if(sharedSnapshotData){setOrganization(sharedSnapshotData.organization||null);setAircraft(sharedSnapshotData.aircraft||[]);setMembers(sharedSnapshotData.members||[]);setSchedules(sharedSnapshotData.schedules||[]);setAircraftTypes(sharedSnapshotData.aircraftTypes||[]);setPositions(sharedSnapshotData.positions||{});setSnapshotData(sharedSnapshotData);}
       else{setOrganization(null);setAircraft([]);setMembers([]);setSchedules([]);}
