@@ -1,5 +1,5 @@
 "use client";
-import { useMemo,useState } from "react";
+import { useEffect,useMemo,useState } from "react";
 import { ChevronDown,Users,ArrowRight } from "lucide-react";
 import { Empty } from "@/components/workspace/shared-ui";
 import { useWorkspace } from "../workspace-context";
@@ -26,6 +26,7 @@ export function SchedulesPage(){
  const airports:Airport[]=snapshotData.airports||[];
  const [expanded,setExpanded]=useState<string|null>(null);
  const [requests,setRequests]=useState<SeatRequest[]>(snapshotData.requests||[]);
+ useEffect(()=>{setRequests(snapshotData.requests||[])},[snapshotData.requests]);
  const [choice,setChoice]=useState<{scheduleId:string;seat:"captain"|"first_officer"}|null>(null);
  const [loading,setLoading]=useState(false),[error,setError]=useState(""),[success,setSuccess]=useState("");
 
