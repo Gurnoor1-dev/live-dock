@@ -3,6 +3,7 @@ import { eq,inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { appSettings,appUsers,applicationCodes,adminOperatorCredentials,crewRequests,discordIntegrations,featureSettings } from "@/lib/db/schema";
 import { getIFRateLimit,ifFetch,ORGANIZATION_ID,requireIFSession } from "@/lib/infinite-flight/server";
+import { stickyCrewStatus } from "@/lib/automation/sticky-crew";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 const CACHE_MS=120_000;
@@ -15,11 +16,12 @@ const unwrap=<T,>(v:T[]|{items?:T[]}|null|undefined):T[]=>Array.isArray(v)?v:(v?
 const responseCache=new Map<string,{expiresAt:number;value:unknown}>();
 function cacheGet<T>(key:string):T|null{const entry=responseCache.get(key);if(!entry)return null;if(entry.expiresAt<=Date.now()){responseCache.delete(key);return null;}return entry.value as T;}
 function cacheSet(key:string,value:unknown){responseCache.set(key,{value,expiresAt:Date.now()+CACHE_MS});}
-export async function GET(){
+export async function GET(request:Request){
  try{
   const {session,identity}=await requireIFSession();
   const key="workspace:"+identity.id;
-  const cached=cacheGet<Record<string,unknown>>(key);
+  const force=new URL(request.url).searchParams.get("refresh")==="1";
+  const cached=force?null:cacheGet<Record<string,unknown>>(key);
   if(cached)return NextResponse.json({...cached,refreshedAt:Date.now(),cache:"HIT"},{headers:{"Cache-Control":"private, no-store","X-LiveDock-Snapshot-Cache":"HIT"}});
   const [organization,aircraftRaw,membersRaw,schedulesRaw]=await Promise.all([
    ifFetch<Record<string,unknown>>("/live/organizations/"+ORGANIZATION_ID,session),
@@ -54,14 +56,15 @@ export async function GET(){
   const airportPoints:Record<string,{latitude:number;longitude:number}>={};
   const hubs=[...new Set(schedules.flatMap(s=>[String(s.originIcao||""),String(s.destinationIcao||"")]).filter(Boolean))].slice(0,3);
   for(const code of hubs){const value=airports.find(a=>(a.icao||a.icaoCode||a.code)===code);if(value){const latitude=Number(value.latitude??value.location?.latitude),longitude=Number(value.longitude??value.location?.longitude);if(Number.isFinite(latitude)&&Number.isFinite(longitude))airportPoints[code]={latitude,longitude};}}
-  const [userRows,requests,codeRows,integrationRows,features,operatorRows,stickyRows]=await Promise.all([
+  const [userRows,requests,codeRows,integrationRows,features,operatorRows,stickyRows,stickyPanel]=await Promise.all([
    getDb().select().from(appUsers),
    getDb().select({scheduleId:crewRequests.scheduleId,seat:crewRequests.seat,status:crewRequests.status}).from(crewRequests).where(inArray(crewRequests.status,["pending","processing"])),
    getDb().select({id:applicationCodes.id,issuedToIfcUserId:applicationCodes.issuedToIfcUserId,createdAt:applicationCodes.createdAt,expiresAt:applicationCodes.expiresAt,usedAt:applicationCodes.usedAt,usedByIfcUserId:applicationCodes.usedByIfcUserId,revokedAt:applicationCodes.revokedAt}).from(applicationCodes).orderBy(applicationCodes.createdAt),
    getDb().select().from(discordIntegrations).where(eq(discordIntegrations.id,"virtual-blue")).limit(1),
    getDb().select().from(featureSettings),
    getDb().select({ifcUserId:adminOperatorCredentials.ifcUserId,connectedAt:adminOperatorCredentials.connectedAt}).from(adminOperatorCredentials).where(eq(adminOperatorCredentials.ifcUserId,identityId)).limit(1),
-   getDb().select().from(appSettings).where(eq(appSettings.key,"sticky_crew_config")).limit(1)
+   getDb().select().from(appSettings).where(eq(appSettings.key,"sticky_crew_config")).limit(1),
+   stickyCrewStatus().catch(()=>({exists:false,reason:"verification_unavailable"}))
   ]);
   const registry=new Map(userRows.map(u=>[u.ifcUserId,u]));
   const registered=members.filter(m=>Boolean(registry.get(m.userId)?.onboardingCompletedAt)).map(m=>({...m,appUser:registry.get(m.userId)}));
@@ -75,7 +78,7 @@ export async function GET(){
    organization,aircraft,members,schedules,aircraftTypes,airports,positions,
    myFlights:{live:live.map(s=>({...s,aircraftRegistration:registration.get(s.aircraftId)})),future:future.map(s=>({...s,aircraftRegistration:registration.get(s.aircraftId)})),past,pastCoverage:{checked:historyRows.length,total:flyable.length,complete:historyRows.length>=flyable.length,limited:historyRows.length<flyable.length}},
    activity,airportPoints,requests,
-   admin:{registered,pending,connected:Boolean(operatorRows[0]),codes:codeRows,integrations:{...(integration||{}),stickyCrewChannelId:sticky?.channelId||""},features,stickyPanel:{exists:false,reason:"not_checked"}},
+   admin:{registered,pending,connected:Boolean(operatorRows[0]),codes:codeRows,integrations:{...(integration||{}),stickyCrewChannelId:sticky?.channelId||""},features,stickyPanel},
    requestUsage:{initial:4,additional:used,total:4+used,limit:18,quota:{isPro:quota.isPro,remaining:quota.remaining}},
    refreshedAt:Date.now(),cache:"MISS"
   };
