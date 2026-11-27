@@ -25,7 +25,7 @@ import Image from "next/image";
 import vbLogo from "@/assets/vb.png";
 import veyroLiveLogo from "@/assets/veyro-live.png";
 import maplibregl from "maplibre-gl";
-import { Activity, ArrowUpRight, Building2, CalendarDays, ClipboardList, Compass, LogOut, Menu, Moon, Plane, PlaneTakeoff, Plug, RadioTower, RefreshCw, ShieldCheck, SlidersHorizontal, Sun, UserRoundCog, X } from "lucide-react";
+import { ArrowUpRight, Building2, CalendarDays, ClipboardList, Compass, LogOut, Menu, Moon, Plane, PlaneTakeoff, Plug, RefreshCw, ShieldCheck, SlidersHorizontal, Sun, UserRoundCog, X } from "lucide-react";
 
 type Organization={id:string;name:string;role:number;description?:string|null;worldType:number;operationType:number};
 type Aircraft={id:string;aircraftId:string;organizationId:string;registration:string;status:number;visibility:number;fleetPriority:number|null;fleetRank:number;isFleetActiveSlot:boolean};
@@ -41,16 +41,21 @@ type AirportRecord={icao?:string;icaoCode?:string;code?:string;name?:string;lati
 type GalleryPhoto={id:string;url:string;altText:string;caption:string;credit:{name:string;url:string;displayText:string};displayOrder:number;isVisible:boolean};
 type GalleryManifest={settings:{maxPhotosPerAircraft:number;slideshowIntervalMs:number};aircraft:Record<string,{photos:GalleryPhoto[]}>};
 type WorkspaceSnapshot={organization:Organization|null;aircraft:Aircraft[];members:Member[];schedules:Schedule[];refreshedAt:number};
+type AirportCandidate={icao:string;name:string;latitude:number;longitude:number};
+type WorkspaceFlight=FlightHistoryRecord&{scheduledDepartureUtc?:string;isTimeless?:boolean;aircraftRegistration?:string};
+type SnapshotCode={id:string;issuedToIfcUserId:string|null;createdAt:string;expiresAt:string|null;usedAt:string|null;usedByIfcUserId:string|null;revokedAt:string|null};
+type SnapshotAdminPilot=Member&{hasLoggedIn?:boolean;appUser?:{discordUserId?:string|null;discordUsername?:string|null;onboardingCompletedAt?:string|null}};
+type SnapshotAdmin={registered:SnapshotAdminPilot[];pending:SnapshotAdminPilot[];connected:boolean;codes:SnapshotCode[];integrations:Record<string,string|undefined>;features:Array<{featureKey:string;enabled:boolean}>;stickyPanel:{exists:boolean;reason?:string}};
+type UnifiedSnapshot=WorkspaceSnapshot&{aircraftTypes:AircraftType[];positions:Record<string,Position>;profile:{ifcUserId:string;username:string|null;role:number|null;onboardingRequired:boolean;discordUserId:string|null;discordUsername:string|null};airports:AirportRecord[];airportPoints:Record<string,{latitude:number;longitude:number}>;requests:Array<{scheduleId:string;seat:"captain"|"first_officer";status:"pending"|"processing"|"approved"|"rejected"|"failed"}>;myFlights:{live:WorkspaceFlight[];future:WorkspaceFlight[];past:WorkspaceFlight[];pastCoverage:{checked:number;total:number;complete:boolean;limited:boolean}};activity:Array<FlightHistoryRecord&{aircraftRegistration?:string}>;admin:SnapshotAdmin;gallery:GalleryManifest|null;flightHistoryByAircraft:Record<string,FlightHistoryRecord[]>;requestUsage:{actual:number;plannedSlots:number;limit:number;quota:{isPro:boolean;remaining:number}};cache?:string};
+const EMPTY_SNAPSHOT:UnifiedSnapshot={organization:null,aircraft:[],members:[],schedules:[],refreshedAt:0,aircraftTypes:[],positions:{},profile:{ifcUserId:"",username:null,role:null,onboardingRequired:false,discordUserId:null,discordUsername:null},airports:[],airportPoints:{},requests:[],myFlights:{live:[],future:[],past:[],pastCoverage:{checked:0,total:0,complete:false,limited:false}},activity:[],admin:{registered:[],pending:[],connected:false,codes:[],integrations:{},features:[],stickyPanel:{exists:false,reason:""}},gallery:null,flightHistoryByAircraft:{},requestUsage:{actual:0,plannedSlots:0,limit:18,quota:{isPro:false,remaining:0}}};
 let sharedWorkspaceSnapshot:WorkspaceSnapshot|null=null;
-let sharedSnapshotData:any=null;
+let sharedSnapshotData:UnifiedSnapshot|null=null;
 let sharedAuthState:"unknown"|"signed-out"|"signed-in"="unknown";
 let sharedAuthCheckedAt=0;
 let sharedProfile:{username?:string;role?:number;discordUserId?:string;discordUsername?:string}|null=null;
 const sharedPositions:Record<string,Position>={};
-let sharedIsPro=false;
-
-let sharedAircraftTypes:AircraftType[]=[];
-let sharedGallery:GalleryManifest|null=null;
+const sharedAircraftTypes:AircraftType[]=[];
+const sharedGallery:GalleryManifest|null=null;
 const WORKSPACE_REFRESH_MS=120_000;
 
 const PAGE_ROUTES:Record<Tab,string>={
@@ -72,7 +77,6 @@ async function api(path:string,init:RequestInit={}) {
     ...init,cache:"no-store",credentials:"same-origin",
     headers:{"Content-Type":"application/json",...(init.headers||{})}
   });
-  const proHeader=response.headers.get("x-user-pro");if(proHeader!==null)sharedIsPro=proHeader.toLowerCase()==="true";
   const payload=await response.json().catch(()=>({}));
   if(!response.ok) throw new Error(payload.error_description||payload.error||payload.message||`Infinite Flight returned HTTP ${response.status}.`);
   if(typeof payload.errorCode==="number"&&payload.errorCode!==0) throw new Error(payload.message||`Infinite Flight API error ${payload.errorCode}.`);
@@ -90,7 +94,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
   const [organization,setOrganization]=useState<Organization|null>(sharedWorkspaceSnapshot?.organization??null);
   const [aircraft,setAircraft]=useState<Aircraft[]>(sharedWorkspaceSnapshot?.aircraft??[]);
   const [aircraftTypes,setAircraftTypes]=useState<AircraftType[]>(sharedSnapshotData?.aircraftTypes||sharedAircraftTypes);
-  const [snapshotData,setSnapshotData]=useState<any>(sharedSnapshotData||{airports:[],airportPoints:{},requests:[],myFlights:{live:[],future:[],past:[],pastCoverage:null},activity:[],admin:{registered:[],pending:[],connected:false,codes:[],integrations:{},features:[],stickyPanel:{exists:false,reason:""}}});
+  const [snapshotData,setSnapshotData]=useState<UnifiedSnapshot>(sharedSnapshotData||EMPTY_SNAPSHOT);
   const [members,setMembers]=useState<Member[]>(sharedWorkspaceSnapshot?.members??[]);
   const [schedules,setSchedules]=useState<Schedule[]>(sharedWorkspaceSnapshot?.schedules??[]);
   const [active,setActive]=useState<Tab>(initialPage);
@@ -233,9 +237,9 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
       const data=await response.json().catch(()=>({}));
       if(response.status===401){sharedAuthState="signed-out";sharedAuthCheckedAt=Date.now();setAuth("signed-out");return;}
       if(!response.ok)throw new Error(data.error||"Unable to load the unified workspace snapshot.");
-      sharedSnapshotData=data;sharedAuthState="signed-in";sharedAuthCheckedAt=Date.now();
+      sharedSnapshotData=data as UnifiedSnapshot;sharedAuthState="signed-in";sharedAuthCheckedAt=Date.now();
       sharedWorkspaceSnapshot={organization:data.organization||null,aircraft:data.aircraft||[],members:data.members||[],schedules:data.schedules||[],refreshedAt:Number(data.refreshedAt||Date.now())};
-      setOrganization(data.organization||null);setAircraft(data.aircraft||[]);setMembers(data.members||[]);setSchedules(data.schedules||[]);setAircraftTypes(data.aircraftTypes||[]);setPositions(data.positions||{});setGallery(data.gallery||null);setSnapshotData(data);
+      setOrganization(data.organization||null);setAircraft(data.aircraft||[]);setMembers(data.members||[]);setSchedules(data.schedules||[]);setAircraftTypes(data.aircraftTypes||[]);setPositions(data.positions||{});setGallery(data.gallery||null);setSnapshotData(data as UnifiedSnapshot);
       const profile=data.profile||{};
       sharedProfile={username:profile.username||undefined,role:profile.role??undefined,discordUserId:profile.discordUserId||"",discordUsername:profile.discordUsername||""};
       if(profile.username)setProfileName(profile.username);if(typeof profile.role==="number")setProfileRole(profile.role);setDiscordUserId(profile.discordUserId||"");setDiscordUsername(profile.discordUsername||"");
@@ -279,7 +283,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
       }
     });
     return()=>{markerRefs.current.forEach(marker=>marker.remove());markerRefs.current=[];hubMarkerRefs.current.forEach(marker=>marker.remove());hubMarkerRefs.current=[];map.remove();mapRef.current=null;};
-  },[active,theme,organization,schedules,snapshotData.airportPoints]);
+  },[active,theme,organization,schedules,positions,snapshotData.airportPoints]);
 
   useEffect(()=>{
     const map=mapRef.current;
@@ -337,7 +341,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
       const travelled=haversineKm(originPoint,{latitude:position.latitude,longitude:position.longitude});
       setRouteProgress(total>0?Math.max(0,Math.min(100,Math.round(travelled/total*100))):null);
     }else setRouteProgress(null);
-  },[selectedActiveSchedule?.id,selectedPosition?.latitude,selectedPosition?.longitude,snapshotData.airportPoints]);
+  },[selectedActiveSchedule,selectedPosition,snapshotData.airportPoints]);
 
   useEffect(()=>{
     if(!selectedAircraft?.id){setFlightHistory([]);return;}
@@ -347,10 +351,10 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
   useEffect(()=>{
     if(!selectedAircraft||selectedPosition?.state!==1){setParkedAirport("Unknown");return;}
     if(selectedPosition.airportIcao){setParkedAirport(selectedPosition.airportIcao+(selectedPosition.airportName?" · "+selectedPosition.airportName:""));return;}
-    const candidates=(snapshotData.airports||[]).map((airport:AirportRecord)=>({icao:airport.icao||airport.icaoCode||airport.code||"",name:airport.name||airport.icao||airport.icaoCode||"Airport",latitude:Number(airport.latitude??airport.location?.latitude),longitude:Number(airport.longitude??airport.location?.longitude)})).filter((airport:any)=>Boolean(airport.icao)&&Number.isFinite(airport.latitude)&&Number.isFinite(airport.longitude));
-    const nearest=candidates.map((airport:any)=>({...airport,distance:haversineKm(airport,{latitude:selectedPosition.latitude,longitude:selectedPosition.longitude})})).sort((a:any,b:any)=>a.distance-b.distance)[0];
+    const candidates:AirportCandidate[]=(snapshotData.airports||[]).map(airport=>({icao:airport.icao||airport.icaoCode||airport.code||"",name:airport.name||airport.icao||airport.icaoCode||"Airport",latitude:Number(airport.latitude??airport.location?.latitude),longitude:Number(airport.longitude??airport.location?.longitude)})).filter((airport):airport is AirportCandidate=>Boolean(airport.icao)&&Number.isFinite(airport.latitude)&&Number.isFinite(airport.longitude));
+    const nearest=candidates.map(airport=>({...airport,distance:haversineKm(airport,{latitude:selectedPosition.latitude,longitude:selectedPosition.longitude})})).sort((a,b)=>a.distance-b.distance)[0];
     setParkedAirport(nearest&&nearest.distance<=15?nearest.icao+" · "+nearest.name:"Airport not identified");
-  },[selectedAircraft?.id,selectedPosition?.latitude,selectedPosition?.longitude,selectedPosition?.state,selectedPosition?.airportIcao,selectedPosition?.airportName,snapshotData.airports]);
+  },[selectedAircraft,selectedPosition,snapshotData.airports]);
 
   useEffect(()=>{
     if(selectedPhotos.length<2)return;
