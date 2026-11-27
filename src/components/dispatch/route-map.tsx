@@ -4,7 +4,7 @@ import type {Map as MapLibreMap} from "maplibre-gl";
 import type {SimBriefWaypoint} from "@/lib/simbrief/server";
 type LivePosition={latitude:number;longitude:number;altitude?:number;heading?:number;speed?:number;updatedAt?:string;isOnGround?:boolean;lastPilotUsername?:string};
 export function RouteMap({points,origin,destination,position,theme}:{points:SimBriefWaypoint[];origin:string;destination:string;position:LivePosition|null;theme:"light"|"dark"}){
- const ref=useRef<HTMLDivElement>(null),mapRef=useRef<MapLibreMap|null>(null);
+ const ref=useRef<HTMLDivElement>(null),mapRef=useRef<MapLibreMap|null>(null),positionRef=useRef(position);\n positionRef.current=position;
  useEffect(()=>{
   let map:MapLibreMap|undefined,disposed=false;
   if(!ref.current||points.length<2)return;
@@ -21,11 +21,11 @@ export function RouteMap({points,origin,destination,position,theme}:{points:SimB
     map.addLayer({id:"dispatch-route-line",type:"line",source:"dispatch-route",paint:{"line-color":"#3289ed","line-width":2.6,"line-dasharray":[2,1]}});
     map.addSource("dispatch-points",{type:"geojson",data:{type:"FeatureCollection",features:coords.map((c,i)=>({type:"Feature" as const,properties:{name:points[i].name},geometry:{type:"Point" as const,coordinates:c}}))}});
     map.addLayer({id:"dispatch-points-layer",type:"circle",source:"dispatch-points",paint:{"circle-radius":3,"circle-color":"#7db9f5","circle-stroke-color":"#fff","circle-stroke-width":1}});
-    map.addSource("dispatch-live-aircraft",{type:"geojson",data:{type:"FeatureCollection",features:position&&Number.isFinite(position.latitude)&&Number.isFinite(position.longitude)?[{type:"Feature" as const,properties:{},geometry:{type:"Point" as const,coordinates:[position.longitude,position.latitude]}}]:[]}});
+    map.addSource("dispatch-live-aircraft",{type:"geojson",data:{type:"FeatureCollection",features:positionRef.current&&Number.isFinite(positionRef.current.latitude)&&Number.isFinite(positionRef.current.longitude)?[{type:"Feature" as const,properties:{},geometry:{type:"Point" as const,coordinates:[positionRef.current.longitude,positionRef.current.latitude]}}]:[]}});
     map.addLayer({id:"dispatch-aircraft-halo",type:"circle",source:"dispatch-live-aircraft",paint:{"circle-radius":17,"circle-color":"#18a76b","circle-opacity":.16,"circle-blur":.5}});
     map.addLayer({id:"dispatch-aircraft-dot",type:"circle",source:"dispatch-live-aircraft",paint:{"circle-radius":7,"circle-color":"#16a36a","circle-stroke-color":"#fff","circle-stroke-width":2}});
     const bounds=coords.reduce((b,c)=>b.extend(c),new maplibregl.LngLatBounds(coords[0],coords[0]));
-    if(position&&Number.isFinite(position.latitude)&&Number.isFinite(position.longitude))bounds.extend([position.longitude,position.latitude]);
+    if(positionRef.current&&Number.isFinite(positionRef.current.latitude)&&Number.isFinite(positionRef.current.longitude))bounds.extend([positionRef.current.longitude,positionRef.current.latitude]);
     map.fitBounds(bounds,{padding:55,maxZoom:5,duration:700});
    });
   });
