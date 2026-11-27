@@ -5,7 +5,7 @@ import { getDb } from "@/lib/db";
 import { appSettings,appUsers,applicationCodes,adminOperatorCredentials,crewRequests,discordIntegrations,featureSettings,dispatchBriefings } from "@/lib/db/schema";
 import { getIFRateLimit,getIFRequestCount,ifFetch,invalidateIFGetCache,ORGANIZATION_ID,requireIFSession } from "@/lib/infinite-flight/server";
 import { stickyCrewStatus } from "@/lib/automation/sticky-crew";
-import { buildSimBriefFlightPlan,isSimBriefFlightPlanSynced,type SimBriefData,type IFStructuredFlightPlan } from "@/lib/simbrief/server";
+import { buildSimBriefFlightPlan,isSimBriefFlightPlanSynced,parseSimBriefXml,type SimBriefData,type IFStructuredFlightPlan } from "@/lib/simbrief/server";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 const CACHE_MS=120_000;
@@ -24,13 +24,14 @@ async function attachDispatch(snapshot:Record<string,unknown>,scheduleId:string,
  const schedules=Array.isArray(snapshot.schedules)?snapshot.schedules as Schedule[]:[];
  const schedule=schedules.find(item=>item.id===scheduleId);
  if(!schedule||!(schedule.crew||[]).some(crew=>crew.userId===userId))return {error:"This briefing is only available to pilots assigned to the flight.",status:403};
- const [row]=await getDb().select({data:dispatchBriefings.data,ofpId:dispatchBriefings.ofpId,syncStatus:dispatchBriefings.syncStatus,syncError:dispatchBriefings.syncError,createdAt:dispatchBriefings.createdAt}).from(dispatchBriefings).where(eq(dispatchBriefings.scheduleId,scheduleId)).limit(1);
+ const [row]=await getDb().select({data:dispatchBriefings.data,rawXml:dispatchBriefings.rawXml,ofpId:dispatchBriefings.ofpId,syncStatus:dispatchBriefings.syncStatus,syncError:dispatchBriefings.syncError,createdAt:dispatchBriefings.createdAt}).from(dispatchBriefings).where(eq(dispatchBriefings.scheduleId,scheduleId)).limit(1);
  if(!row)return {briefing:null};
+ const briefing=row.rawXml?parseSimBriefXml(row.rawXml,row.ofpId):row.data;
  let expected:IFStructuredFlightPlan|null=null;
- try{expected=buildSimBriefFlightPlan(row.data as unknown as SimBriefData);}catch{}
+ try{expected=buildSimBriefFlightPlan(briefing as unknown as SimBriefData);}catch{}
  const confirmed=row.syncStatus==="synced"||(expected!==null&&isSimBriefFlightPlanSynced((schedule as Schedule&{flightPlan?:unknown}).flightPlan,expected));
  const positions=(snapshot.positions||{}) as Record<string,Position>;
- return {briefing:row.data,ofpId:row.ofpId,schedule:{id:schedule.id,aircraftId:schedule.aircraftId||null,callsign:schedule.callsign||"",status:schedule.status??0,originIcao:String(schedule.originIcao||""),destinationIcao:String(schedule.destinationIcao||""),scheduledDepartureUtc:String(schedule.scheduledDepartureUtc||""),scheduledArrivalUtc:String(schedule.scheduledArrivalUtc||"")},livePosition:positions[schedule.aircraftId]||null,syncStatus:confirmed?"synced":row.syncStatus==="failed"?"failed":"pending",syncError:confirmed?"":(row.syncError||"Infinite Flight does not currently show this SimBrief route on the schedule. Please re-sync."),createdAt:row.createdAt};
+ return {briefing,ofpId:row.ofpId,schedule:{id:schedule.id,aircraftId:schedule.aircraftId||null,callsign:schedule.callsign||"",status:schedule.status??0,originIcao:String(schedule.originIcao||""),destinationIcao:String(schedule.destinationIcao||""),scheduledDepartureUtc:String(schedule.scheduledDepartureUtc||""),scheduledArrivalUtc:String(schedule.scheduledArrivalUtc||"")},livePosition:positions[schedule.aircraftId]||null,syncStatus:confirmed?"synced":row.syncStatus==="failed"?"failed":"pending",syncError:confirmed?"":(row.syncError||"Infinite Flight does not currently show this SimBrief route on the schedule. Please re-sync."),createdAt:row.createdAt};
 }
 export async function GET(request:Request){
  try{
