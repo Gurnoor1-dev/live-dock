@@ -262,7 +262,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
 
   useEffect(()=>{
     if(auth!=="signed-in")return;
-    const timer=window.setInterval(()=>{if(document.visibilityState==="visible")void loadOrganization(true);},WORKSPACE_REFRESH_MS);
+    const timer=window.setInterval(()=>{if(document.visibilityState==="visible")void loadOrganization();},WORKSPACE_REFRESH_MS);
     return()=>window.clearInterval(timer);
   },[auth,loadOrganization]);
 
