@@ -32,7 +32,7 @@ export async function GET(request:Request){
   ]);
   const aircraft=Array.isArray(aircraftRaw)?aircraftRaw:[],members=Array.isArray(membersRaw)?membersRaw:[],schedules=unwrap(schedulesRaw);
   const quota=getIFRateLimit(session);
-  const additionalBudget=Math.max(0,Math.min(14,quota.remaining-1));
+  const additionalBudget=quota.isPro?Math.max(0,Math.min(14,quota.remaining-1)):Math.max(0,Math.min(1,quota.remaining-1));
   let used=0;
   const safe=async <T,>(path:string):Promise<T|null>=>{if(used>=additionalBudget)return null;used++;try{return await ifFetch<T>(path,session);}catch{return null;}};
   const [typesValue,airportsValue]=await Promise.all([safe<unknown[]>("/aircraft"),safe<Airport[]|{items?:Airport[];airports?:Airport[]}>("/airports")]);
