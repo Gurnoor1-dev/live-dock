@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { list } from "@vercel/blob";
+import { list,put } from "@vercel/blob";
 import { eq,inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { appSettings,appUsers,applicationCodes,adminOperatorCredentials,crewRequests,discordIntegrations,featureSettings } from "@/lib/db/schema";
@@ -8,7 +8,8 @@ import { stickyCrewStatus } from "@/lib/automation/sticky-crew";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 const CACHE_MS=120_000;
-async function readGallerySnapshot(){try{const result=await list({prefix:"aircraft-gallery/manifest.json",limit:1});const blob=result.blobs.find(item=>item.pathname==="aircraft-gallery/manifest.json");if(!blob)return null;const response=await fetch(blob.url+"?v="+Date.now(),{cache:"no-store"});if(!response.ok)return null;const data=await response.json();return data&&typeof data==="object"&&data.aircraft?data:null;}catch{return null;}}
+const GALLERY_MANIFEST_PATH="aircraft-gallery/manifest.json";
+async function readGallerySnapshot(){try{const result=await list({prefix:GALLERY_MANIFEST_PATH,limit:1});const blob=result.blobs.find(item=>item.pathname===GALLERY_MANIFEST_PATH);if(!blob){const initial={schemaVersion:1,manifestVersion:1,lastUpdatedAt:new Date().toISOString(),organization:{id:ORGANIZATION_ID,name:"Virtual Blue"},settings:{maxPhotosPerAircraft:4,slideshowIntervalMs:2000,transition:"crossfade"},aircraft:{}};await put(GALLERY_MANIFEST_PATH,JSON.stringify(initial,null,2)+"\n",{access:"public",addRandomSuffix:false,allowOverwrite:true,contentType:"application/json",cacheControlMaxAge:60});return initial;}const response=await fetch(blob.url+"?v="+Date.now(),{cache:"no-store"});if(!response.ok)return null;const data=await response.json();return data&&typeof data==="object"&&data.aircraft?data:null;}catch{return null;}}
 type Aircraft={id:string;aircraftId:string;registration:string;status:number;visibility:number;isFleetActiveSlot:boolean;[key:string]:unknown};
 type Schedule={id:string;aircraftId:string;callsign:string;status:number;crew?:Array<{userId:string;username?:string;role:number}>;[key:string]:unknown};
 type Flight={id:string;aircraftId?:string;callsign?:string;originIcao?:string|null;destinationIcao?:string|null;actualDepartureUtc?:string|null;actualArrivalUtc?:string|null;status:number;flightTimeMinutes?:number;crew?:Array<{userId:string;username?:string}>;pilotFlightTimes?:Array<{userId:string;username?:string;flightTimeSeconds?:number}>};
