@@ -50,6 +50,7 @@ let sharedAuthCheckedAt=0;
 let sharedAuthPromise:Promise<boolean>|null=null;
 let sharedProfile:{username?:string;role?:number;discordUserId?:string;discordUsername?:string}|null=null;
 const sharedPositions:Record<string,Position>={};
+let sharedIsPro=false;
 
 let sharedAircraftTypes:AircraftType[]=[];
 let sharedGallery:GalleryManifest|null=null;
