@@ -5,7 +5,7 @@ import type {SimBriefWaypoint} from "@/lib/simbrief/server";
 type LivePosition={latitude:number;longitude:number;altitude?:number;heading?:number;speed?:number;updatedAt?:string;isOnGround?:boolean;lastPilotUsername?:string};
 export function RouteMap({points,origin,destination,position,theme}:{points:SimBriefWaypoint[];origin:string;destination:string;position:LivePosition|null;theme:"light"|"dark"}){
  const ref=useRef<HTMLDivElement>(null),mapRef=useRef<MapLibreMap|null>(null),positionRef=useRef(position);
- positionRef.current=position;
+ useEffect(()=>{positionRef.current=position;},[position]);
  useEffect(()=>{
   let map:MapLibreMap|undefined,disposed=false;
   if(!ref.current||points.length<2)return;
