@@ -77,7 +77,7 @@ export async function GET(request:Request){
    profile:{ifcUserId:identity.id,username:identity.username||null,role:null,onboardingRequired:!pilot?.onboardingCompletedAt,discordUserId:pilot?.discordUserId??null,discordUsername:pilot?.discordUsername??null},
    organization,aircraft,members,schedules,aircraftTypes,airports,positions,
    myFlights:{live:live.map(s=>({...s,aircraftRegistration:registration.get(s.aircraftId)})),future:future.map(s=>({...s,aircraftRegistration:registration.get(s.aircraftId)})),past,pastCoverage:{checked:historyRows.length,total:flyable.length,complete:historyRows.length>=flyable.length,limited:historyRows.length<flyable.length}},
-   activity,airportPoints,requests,
+   activity,airportPoints,requests,flightHistoryByAircraft:Object.fromEntries(historyRows.map(({aircraft:a,flights})=>[a.id,flights])),
    admin:{registered,pending,connected:Boolean(operatorRows[0]),codes:codeRows,integrations:{...(integration||{}),stickyCrewChannelId:sticky?.channelId||""},features,stickyPanel},
    requestUsage:{initial:4,additional:used,total:4+used,limit:18,quota:{isPro:quota.isPro,remaining:quota.remaining}},
    refreshedAt:Date.now(),cache:"MISS"
