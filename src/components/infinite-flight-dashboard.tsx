@@ -229,7 +229,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
 
   const loadOrganization=useCallback(async(force=false,invalidateIFCache=false)=>{
     if(!force&&sharedSnapshotData&&Date.now()-Number(sharedSnapshotData.refreshedAt||0)<WORKSPACE_REFRESH_MS){
-      setOrganization(sharedSnapshotData.organization||null);setAircraft(sharedSnapshotData.aircraft||[]);setMembers(sharedSnapshotData.members||[]);setSchedules(sharedSnapshotData.schedules||[]);setAircraftTypes(sharedSnapshotData.aircraftTypes||[]);setPositions(sharedSnapshotData.positions||{});setSnapshotData(sharedSnapshotData);return;
+      setOrganization(sharedSnapshotData.organization||null);setAircraft(sharedSnapshotData.aircraft||[]);setMembers(sharedSnapshotData.members||[]);setSchedules(sharedSnapshotData.schedules||[]);setAircraftTypes(sharedSnapshotData.aircraftTypes||[]);setPositions(sharedSnapshotData.positions||{});setGallery(sharedSnapshotData.gallery||null);setSnapshotData(sharedSnapshotData);return;
     }
     setBusy(true);setError("");setNotice("");
     try{
@@ -239,7 +239,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
       if(!response.ok)throw new Error(data.error||"Unable to load the unified workspace snapshot.");
       sharedSnapshotData=data;sharedAuthState="signed-in";sharedAuthCheckedAt=Date.now();
       sharedWorkspaceSnapshot={organization:data.organization||null,aircraft:data.aircraft||[],members:data.members||[],schedules:data.schedules||[],refreshedAt:Number(data.refreshedAt||Date.now())};
-      setOrganization(data.organization||null);setAircraft(data.aircraft||[]);setMembers(data.members||[]);setSchedules(data.schedules||[]);setAircraftTypes(data.aircraftTypes||[]);setPositions(data.positions||{});setSnapshotData(data);
+      setOrganization(data.organization||null);setAircraft(data.aircraft||[]);setMembers(data.members||[]);setSchedules(data.schedules||[]);setAircraftTypes(data.aircraftTypes||[]);setPositions(data.positions||{});setGallery(data.gallery||null);setSnapshotData(data);
       const profile=data.profile||{};
       sharedProfile={username:profile.username||undefined,role:profile.role??undefined,discordUserId:profile.discordUserId||"",discordUsername:profile.discordUsername||""};
       if(profile.username)setProfileName(profile.username);if(typeof profile.role==="number")setProfileRole(profile.role);setDiscordUserId(profile.discordUserId||"");setDiscordUsername(profile.discordUsername||"");
@@ -247,7 +247,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     }catch(e){
       setAuth("signed-in");
       setError(e instanceof Error?e.message:"Unable to refresh the Virtual Blue workspace.");
-      if(sharedSnapshotData){setOrganization(sharedSnapshotData.organization||null);setAircraft(sharedSnapshotData.aircraft||[]);setMembers(sharedSnapshotData.members||[]);setSchedules(sharedSnapshotData.schedules||[]);setAircraftTypes(sharedSnapshotData.aircraftTypes||[]);setPositions(sharedSnapshotData.positions||{});setSnapshotData(sharedSnapshotData);}
+      if(sharedSnapshotData){setOrganization(sharedSnapshotData.organization||null);setAircraft(sharedSnapshotData.aircraft||[]);setMembers(sharedSnapshotData.members||[]);setSchedules(sharedSnapshotData.schedules||[]);setAircraftTypes(sharedSnapshotData.aircraftTypes||[]);setPositions(sharedSnapshotData.positions||{});setGallery(sharedSnapshotData.gallery||null);setSnapshotData(sharedSnapshotData);}
       else{setOrganization(null);setAircraft([]);setMembers([]);setSchedules([]);}
     }finally{setBusy(false);}
   },[]);
@@ -377,8 +377,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
       const response=await fetch("/api/if/gallery/upload",{method:"POST",body:form,credentials:"same-origin"});
       const payload=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(payload.error||"Could not upload aircraft photo.");
-      const manifestResponse=await fetch("/api/if/gallery",{cache:"no-store"});
-      if(manifestResponse.ok)setGallery(await manifestResponse.json());
+      await loadOrganization(true);
       setGalleryFile(null);setGalleryCredit("");setGalleryCreditUrl("");setGalleryCaption("");
       setNotice("Aircraft photo uploaded and added to the Blob manifest.");
     }catch(e){setError(e instanceof Error?e.message:"Could not upload aircraft photo.");}
