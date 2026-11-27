@@ -1,17 +1,16 @@
 "use client";
-import { useEffect,useMemo,useState } from "react";
+import { useMemo } from "react";
 import { Building2,Plane,ArrowDownToLine,ArrowUpFromLine,Users,Activity } from "lucide-react";
 import { Stat,Empty } from "@/components/workspace/shared-ui";
 import { useWorkspace } from "../workspace-context";
 type ActivityFlight={id:string;originIcao?:string;destinationIcao?:string;actualDepartureUtc?:string;crew?:Array<{username?:string|null}>;pilotFlightTimes?:Array<{username?:string|null}>;aircraftRegistration?:string};
 type Point={latitude:number;longitude:number};
 export function OrganisationDockPage(){
- const {active,organization,aircraft,members,schedules,positions,roleName,dateTime}=useWorkspace();
- const [activity,setActivity]=useState<ActivityFlight[]>([]);
- const [airportPoints,setAirportPoints]=useState<Record<string,Point>>({});
- useEffect(()=>{if(active!=="Organisation Dock")return;let alive=true;fetch("/api/organisation-dock/activity",{cache:"no-store"}).then(async r=>{const d=await r.json();if(r.ok&&alive)setActivity(d.activity||[])}).catch(()=>{});return()=>{alive=false}},[active]);
+ const {active,organization,aircraft,members,schedules,positions,roleName,dateTime,snapshotData}=useWorkspace();
+ const activity:ActivityFlight[]=snapshotData.activity||[];
+ const airportPoints:Record<string,Point>=snapshotData.airportPoints||{};
  const hubCodes=useMemo(()=>{const counts=new Map<string,number>();for(const s of schedules){for(const code of [s.originIcao,s.destinationIcao])if(code)counts.set(code,(counts.get(code)||0)+1)}return [...counts.entries()].sort((x,y)=>y[1]-x[1]).slice(0,3).map(([code])=>code)},[schedules]);
- useEffect(()=>{if(active!=="Organisation Dock"||!hubCodes.length)return;let alive=true;Promise.all(hubCodes.map(async code=>{try{const r=await fetch("/api/if/airport/"+code,{cache:"force-cache"});const d=await r.json();const a=d.result||d;const point={latitude:Number(a.latitude??a.location?.latitude),longitude:Number(a.longitude??a.location?.longitude)};return [code,point] as const}catch{return null}})).then(rows=>{if(!alive)return;const next:Record<string,Point>={};for(const row of rows)if(row&&Number.isFinite(row[1].latitude)&&Number.isFinite(row[1].longitude))next[row[0]]=row[1];setAirportPoints(next)});return()=>{alive=false}},[active,hubCodes]);
+
  const hubs=useMemo(()=>{const map=new Map<string,{departures:number;inbounds:number;parked:number}>();for(const icao of hubCodes)map.set(icao,{departures:0,inbounds:0,parked:0});for(const s of schedules.filter(s=>[1,2,3,4].includes(s.status))){for(const [icao,key] of [[s.originIcao,"departures"],[s.destinationIcao,"inbounds"]] as const){const row=map.get(icao);if(row){row[key]++;map.set(icao,row)}}}for(const a of aircraft.filter(item=>item.status===0&&item.visibility!==2&&item.isFleetActiveSlot)){const p=positions[a.id];if(!p?.isOnGround)continue;for(const [icao,point] of Object.entries(airportPoints)){const lat=(p.latitude-point.latitude)*Math.PI/180,lon=(p.longitude-point.longitude)*Math.PI/180;const h=Math.sin(lat/2)**2+Math.cos(point.latitude*Math.PI/180)*Math.cos(p.latitude*Math.PI/180)*Math.sin(lon/2)**2;const km=6371*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));if(km<=15){const row=map.get(icao)||{departures:0,inbounds:0,parked:0};row.parked++;map.set(icao,row);break}}}return [...map.entries()].sort((a,b)=>(b[1].parked+b[1].departures+b[1].inbounds)-(a[1].parked+a[1].departures+a[1].inbounds))},[schedules,aircraft,positions,airportPoints,hubCodes]);
  if(active!=="Organisation Dock"||!organization)return null;
  const flyable=aircraft.filter(a=>a.status===0&&a.visibility!==2&&a.isFleetActiveSlot);
