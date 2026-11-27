@@ -344,15 +344,9 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
   },[selectedActiveSchedule?.id,selectedPosition?.latitude,selectedPosition?.longitude,snapshotData.airportPoints]);
 
   useEffect(()=>{
-    if(!selectedAircraft||!selectedAircraft.id)return;
-    setFlightHistory([]);
-    let alive=true;
-    api("/live/aircraft/"+selectedAircraft.id+"/flights?page=1&pageSize=50").then(value=>{
-      if(alive)setFlightHistory(Array.isArray(value)?value:(value?.items||[]));
-    }).catch(()=>{if(alive)setFlightHistory([]);});
-    return()=>{alive=false;};
-  },[selectedAircraft]);
-
+    if(!selectedAircraft?.id){setFlightHistory([]);return;}
+    setFlightHistory(snapshotData.flightHistoryByAircraft?.[selectedAircraft.id]||[]);
+  },[selectedAircraft?.id,snapshotData.flightHistoryByAircraft]);
 
   useEffect(()=>{
     if(!selectedAircraft||selectedPosition?.state!==1){setParkedAirport("Unknown");return;}
