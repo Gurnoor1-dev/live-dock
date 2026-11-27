@@ -62,9 +62,9 @@ function ifCacheTtl(path: string) {
   return 0;
 }
 
-export function invalidateIFGetCache(session:IFSession){
+export function invalidateIFGetCache(session:IFSession,pathMatch?:string){
   const prefix=session.accessToken+":";
-  for(const key of ifGetCache.keys())if(key.startsWith(prefix))ifGetCache.delete(key);
+  for(const key of ifGetCache.keys())if(key.startsWith(prefix)&&(!pathMatch||key.includes(pathMatch)))ifGetCache.delete(key);
 }
 export function getIFRequestCount(session:IFSession){
   const window=ifRequestWindows.get(session.accessToken);
