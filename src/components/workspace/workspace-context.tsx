@@ -21,7 +21,7 @@ type WorkspaceSnapshotData={airports:Airport[];airportPoints:Record<string,{lati
 
 export interface WorkspaceContextValue {
   active:string;
-  refreshWorkspace:()=>Promise<void>;
+  refreshWorkspace:(invalidateIFCache?:boolean)=>Promise<void>;
   organization:Organization|null;\n  snapshotData:WorkspaceSnapshotData;
   aircraft:Aircraft[];
   aircraftTypes:AircraftType[];
