@@ -106,7 +106,7 @@ export async function GET(request:Request){
    myFlights:{live:live.map(s=>({...s,aircraftRegistration:registration.get(s.aircraftId)})),future:future.map(s=>({...s,aircraftRegistration:registration.get(s.aircraftId)})),past,pastCoverage:{checked:historyRows.length,total:flyable.length,complete:historyRows.length>=flyable.length,limited:historyRows.length<flyable.length}},
    activity,airportPoints,requests,flightHistoryByAircraft:Object.fromEntries(historyRows.map(({aircraft:a,flights})=>[a.id,flights])),
    admin:canManage?{registered,pending,connected:Boolean(operatorRows[0]),codes:codeRows,integrations:{...(integration||{}),stickyCrewChannelId:sticky?.channelId||""},features,stickyPanel}:{registered:[],pending:[],connected:false,codes:[],integrations:{},features:[],stickyPanel},
-   requestUsage:{actual:actualIFRequests,plannedSlots:baseSlots+used,limit:quota.isPro?18:4,quota:{isPro:quota.isPro,remaining:quota.remaining}},
+   requestUsage:{actual:actualIFRequests,plannedSlots:actualIFRequests,limit:quota.isPro?18:4,quota:{isPro:quota.isPro,remaining:quota.remaining}},
    refreshedAt:Date.now(),cache:"MISS"
   };
   cacheSet(key,result);
