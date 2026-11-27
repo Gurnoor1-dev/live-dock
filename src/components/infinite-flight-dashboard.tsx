@@ -410,7 +410,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     finally{setProfileSaving(false);}
   }
 
-  async function refresh(invalidateIFCache=false){await loadOrganization(true,invalidateIFCache);}
+  async function refresh(invalidateIFCache=false){await loadOrganization(invalidateIFCache,invalidateIFCache);}
   async function signOut(){
     setBusy(true);setError("");
     try{
