@@ -21,8 +21,9 @@ export async function GET(request:Request){
   const {session,identity}=await requireIFSession();
   const key="workspace:"+identity.id;
   const force=new URL(request.url).searchParams.get("refresh")==="1";
-  const cached=force?null:cacheGet<Record<string,unknown>>(key);
-  if(cached)return NextResponse.json({...cached,refreshedAt:Date.now(),cache:"HIT"},{headers:{"Cache-Control":"private, no-store","X-LiveDock-Snapshot-Cache":"HIT"}});
+  let cached=force?null:cacheGet<Record<string,unknown>>(key);
+  if(!cached&&!force){const [stored]=await getDb().select({value:appSettings.value}).from(appSettings).where(eq(appSettings.key,"workspace_snapshot:"+identity.id)).limit(1);const saved=stored?.value as {expiresAt?:number;snapshot?:Record<string,unknown>}|undefined;if(saved?.snapshot&&Number(saved.expiresAt)>Date.now())cached=saved.snapshot;}
+  if(cached){cacheSet(key,cached);return NextResponse.json({...cached,refreshedAt:Date.now(),cache:"HIT"},{headers:{"Cache-Control":"private, no-store","X-LiveDock-Snapshot-Cache":"HIT"}})}
   const [organization,aircraftRaw,membersRaw,schedulesRaw]=await Promise.all([
    ifFetch<Record<string,unknown>>("/live/organizations/"+ORGANIZATION_ID,session),
    ifFetch<Aircraft[]>("/live/organizations/"+ORGANIZATION_ID+"/aircraft",session),
@@ -33,7 +34,7 @@ export async function GET(request:Request){
   const quota=getIFRateLimit(session);
   const additionalBudget=Math.max(0,Math.min(14,quota.remaining-1));
   let used=0;
-  const safe=async <T,>(path:string):Promise<T|null>=>{if(used>=additionalBudget)return null;try{const value=await ifFetch<T>(path,session);used++;return value;}catch{used++;return null;}};
+  const safe=async <T,>(path:string):Promise<T|null>=>{if(used>=additionalBudget)return null;used++;try{return await ifFetch<T>(path,session);}catch{return null;}};
   const [typesValue,airportsValue]=await Promise.all([safe<unknown[]>("/aircraft"),safe<Airport[]|{items?:Airport[];airports?:Airport[]}>("/airports")]);
   const aircraftTypes=Array.isArray(typesValue)?typesValue:[];
   let airports=unwrap(airportsValue as Airport[]|{items?:Airport[]}|null);
@@ -83,6 +84,7 @@ export async function GET(request:Request){
    refreshedAt:Date.now(),cache:"MISS"
   };
   cacheSet(key,result);
+  await getDb().insert(appSettings).values({key:"workspace_snapshot:"+identity.id,value:{expiresAt:Date.now()+CACHE_MS,snapshot:result},updatedAt:new Date()}).onConflictDoUpdate({target:appSettings.key,set:{value:{expiresAt:Date.now()+CACHE_MS,snapshot:result},updatedAt:new Date()}});
   return NextResponse.json(result,{headers:{"Cache-Control":"private, no-store","X-LiveDock-Snapshot-Cache":"MISS","X-LiveDock-IF-Requests":String(4+used)}});
  }catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Unable to load the unified workspace snapshot."},{status:Number((error as {status?:number})?.status)||500,headers:{"Cache-Control":"no-store"}})}
 }
