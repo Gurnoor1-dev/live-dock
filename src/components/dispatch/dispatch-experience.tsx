@@ -33,7 +33,7 @@ export function DispatchExperience({scheduleId}:{scheduleId:string}){
  }catch(e){setAtisError(e instanceof Error?e.message:"Live ATIS could not be retrieved.");}finally{setAtisLoading(false);}};
  const fmt=(value:string)=>value?value.replace("T"," ").replace("Z"," UTC"):"—";
  if(loading)return <main className="dispatch-page" data-theme={theme}><div className="dispatch-loading"><div className="dispatch-spinner"/><b>Preparing your flight deck</b><span>Retrieving saved dispatch information…</span></div></main>;
- return <main className="dispatch-page">
+ return <main className="dispatch-page" data-theme={theme}>
   <div className="dispatch-topline"><Link href="/my-flights" className="dispatch-back"><ArrowLeft size={15}/> My Flights</Link><div className="dispatch-top-actions"><span className="dispatch-secure"><i/> PRIVATE PILOT BRIEFING</span><button className="dispatch-theme-toggle" onClick={()=>setTheme(theme==="dark"?"light":"dark")} aria-label={"Switch to "+(theme==="dark"?"light":"dark")+" theme"}>{theme==="dark"?<Sun size={15}/>:<Moon size={15}/>}<span>{theme==="dark"?"Light":"Dark"}</span></button></div></div>
   {error&&<div className="dispatch-alert"><AlertTriangle size={17}/>{error}<button onClick={()=>void load()}>Retry</button></div>}
   {!briefing?<div className="dispatch-empty"><div className="dispatch-empty-icon"><Plane size={24}/></div><span className="dispatch-kicker">FLIGHT DISPATCH</span><h1>No saved briefing yet</h1><p>Return to My Flights and select Dispatch on one of your future assigned flights to generate an OFP through your SimBrief account.</p><Link href="/my-flights" className="dispatch-primary">Back to My Flights <ArrowUpRight size={15}/></Link></div>:<>
