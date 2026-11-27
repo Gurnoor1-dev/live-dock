@@ -24,7 +24,7 @@ export function MyFlightsPage(){
  const [error,setError]=useState("");
  const data=snapshotData.myFlights||{live:[],future:[],past:[],pastCoverage:null};
  const coverage=data.pastCoverage as Coverage|null;
- async function refresh(){setLoading(true);setError("");try{await refreshWorkspace();}catch(e){setError(e instanceof Error?e.message:"Unable to refresh flight data.");}finally{setLoading(false)}}
+ async function refresh(){setLoading(true);setError("");try{await refreshWorkspace(true);}catch(e){setError(e instanceof Error?e.message:"Unable to refresh flight data.");}finally{setLoading(false)}}
  if(active!=="My Flights")return null;
  return <div className="my-flights-page">
   <div className="page-intro-inline"><div><h2>Your flight logbook</h2><p className="muted">Live assignments, approved upcoming legs and completed Virtual Blue aircraft flights.</p></div><button className="outline-button" onClick={()=>void refresh()} disabled={loading}><RefreshCw size={14}/>{loading?"Refreshing":"Refresh flights"}</button></div>
