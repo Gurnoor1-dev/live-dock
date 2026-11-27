@@ -43,7 +43,6 @@ export async function GET(request:Request){
   if(!cached&&!force){const [stored]=await getDb().select({value:appSettings.value}).from(appSettings).where(eq(appSettings.key,"workspace_snapshot:"+identity.id)).limit(1);const saved=stored?.value as {expiresAt?:number;snapshot?:Record<string,unknown>}|undefined;if(saved?.snapshot&&Number(saved.expiresAt)>Date.now())cached=saved.snapshot;}
   if(cached){cacheSet(key,cached);const dispatchId=params.get("dispatchId");if(dispatchId){const dispatch=await attachDispatch(cached,dispatchId,identity.id);if("status" in dispatch)return NextResponse.json({error:dispatch.error},{status:dispatch.status});return NextResponse.json({...cached,dispatch,refreshedAt:Date.now(),cache:"HIT"},{headers:{"Cache-Control":"private, no-store","X-LiveDock-Snapshot-Cache":"HIT"}})}return NextResponse.json({...cached,refreshedAt:Date.now(),cache:"HIT"},{headers:{"Cache-Control":"private, no-store","X-LiveDock-Snapshot-Cache":"HIT"}})}
   const requestCountAtStart=getIFRequestCount(session);
-  const requestCountAtStart=getIFRequestCount(session);
   const [aircraftRaw,membersRaw,schedulesRaw]=await Promise.all([
    ifFetch<Aircraft[]>("/live/organizations/"+ORGANIZATION_ID+"/aircraft",session),
    ifFetch<Array<{userId:string;username:string|null;role:number;joinedAt:string;activeLifts:number}>>("/live/organizations/"+ORGANIZATION_ID+"/members",session),
