@@ -55,9 +55,6 @@ export async function GET(request:Request){
   const isCrew=(s:Schedule)=>(s.crew||[]).some(c=>c.userId===identityId);
   const live=schedules.filter(s=>s.status===6&&isCrew(s));
   const future=schedules.filter(s=>[1,2,3,4].includes(s.status)&&isCrew(s));
-  const historyBudget=Math.min(quota.isPro?6:0,Math.max(0,additionalBudget-used));
-  const historyAircraft=flyable.slice(0,historyBudget);
-  const historyRows=await Promise.all(historyAircraft.map(async a=>{const page=await safe<Flight[]|{items?:Flight[]}>("/live/aircraft/"+a.id+"/flights?page=1&pageSize=100");return {aircraft:a,flights:unwrap(page)}}));
   const registration=new Map(aircraft.map(a=>[a.id,a.registration]));
   const past=historyRows.flatMap(({aircraft:a,flights})=>flights.filter(f=>f.status===1&&((f.pilotFlightTimes||[]).some(p=>p.userId===identityId)||(f.crew||[]).some(p=>p.userId===identityId))).map(f=>({...f,aircraftRegistration:a.registration}))).sort((a,b)=>new Date(b.actualDepartureUtc||0).getTime()-new Date(a.actualDepartureUtc||0).getTime());
   const activity=historyRows.flatMap(({aircraft:a,flights})=>flights.slice(0,5).map(f=>({...f,aircraftRegistration:a.registration}))).sort((a,b)=>new Date(b.actualDepartureUtc||0).getTime()-new Date(a.actualDepartureUtc||0).getTime()).slice(0,12);
