@@ -227,13 +227,13 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     try{window.localStorage.setItem("vb-theme",theme);}catch{}
   },[theme,themeReady]);
 
-  const loadOrganization=useCallback(async(force=false)=>{
+  const loadOrganization=useCallback(async(force=false,invalidateIFCache=false)=>{
     if(!force&&sharedSnapshotData&&Date.now()-Number(sharedSnapshotData.refreshedAt||0)<WORKSPACE_REFRESH_MS){
       setOrganization(sharedSnapshotData.organization||null);setAircraft(sharedSnapshotData.aircraft||[]);setMembers(sharedSnapshotData.members||[]);setSchedules(sharedSnapshotData.schedules||[]);setAircraftTypes(sharedSnapshotData.aircraftTypes||[]);setPositions(sharedSnapshotData.positions||{});setSnapshotData(sharedSnapshotData);return;
     }
     setBusy(true);setError("");setNotice("");
     try{
-      const response=await fetch("/api/workspace/snapshot"+(force?"?refresh=1":""),{cache:"no-store",credentials:"same-origin"});
+      const response=await fetch("/api/workspace/snapshot"+(force?"?refresh=1"+(invalidateIFCache?"&invalidate=1":""):""),{cache:"no-store",credentials:"same-origin"});
       const data=await response.json().catch(()=>({}));
       if(response.status===401){sharedAuthState="signed-out";sharedAuthCheckedAt=Date.now();setAuth("signed-out");return;}
       if(!response.ok)throw new Error(data.error||"Unable to load the unified workspace snapshot.");
@@ -405,7 +405,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     finally{setProfileSaving(false);}
   }
 
-  async function refresh(){await loadOrganization(true);}
+  async function refresh(invalidateIFCache=false){await loadOrganization(true,invalidateIFCache);}
   async function signOut(){
     setBusy(true);setError("");
     try{
@@ -433,14 +433,14 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
       await api(`/live/aircraft/${aircraftId}/schedules`,{method:"POST",body:JSON.stringify(payload)});
       setNotice("Schedule published to Infinite Flight.");
       setCallsign("");setOrigin("");setDestination("");setDeparture("");setArrival("");setBriefing("");
-      await refresh();
+      await refresh(true);
     }catch(e){setError(e instanceof Error?e.message:"Could not publish schedule.");}
     finally{setBusy(false);}
   }
   async function deleteSchedule(id:string){
     if(!canManage)return;
     setBusy(true);setError("");setNotice("");
-    try{await api(`/live/schedules/${id}`,{method:"DELETE"});setNotice("Schedule deleted in Infinite Flight.");await refresh();}
+    try{await api(`/live/schedules/${id}`,{method:"DELETE"});setNotice("Schedule deleted in Infinite Flight.");await refresh(true);}
     catch(e){setError(e instanceof Error?e.message:"Could not delete schedule.");}
     finally{setBusy(false);}
   }
@@ -450,7 +450,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     setBusy(true);setError("");setNotice("");
     try{
       await api(`/live/schedules/${schedule.id}/crew/${userId}`,{method:"PUT",body:JSON.stringify({role:Number(crewRoles[schedule.id]??0)})});
-      setNotice("Crew assignment saved to Infinite Flight.");await refresh();
+      setNotice("Crew assignment saved to Infinite Flight.");await refresh(true);
     }catch(e){setError(e instanceof Error?e.message:"Could not assign crew.");}
     finally{setBusy(false);}
   }
