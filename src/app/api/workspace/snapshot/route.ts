@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { list,put } from "@vercel/blob";
 import { eq,inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { appSettings,appUsers,applicationCodes,adminOperatorCredentials,crewRequests,discordIntegrations,featureSettings } from "@/lib/db/schema";
+import { appSettings,appUsers,applicationCodes,adminOperatorCredentials,crewRequests,discordIntegrations,featureSettings,dispatchBriefings } from "@/lib/db/schema";
 import { getIFRateLimit,getIFRequestCount,ifFetch,invalidateIFGetCache,ORGANIZATION_ID,requireIFSession } from "@/lib/infinite-flight/server";
 import { stickyCrewStatus } from "@/lib/automation/sticky-crew";
+import { buildSimBriefFlightPlan,isSimBriefFlightPlanSynced,type SimBriefData,type IFStructuredFlightPlan } from "@/lib/simbrief/server";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 const CACHE_MS=120_000;
@@ -19,6 +20,18 @@ const unwrap=<T,>(v:T[]|{items?:T[]}|null|undefined):T[]=>Array.isArray(v)?v:(v?
 const responseCache=new Map<string,{expiresAt:number;value:unknown}>();
 function cacheGet<T>(key:string):T|null{const entry=responseCache.get(key);if(!entry)return null;if(entry.expiresAt<=Date.now()){responseCache.delete(key);return null;}return entry.value as T;}
 function cacheSet(key:string,value:unknown){responseCache.set(key,{value,expiresAt:Date.now()+CACHE_MS});}
+async function attachDispatch(snapshot:Record<string,unknown>,scheduleId:string,userId:string){
+ const schedules=Array.isArray(snapshot.schedules)?snapshot.schedules as Schedule[]:[];
+ const schedule=schedules.find(item=>item.id===scheduleId);
+ if(!schedule||!(schedule.crew||[]).some(crew=>crew.userId===userId))return {error:"This briefing is only available to pilots assigned to the flight.",status:403};
+ const [row]=await getDb().select({data:dispatchBriefings.data,ofpId:dispatchBriefings.ofpId,syncStatus:dispatchBriefings.syncStatus,syncError:dispatchBriefings.syncError,createdAt:dispatchBriefings.createdAt}).from(dispatchBriefings).where(eq(dispatchBriefings.scheduleId,scheduleId)).limit(1);
+ if(!row)return {briefing:null};
+ let expected:IFStructuredFlightPlan|null=null;
+ try{expected=buildSimBriefFlightPlan(row.data as unknown as SimBriefData);}catch{}
+ const confirmed=expected!==null&&isSimBriefFlightPlanSynced((schedule as Schedule&{flightPlan?:unknown}).flightPlan,expected);
+ const positions=(snapshot.positions||{}) as Record<string,Position>;
+ return {briefing:row.data,ofpId:row.ofpId,schedule:{id:schedule.id,aircraftId:schedule.aircraftId||null,callsign:schedule.callsign||"",status:schedule.status??0,originIcao:String(schedule.originIcao||""),destinationIcao:String(schedule.destinationIcao||""),scheduledDepartureUtc:String(schedule.scheduledDepartureUtc||""),scheduledArrivalUtc:String(schedule.scheduledArrivalUtc||"")},livePosition:positions[schedule.aircraftId]||null,syncStatus:confirmed?"synced":row.syncStatus==="failed"?"failed":"pending",syncError:confirmed?"":(row.syncError||"Infinite Flight does not currently show this SimBrief route on the schedule. Please re-sync."),createdAt:row.createdAt};
+}
 export async function GET(request:Request){
  try{
   const {session,identity}=await requireIFSession();
@@ -28,7 +41,7 @@ export async function GET(request:Request){
   if(params.get("invalidate")==="1")invalidateIFGetCache(session);
   let cached=force?null:cacheGet<Record<string,unknown>>(key);
   if(!cached&&!force){const [stored]=await getDb().select({value:appSettings.value}).from(appSettings).where(eq(appSettings.key,"workspace_snapshot:"+identity.id)).limit(1);const saved=stored?.value as {expiresAt?:number;snapshot?:Record<string,unknown>}|undefined;if(saved?.snapshot&&Number(saved.expiresAt)>Date.now())cached=saved.snapshot;}
-  if(cached){cacheSet(key,cached);return NextResponse.json({...cached,refreshedAt:Date.now(),cache:"HIT"},{headers:{"Cache-Control":"private, no-store","X-LiveDock-Snapshot-Cache":"HIT"}})}
+  if(cached){cacheSet(key,cached);const dispatchId=params.get("dispatchId");if(dispatchId){const dispatch=await attachDispatch(cached,dispatchId,identity.id);if("status" in dispatch)return NextResponse.json({error:dispatch.error},{status:dispatch.status});return NextResponse.json({...cached,dispatch,refreshedAt:Date.now(),cache:"HIT"},{headers:{"Cache-Control":"private, no-store","X-LiveDock-Snapshot-Cache":"HIT"}})}return NextResponse.json({...cached,refreshedAt:Date.now(),cache:"HIT"},{headers:{"Cache-Control":"private, no-store","X-LiveDock-Snapshot-Cache":"HIT"}})}
   const requestCountAtStart=getIFRequestCount(session);
   const requestCountAtStart=getIFRequestCount(session);
   const [aircraftRaw,membersRaw,schedulesRaw]=await Promise.all([
@@ -99,6 +112,7 @@ export async function GET(request:Request){
   };
   cacheSet(key,result);
   await getDb().insert(appSettings).values({key:"workspace_snapshot:"+identity.id,value:{expiresAt:Date.now()+CACHE_MS,snapshot:result},updatedAt:new Date()}).onConflictDoUpdate({target:appSettings.key,set:{value:{expiresAt:Date.now()+CACHE_MS,snapshot:result},updatedAt:new Date()}});
+  const dispatchId=params.get("dispatchId");if(dispatchId){const dispatch=await attachDispatch(result,dispatchId,identity.id);if("status" in dispatch)return NextResponse.json({error:dispatch.error},{status:dispatch.status});result.dispatch=dispatch;}
   return NextResponse.json(result,{headers:{"Cache-Control":"private, no-store","X-LiveDock-Snapshot-Cache":"MISS","X-LiveDock-IF-Requests":String(actualIFRequests)}});
  }catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Unable to load the unified workspace snapshot."},{status:Number((error as {status?:number})?.status)||500,headers:{"Cache-Control":"no-store"}})}
 }
