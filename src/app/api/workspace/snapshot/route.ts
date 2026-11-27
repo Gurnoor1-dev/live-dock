@@ -99,7 +99,7 @@ export async function GET(request:Request){
   const integration=integrationRows[0]||null;
   const sticky=stickyRows[0]?.value as {channelId?:string}|undefined;
   const actualIFRequests=Math.max(0,getIFRequestCount(session)-requestCountAtStart);
-  const result={
+  const result:Record<string,unknown>={
    authenticated:true,identity:{id:identity.id,username:identity.username||null},
    profile:{ifcUserId:identity.id,username:identity.username||null,role:null,onboardingRequired:!pilot?.onboardingCompletedAt,discordUserId:pilot?.discordUserId??null,discordUsername:pilot?.discordUsername??null},
    organization,aircraft,members,schedules,aircraftTypes,airports,positions,gallery,
