@@ -17,7 +17,7 @@ type GalleryManifest={settings:{maxPhotosPerAircraft:number;slideshowIntervalMs:
 type Airport={icao?:string;icaoCode?:string;code?:string;name?:string;latitude?:number;longitude?:number;location?:{latitude?:number;longitude?:number}};
 type Flight={id:string;callsign?:string;originIcao?:string|null;destinationIcao?:string|null;actualDepartureUtc?:string|null;actualArrivalUtc?:string|null;scheduledDepartureUtc?:string;isTimeless?:boolean;aircraftRegistration?:string;flightTimeMinutes?:number};
 type AdminSnapshot={registered:Array<any>;pending:Array<any>;connected:boolean;codes:Array<any>;integrations:Record<string,any>;features:Array<{featureKey:string;enabled:boolean}>;stickyPanel:{exists:boolean;reason:string}};
-type WorkspaceSnapshotData={airports:Airport[];airportPoints:Record<string,{latitude:number;longitude:number}>;requests:Array<{scheduleId:string;seat:string;status:string}>;myFlights:{live:Flight[];future:Flight[];past:Flight[];pastCoverage:{checked:number;total:number;complete:boolean;limited:boolean}};activity:Array<any>;admin:AdminSnapshot;requestUsage:{initial:number;additional:number;total:number;limit:number;quota:{isPro:boolean;remaining:number}}};
+type WorkspaceSnapshotData={airports:Airport[];airportPoints:Record<string,{latitude:number;longitude:number}>;requests:Array<{scheduleId:string;seat:"captain"|"first_officer";status:"pending"|"processing"|"approved"|"rejected"|"failed"}>;myFlights:{live:Flight[];future:Flight[];past:Flight[];pastCoverage:{checked:number;total:number;complete:boolean;limited:boolean}};activity:Array<any>;admin:AdminSnapshot;requestUsage:{initial:number;additional:number;total:number;limit:number;quota:{isPro:boolean;remaining:number}}};
 
 export interface WorkspaceContextValue {
   active:string;
