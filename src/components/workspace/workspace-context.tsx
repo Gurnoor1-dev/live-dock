@@ -16,8 +16,12 @@ type GalleryPhoto={id:string;url:string;altText:string;caption:string;credit:{na
 type GalleryManifest={settings:{maxPhotosPerAircraft:number;slideshowIntervalMs:number};aircraft:Record<string,{photos:GalleryPhoto[]}>};
 type Airport={icao?:string;icaoCode?:string;code?:string;name?:string;latitude?:number;longitude?:number;location?:{latitude?:number;longitude?:number}};
 type Flight={id:string;callsign?:string;originIcao?:string|null;destinationIcao?:string|null;actualDepartureUtc?:string|null;actualArrivalUtc?:string|null;scheduledDepartureUtc?:string;isTimeless?:boolean;aircraftRegistration?:string;flightTimeMinutes?:number};
-type AdminSnapshot={registered:Array<any>;pending:Array<any>;connected:boolean;codes:Array<any>;integrations:Record<string,any>;features:Array<{featureKey:string;enabled:boolean}>;stickyPanel:{exists:boolean;reason:string}};
-type WorkspaceSnapshotData={airports:Airport[];airportPoints:Record<string,{latitude:number;longitude:number}>;requests:Array<{scheduleId:string;seat:"captain"|"first_officer";status:"pending"|"processing"|"approved"|"rejected"|"failed"}>;myFlights:{live:Flight[];future:Flight[];past:Flight[];pastCoverage:{checked:number;total:number;complete:boolean;limited:boolean}};activity:Array<any>;admin:AdminSnapshot;requestUsage:{actual:number;plannedSlots:number;limit:number;quota:{isPro:boolean;remaining:number}}};
+type AdminPilot=Member&{hasLoggedIn?:boolean;appUser?:{discordUserId?:string|null;discordUsername?:string|null;onboardingCompletedAt?:string|null}};
+type ApplicationCode={id:string;issuedToIfcUserId:string|null;createdAt:string;expiresAt:string|null;usedAt:string|null;usedByIfcUserId:string|null;revokedAt:string|null};
+type IntegrationSettings={guildId?:string;crewRequestsChannelId?:string;notifierChannelId?:string;autoCrewChannelId?:string;scheduleReviserChannelId?:string;autoCrewRoleId?:string;waitlistRoleId?:string;stickyCrewChannelId?:string};
+type AdminSnapshot={registered:AdminPilot[];pending:AdminPilot[];connected:boolean;codes:ApplicationCode[];integrations:IntegrationSettings;features:Array<{featureKey:string;enabled:boolean}>;stickyPanel:{exists:boolean;reason?:string}};
+type ActivityFlight={id:string;originIcao?:string;destinationIcao?:string;actualDepartureUtc?:string;crew?:Array<{username?:string|null}>;pilotFlightTimes?:Array<{username?:string|null}>;aircraftRegistration?:string};
+type WorkspaceSnapshotData={airports:Airport[];airportPoints:Record<string,{latitude:number;longitude:number}>;requests:Array<{scheduleId:string;seat:"captain"|"first_officer";status:"pending"|"processing"|"approved"|"rejected"|"failed"}>;myFlights:{live:Flight[];future:Flight[];past:Flight[];pastCoverage:{checked:number;total:number;complete:boolean;limited:boolean}};activity:ActivityFlight[];admin:AdminSnapshot;requestUsage:{actual:number;plannedSlots:number;limit:number;quota:{isPro:boolean;remaining:number}}};
 
 export interface WorkspaceContextValue {
   active:string;
