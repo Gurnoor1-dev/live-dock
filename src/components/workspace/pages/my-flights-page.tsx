@@ -19,28 +19,19 @@ function FlightGroup({title,description,icon,flights,empty,showDispatch}:{title:
 }
 
 export function MyFlightsPage(){
- const {active}=useWorkspace();
- const [data,setData]=useState<{live:Flight[];future:Flight[];past:Flight[]}>({live:[],future:[],past:[]});
- const [coverage,setCoverage]=useState<Coverage|null>(null);
+ const {active,snapshotData,refreshWorkspace}=useWorkspace();
  const [loading,setLoading]=useState(false);
  const [error,setError]=useState("");
- const [refreshKey,setRefreshKey]=useState(0);
- useEffect(()=>{
-  if(active!=="My Flights")return;
-  let alive=true;
-  setLoading(true);setError("");
-  fetch("/api/my-flights",{cache:"no-store"}).then(async response=>{const body=await response.json();if(!response.ok)throw new Error(body.error||"Unable to load your flights.");return body;}).then(body=>{
-   if(alive){setData({live:body.live||[],future:body.future||[],past:body.past||[]});setCoverage(body.pastCoverage||null);}
-  }).catch(reason=>{if(alive)setError(reason instanceof Error?reason.message:"Unable to load your flights.");}).finally(()=>{if(alive)setLoading(false);});
-  return()=>{alive=false;};
- },[active,refreshKey]);
+ const data=snapshotData.myFlights||{live:[],future:[],past:[],pastCoverage:null};
+ const coverage=data.pastCoverage as Coverage|null;
+ async function refresh(){setLoading(true);setError("");try{await refreshWorkspace();}catch(e){setError(e instanceof Error?e.message:"Unable to refresh flight data.");}finally{setLoading(false)}}
  if(active!=="My Flights")return null;
  return <div className="my-flights-page">
-  <div className="page-intro-inline"><div><h2>Your flight logbook</h2><p className="muted">Live assignments, approved upcoming legs and completed Virtual Blue aircraft flights.</p></div><button className="outline-button" onClick={()=>setRefreshKey(v=>v+1)} disabled={loading}><RefreshCw size={14}/>{loading?"Refreshing":"Refresh flights"}</button></div>
+  <div className="page-intro-inline"><div><h2>Your flight logbook</h2><p className="muted">Live assignments, approved upcoming legs and completed Virtual Blue aircraft flights.</p></div><button className="outline-button" onClick={()=>void refresh()} disabled={loading}><RefreshCw size={14}/>{loading?"Refreshing":"Refresh flights"}</button></div>
   {error&&<p className="form-error" role="alert">{error}</p>}
   <FlightGroup title="Live Flights" description="Flights you are currently operating as crew." icon={<Radio size={17}/>} flights={data.live} empty="No live flights right now"/>
   <FlightGroup title="Future Flights" description="Approved crew assignments that have not started yet." icon={<CalendarDays size={17}/>} flights={data.future} empty="No future flights assigned" showDispatch/>
   <FlightGroup title="Past Flights" description="Completed fleet flights where Infinite Flight confirms you were crew." icon={<History size={17}/>} flights={data.past} empty="No completed fleet flights found"/>
-  {coverage&&!coverage.complete&&<p className="muted past-coverage-note">{coverage.limited?"The API rate limit was reached. ":""}Checked {coverage.checked} of {coverage.total} flyable aircraft for completed flights. Refresh later to check the remaining fleet.</p>}
+  {coverage&&!coverage.complete&&<p className="muted past-coverage-note">{coverage.limited?"The API request budget limited this initial snapshot. ":""}Checked {coverage.checked} of {coverage.total} sampled flyable aircraft for completed flights. Refresh later to check a new sample.</p>}
  </div>;
 }
