@@ -38,7 +38,7 @@ export async function GET(request:Request){
   const key="workspace:"+identity.id;
   const params=new URL(request.url).searchParams;
   const force=params.get("refresh")==="1";
-  if(params.get("invalidate")==="1")invalidateIFGetCache(session);
+  if(params.get("invalidate")==="1")invalidateIFGetCache(session,"/schedules");
   let cached=force?null:cacheGet<Record<string,unknown>>(key);
   if(!cached&&!force){const [stored]=await getDb().select({value:appSettings.value}).from(appSettings).where(eq(appSettings.key,"workspace_snapshot:"+identity.id)).limit(1);const saved=stored?.value as {expiresAt?:number;snapshot?:Record<string,unknown>}|undefined;if(saved?.snapshot&&Number(saved.expiresAt)>Date.now())cached=saved.snapshot;}
   if(cached){const dispatchId=params.get("dispatchId");if(dispatchId){const dispatch=await attachDispatch(cached,dispatchId,identity.id);if("status" in dispatch)return NextResponse.json({error:dispatch.error},{status:dispatch.status});return NextResponse.json({...cached,dispatch,refreshedAt:Date.now(),cache:"HIT"},{headers:{"Cache-Control":"private, no-store","X-LiveDock-Snapshot-Cache":"HIT"}})}return NextResponse.json({...cached,refreshedAt:Date.now(),cache:"HIT"},{headers:{"Cache-Control":"private, no-store","X-LiveDock-Snapshot-Cache":"HIT"}})}
