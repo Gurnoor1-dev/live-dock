@@ -6,9 +6,9 @@ import { AdminGate,Empty } from "@/components/workspace/shared-ui";
 import { useWorkspace } from "../workspace-context";
 type Code={id:string;issuedToIfcUserId:string|null;createdAt:string;expiresAt:string|null;usedAt:string|null;usedByIfcUserId:string|null;revokedAt:string|null};
 export function ApplicationsPage(){
- const {active}=useWorkspace();const [codes,setCodes]=useState<Code[]>([]);const [code,setCode]=useState("");const [loading,setLoading]=useState(false);const [error,setError]=useState("");const [copied,setCopied]=useState(false);const [revoking,setRevoking]=useState("");const [now,setNow]=useState(0);
- async function load(){const r=await fetch("/api/admin/applications/codes",{cache:"no-store"});const d=await r.json();if(!r.ok)throw new Error(d.error||"Could not load application codes.");setCodes(d.codes||[])}
- useEffect(()=>{setNow(new Date().getTime());if(active==="Applications")void load().catch(e=>setError(e.message))},[active]);
+ const {active,snapshotData,refreshWorkspace}=useWorkspace();const [codes,setCodes]=useState<Code[]>(snapshotData.admin?.codes||[]);const [code,setCode]=useState("");const [loading,setLoading]=useState(false);const [error,setError]=useState("");const [copied,setCopied]=useState(false);const [revoking,setRevoking]=useState("");const [now,setNow]=useState(0);
+ async function load(){await refreshWorkspace();}
+ useEffect(()=>{setNow(new Date().getTime());setCodes(snapshotData.admin?.codes||[])},[active,snapshotData.admin?.codes]);
  async function revoke(id:string){setRevoking(id);setError("");try{const r=await fetch("/api/admin/applications/codes",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({id,action:"revoke"})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Could not revoke code.");await load()}catch(e){setError(e instanceof Error?e.message:"Could not revoke code.")}finally{setRevoking("")}}
  async function generate(){setLoading(true);setError("");setCode("");try{const r=await fetch("/api/admin/applications/codes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({expiresInDays:30})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Could not generate code.");setCode(d.code);await load()}catch(e){setError(e instanceof Error?e.message:"Could not generate code.")}finally{setLoading(false)}}
  if(active!=="Applications")return null;
