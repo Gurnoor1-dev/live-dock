@@ -66,6 +66,9 @@ export function invalidateIFGetCache(session:IFSession){
   const prefix=session.accessToken+":";
   for(const key of ifGetCache.keys())if(key.startsWith(prefix))ifGetCache.delete(key);
 }
+export function getIFRequestCount(session:IFSession){
+  return ifRequestWindows.get(session.accessToken)?.count??0;
+}
 export function getIFRateLimit(session: IFSession) {
   const value = rateLimits.get(session.accessToken);
   if (!value) return { isPro: false, remaining: 4 };
