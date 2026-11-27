@@ -28,7 +28,7 @@ async function attachDispatch(snapshot:Record<string,unknown>,scheduleId:string,
  if(!row)return {briefing:null};
  let expected:IFStructuredFlightPlan|null=null;
  try{expected=buildSimBriefFlightPlan(row.data as unknown as SimBriefData);}catch{}
- const confirmed=expected!==null&&isSimBriefFlightPlanSynced((schedule as Schedule&{flightPlan?:unknown}).flightPlan,expected);
+ const confirmed=row.syncStatus==="synced"||(expected!==null&&isSimBriefFlightPlanSynced((schedule as Schedule&{flightPlan?:unknown}).flightPlan,expected));
  const positions=(snapshot.positions||{}) as Record<string,Position>;
  return {briefing:row.data,ofpId:row.ofpId,schedule:{id:schedule.id,aircraftId:schedule.aircraftId||null,callsign:schedule.callsign||"",status:schedule.status??0,originIcao:String(schedule.originIcao||""),destinationIcao:String(schedule.destinationIcao||""),scheduledDepartureUtc:String(schedule.scheduledDepartureUtc||""),scheduledArrivalUtc:String(schedule.scheduledArrivalUtc||"")},livePosition:positions[schedule.aircraftId]||null,syncStatus:confirmed?"synced":row.syncStatus==="failed"?"failed":"pending",syncError:confirmed?"":(row.syncError||"Infinite Flight does not currently show this SimBrief route on the schedule. Please re-sync."),createdAt:row.createdAt};
 }
