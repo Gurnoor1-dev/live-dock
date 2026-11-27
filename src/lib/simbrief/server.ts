@@ -24,7 +24,7 @@ export function parseSimBriefXml(xml:string,ofpId:string):SimBriefData {
  const averageWind=windDirection&&windSpeed?windDirection+"° / "+windSpeed+" kt":first(general,"avg_wind");
  const duration=first(times,"est_time_enroute","ete")||first(general,"ete");
  const durationSeconds=Number(duration);
- const enrouteTime=duration&&Number.isFinite(durationSeconds)&&/^\\d+(?:\\.\\d+)?$/.test(duration)?[Math.floor(durationSeconds/3600),Math.floor(durationSeconds%3600/60)].map(v=>String(v).padStart(2,"0")).join(":"):duration;
+ const enrouteTime=duration&&Number.isFinite(durationSeconds)&&/^\d+(?:\.\d+)?$/.test(duration)?[Math.floor(durationSeconds/3600),Math.floor(durationSeconds%3600/60)].map(v=>String(v).padStart(2,"0")).join(":"):duration;
  return {ofpId,callsign:(tag(general,"icao_airline")&&tag(general,"flight_number"))?tag(general,"icao_airline")+tag(general,"flight_number"):tag(general,"callsign"),airline:tag(general,"icao_airline"),flightNumber:tag(general,"flight_number"),
  origin:originCode,destination:destinationCode,aircraftType:tag(aircraft,"icaocode")||tag(aircraft,"icaotype"),aircraftName:tag(aircraft,"name")||tag(aircraft,"icaotype"),registration:tag(aircraft,"reg"),route:tag(general,"route"),alternate:tag(section(xml,"alternate"),"icao_code")||tag(section(xml,"alternate"),"icao"),
  departureTime:first(times,"est_out","sched_out")||first(general,"sched_out","orig_time"),arrivalTime:first(times,"est_in","sched_in")||first(general,"sched_in","dest_time"),enrouteTime,distance:first(general,"route_distance","distance","gc_distance"),cruiseAltitude:first(general,"initial_altitude","cruise_altitude"),
