@@ -10,13 +10,15 @@ export async function GET(_request:Request,{params}:{params:Promise<{scheduleId:
   const {session,identity}=await requireIFSession(),{scheduleId}=await params;
   const [row]=await getDb().select({data:dispatchBriefings.data,ofpId:dispatchBriefings.ofpId,syncStatus:dispatchBriefings.syncStatus,syncError:dispatchBriefings.syncError,createdAt:dispatchBriefings.createdAt}).from(dispatchBriefings).where(eq(dispatchBriefings.scheduleId,scheduleId)).limit(1);
   if(!row)return NextResponse.json({briefing:null});
-  const schedules=await ifFetch<Array<{id:string;flightPlan?:unknown;crew?:Array<{userId:string}>}>|{items?:Array<{id:string;flightPlan?:string|null;crew?:Array<{userId:string}>}>}>("/live/organizations/"+ORGANIZATION_ID+"/schedules?page=1&pageSize=100",session,{}, {bypassCache:true});
+  const schedules=await ifFetch<Array<{id:string;flightPlan?:unknown;crew?:Array<{userId:string}>;aircraftId?:string;callsign?:string;status?:number;originIcao?:string;destinationIcao?:string;scheduledDepartureUtc?:string;scheduledArrivalUtc?:string}>|{items?:Array<{id:string;flightPlan?:string|null;crew?:Array<{userId:string}>;aircraftId?:string;callsign?:string;status?:number;originIcao?:string;destinationIcao?:string;scheduledDepartureUtc?:string;scheduledArrivalUtc?:string}>}>("/live/organizations/"+ORGANIZATION_ID+"/schedules?page=1&pageSize=100",session,{}, {bypassCache:true});
   const list=Array.isArray(schedules)?schedules:schedules.items||[],schedule=list.find(s=>s.id===scheduleId);
   if(!schedule||!(schedule.crew||[]).some(c=>c.userId===identity.id))return NextResponse.json({error:"This briefing is only available to pilots assigned to the flight."},{status:403});
   let expected:IFStructuredFlightPlan|null=null;
   try{expected=buildSimBriefFlightPlan(row.data as unknown as SimBriefData);}catch{}
   const confirmed=expected!==null&&isSimBriefFlightPlanSynced(schedule.flightPlan,expected);
+  let livePosition:unknown=null;
+  if(schedule.aircraftId){try{livePosition=await ifFetch("/live/aircraft/"+schedule.aircraftId+"/position",session,{}, {bypassCache:true});}catch{/* Position is optional when the aircraft is offline or unavailable. */}}
   const syncError=confirmed?"":(row.syncError||"Infinite Flight does not currently show this SimBrief route on the schedule. Please re-sync.");
-  return NextResponse.json({briefing:row.data,ofpId:row.ofpId,syncStatus:confirmed?"synced":row.syncStatus==="failed"?"failed":"pending",syncError,createdAt:row.createdAt},{headers:{"Cache-Control":"no-store"}});
+  return NextResponse.json({briefing:row.data,ofpId:row.ofpId,schedule:{id:schedule.id,aircraftId:schedule.aircraftId||null,callsign:schedule.callsign||"",status:schedule.status??0,originIcao:schedule.originIcao||"",destinationIcao:schedule.destinationIcao||"",scheduledDepartureUtc:schedule.scheduledDepartureUtc||"",scheduledArrivalUtc:schedule.scheduledArrivalUtc||""},livePosition,syncStatus:confirmed?"synced":row.syncStatus==="failed"?"failed":"pending",syncError,createdAt:row.createdAt},{headers:{"Cache-Control":"no-store"}});
  }catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Unable to load dispatch briefing."},{status:Number((error as {status?:number})?.status)||500})}
 }
