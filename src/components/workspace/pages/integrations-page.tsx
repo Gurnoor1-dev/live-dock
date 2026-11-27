@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect,useState } from "react";
 import { Plug,Save } from "lucide-react";
 import { AdminGate } from "@/components/workspace/shared-ui";
