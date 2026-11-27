@@ -22,11 +22,10 @@ function aircraftState(position:PositionLike|undefined,aircraftId:string,schedul
  return{label:"Status unavailable",tone:"unknown",detail:"Live aircraft status unavailable"};
 }
 export function SchedulesPage(){
- const {active,aircraft,aircraftTypes,schedules,positions,dateTime}=useWorkspace();
- const [airports,setAirports]=useState<Airport[]>([]);
- useEffect(()=>{if(active!=="Schedules")return;let alive=true;fetch("/api/if/airports",{cache:"force-cache"}).then(async r=>{const d=await r.json();if(alive&&r.ok)setAirports(Array.isArray(d.result)?d.result:Array.isArray(d)?d:[])}).catch(()=>{});return()=>{alive=false};},[active]);
+ const {active,aircraft,aircraftTypes,schedules,positions,dateTime,snapshotData}=useWorkspace();
+ const airports:Airport[]=snapshotData.airports||[];
  const [expanded,setExpanded]=useState<string|null>(null);
- const [requests,setRequests]=useState<SeatRequest[]>([]);
+ const [requests,setRequests]=useState<SeatRequest[]>(snapshotData.requests||[]);
  const [choice,setChoice]=useState<{scheduleId:string;seat:"captain"|"first_officer"}|null>(null);
  const [loading,setLoading]=useState(false),[error,setError]=useState(""),[success,setSuccess]=useState("");
  useEffect(()=>{if(active!=="Schedules")return;let alive=true;const load=()=>fetch("/api/schedules/requests",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(d=>{if(alive&&d?.requests)setRequests(d.requests)}).catch(()=>{});void load();const timer=window.setInterval(load,30000);return()=>{alive=false;window.clearInterval(timer)}},[active]);
