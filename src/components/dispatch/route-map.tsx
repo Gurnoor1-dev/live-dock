@@ -11,7 +11,7 @@ export function RouteMap({points,origin,destination,position,theme}:{points:SimB
   if(!ref.current||points.length<2)return;
   void import("maplibre-gl").then(({default:maplibregl})=>{
    if(disposed||!ref.current)return;
-   map=new maplibregl.Map({container:ref.current,style:theme==="dark"?"https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json":"https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",center:[0,20],zoom:1.5,attributionControl:true});
+   map=new maplibregl.Map({container:ref.current,style:theme==="dark"?"https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json":"https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",center:[0,20],zoom:1.5,attributionControl:{}});
    mapRef.current=map;
    map.addControl(new maplibregl.NavigationControl({showCompass:false}),"top-right");
    map.on("load",()=>{
