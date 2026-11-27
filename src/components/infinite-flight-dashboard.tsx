@@ -18,7 +18,7 @@ import { UserManagementPage } from "@/components/workspace/pages/user-management
 import { FeatureSelectionPage } from "@/components/workspace/pages/feature-selection-page";
 import { WorkspaceProvider } from "@/components/workspace/workspace-context";
 import { OnboardingGate } from "@/components/workspace/onboarding-gate";
-import { loadPilotProfile, updateCachedPilotProfile } from "@/lib/client/pilot-profile";
+import { updateCachedPilotProfile } from "@/lib/client/pilot-profile";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -44,15 +44,13 @@ type GalleryManifest={settings:{maxPhotosPerAircraft:number;slideshowIntervalMs:
 type WorkspaceSnapshot={organization:Organization|null;aircraft:Aircraft[];members:Member[];schedules:Schedule[];refreshedAt:number};
 let sharedWorkspaceSnapshot:WorkspaceSnapshot|null=null;
 let sharedWorkspacePromise:Promise<WorkspaceSnapshot>|null=null;
+let sharedSnapshotData:any=null;
 let sharedAuthState:"unknown"|"signed-out"|"signed-in"="unknown";
 let sharedAuthCheckedAt=0;
 let sharedAuthPromise:Promise<boolean>|null=null;
 let sharedProfile:{username?:string;role?:number;discordUserId?:string;discordUsername?:string}|null=null;
 const sharedPositions:Record<string,Position>={};
-let positionsRefreshedAt=0;
-let sharedPositionCursor=0;
-let sharedIsPro=false;
-let supportingDataLoaded=false;
+
 let sharedAircraftTypes:AircraftType[]=[];
 let sharedGallery:GalleryManifest|null=null;
 const WORKSPACE_REFRESH_MS=120_000;
@@ -94,7 +92,8 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
   const [auth,setAuth]=useState<"checking"|"signed-out"|"signed-in">(sharedAuthState==="signed-in"&&Date.now()-sharedAuthCheckedAt<5*60_000?"signed-in":sharedAuthState==="signed-out"&&Date.now()-sharedAuthCheckedAt<5*60_000?"signed-out":"checking");
   const [organization,setOrganization]=useState<Organization|null>(sharedWorkspaceSnapshot?.organization??null);
   const [aircraft,setAircraft]=useState<Aircraft[]>(sharedWorkspaceSnapshot?.aircraft??[]);
-  const [aircraftTypes,setAircraftTypes]=useState<AircraftType[]>(sharedAircraftTypes);
+  const [aircraftTypes,setAircraftTypes]=useState<AircraftType[]>(sharedSnapshotData?.aircraftTypes||sharedAircraftTypes);
+  const [snapshotData,setSnapshotData]=useState<any>(sharedSnapshotData||{airports:[],airportPoints:{},requests:[],myFlights:{live:[],future:[],past:[],pastCoverage:null},activity:[],admin:{registered:[],pending:[],connected:false,codes:[],integrations:{},features:[],stickyPanel:{exists:false,reason:""}}});
   const [members,setMembers]=useState<Member[]>(sharedWorkspaceSnapshot?.members??[]);
   const [schedules,setSchedules]=useState<Schedule[]>(sharedWorkspaceSnapshot?.schedules??[]);
   const [active,setActive]=useState<Tab>(initialPage);
@@ -129,7 +128,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
   const markerRefs=useRef<maplibregl.Marker[]>([]);
   const hubMarkerRefs=useRef<maplibregl.Marker[]>([]);
   const mapHasFitted=useRef(false);
-  const [positions,setPositions]=useState<Record<string,Position>>(sharedPositions);
+  const [positions,setPositions]=useState<Record<string,Position>>(sharedSnapshotData?.positions||sharedPositions);
   const [selectedAircraft,setSelectedAircraft]=useState<Aircraft|null>(null);
   const [gallery,setGallery]=useState<GalleryManifest|null>(sharedGallery);
   const [flightHistory,setFlightHistory]=useState<FlightHistoryRecord[]>([]);
@@ -228,97 +227,35 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
   },[theme,themeReady]);
 
   const loadOrganization=useCallback(async(force=false)=>{
-    if(!force&&sharedWorkspaceSnapshot&&Date.now()-sharedWorkspaceSnapshot.refreshedAt<WORKSPACE_REFRESH_MS){setOrganization(sharedWorkspaceSnapshot.organization);setAircraft(sharedWorkspaceSnapshot.aircraft);setMembers(sharedWorkspaceSnapshot.members);setSchedules(sharedWorkspaceSnapshot.schedules);return;}
+    if(!force&&sharedSnapshotData&&Date.now()-Number(sharedSnapshotData.refreshedAt||0)<WORKSPACE_REFRESH_MS){
+      setOrganization(sharedSnapshotData.organization||null);setAircraft(sharedSnapshotData.aircraft||[]);setMembers(sharedSnapshotData.members||[]);setSchedules(sharedSnapshotData.schedules||[]);setAircraftTypes(sharedSnapshotData.aircraftTypes||[]);setPositions(sharedSnapshotData.positions||{});setSnapshotData(sharedSnapshotData);return;
+    }
     setBusy(true);setError("");setNotice("");
     try{
-      if(!sharedWorkspacePromise){sharedWorkspacePromise=(async()=>{
-        const [o,a,m,sc]=await Promise.all([api("/live/organizations/"+ORGANIZATION_ID),api("/live/organizations/"+ORGANIZATION_ID+"/aircraft"),api("/live/organizations/"+ORGANIZATION_ID+"/members"),api("/live/organizations/"+ORGANIZATION_ID+"/schedules?page=1&pageSize=100")]);
-        const next:WorkspaceSnapshot={organization:o as Organization,aircraft:Array.isArray(a)?a:[],members:Array.isArray(m)?m:[],schedules:Array.isArray(sc)?sc:(sc?.items||[]),refreshedAt:Date.now()};sharedWorkspaceSnapshot=next;return next;
-      })().finally(()=>{sharedWorkspacePromise=null;});}
-      const next=await sharedWorkspacePromise;setOrganization(next.organization);setAircraft(next.aircraft);setMembers(next.members);setSchedules(next.schedules);
-    }catch(e){setError(e instanceof Error?e.message:"Unable to refresh the Virtual Blue workspace.");if(sharedWorkspaceSnapshot){setOrganization(sharedWorkspaceSnapshot.organization);setAircraft(sharedWorkspaceSnapshot.aircraft);setMembers(sharedWorkspaceSnapshot.members);setSchedules(sharedWorkspaceSnapshot.schedules);}else{setOrganization(null);setAircraft([]);setMembers([]);setSchedules([]);}}
-    finally{setBusy(false);}
+      const response=await fetch("/api/workspace/snapshot"+(force?"?refresh=1":""),{cache:"no-store",credentials:"same-origin"});
+      const data=await response.json().catch(()=>({}));
+      if(response.status===401){sharedAuthState="signed-out";sharedAuthCheckedAt=Date.now();setAuth("signed-out");return;}
+      if(!response.ok)throw new Error(data.error||"Unable to load the unified workspace snapshot.");
+      sharedSnapshotData=data;sharedAuthState="signed-in";sharedAuthCheckedAt=Date.now();
+      sharedWorkspaceSnapshot={organization:data.organization||null,aircraft:data.aircraft||[],members:data.members||[],schedules:data.schedules||[],refreshedAt:Number(data.refreshedAt||Date.now())};
+      setOrganization(data.organization||null);setAircraft(data.aircraft||[]);setMembers(data.members||[]);setSchedules(data.schedules||[]);setAircraftTypes(data.aircraftTypes||[]);setPositions(data.positions||{});setSnapshotData(data);
+      const profile=data.profile||{};
+      sharedProfile={username:profile.username||undefined,role:profile.role??undefined,discordUserId:profile.discordUserId||"",discordUsername:profile.discordUsername||""};
+      if(profile.username)setProfileName(profile.username);if(typeof profile.role==="number")setProfileRole(profile.role);setDiscordUserId(profile.discordUserId||"");setDiscordUsername(profile.discordUsername||"");
+      setAuth("signed-in");
+    }catch(e){
+      setError(e instanceof Error?e.message:"Unable to refresh the Virtual Blue workspace.");
+      if(sharedSnapshotData){setOrganization(sharedSnapshotData.organization||null);setAircraft(sharedSnapshotData.aircraft||[]);setMembers(sharedSnapshotData.members||[]);setSchedules(sharedSnapshotData.schedules||[]);setAircraftTypes(sharedSnapshotData.aircraftTypes||[]);setPositions(sharedSnapshotData.positions||{});setSnapshotData(sharedSnapshotData);}
+      else{setOrganization(null);setAircraft([]);setMembers([]);setSchedules([]);}
+    }finally{setBusy(false);}
   },[]);
 
   useEffect(()=>{
     let mounted=true;
-    (async()=>{try{
-      let authenticated=sharedAuthState==="signed-in"&&Date.now()-sharedAuthCheckedAt<5*60_000;
-      if(sharedAuthState==="signed-out"&&Date.now()-sharedAuthCheckedAt<5*60_000)authenticated=false;
-      if(sharedAuthState==="unknown"||Date.now()-sharedAuthCheckedAt>=5*60_000){
-        if(!sharedAuthPromise){sharedAuthPromise=(async()=>{
-          const response=await fetch("/api/auth/if/session",{cache:"no-store",credentials:"same-origin"});
-          if(response.status===503)throw new Error("Account verification is temporarily unavailable. Your saved session has been retained; retrying shortly.");
-          const data=await response.json();const ok=Boolean(data.authenticated);sharedAuthState=ok?"signed-in":"signed-out";sharedAuthCheckedAt=Date.now();return ok;
-        })().finally(()=>{sharedAuthPromise=null;});}
-        authenticated=await sharedAuthPromise;
-      }
-      if(!mounted)return;if(!authenticated){setAuth("signed-out");return;}setAuth("signed-in");
-      await loadOrganization();
-      if(!sharedProfile){
-        const profile=await loadPilotProfile();
-        sharedProfile={username:profile.username||undefined,role:profile.role??undefined,discordUserId:profile.discordUserId||"",discordUsername:profile.discordUsername||""};
-      }
-      if(mounted&&sharedProfile){if(sharedProfile.username)setProfileName(sharedProfile.username);if(typeof sharedProfile.role==="number")setProfileRole(sharedProfile.role);setDiscordUserId(sharedProfile.discordUserId||"");setDiscordUsername(sharedProfile.discordUsername||"");}
-    }catch(e){if(mounted){setAuth(sharedAuthState==="signed-in"?"signed-in":"checking");setError(e instanceof Error?e.message:"Unable to verify your Infinite Flight session.");}}})();
+    void loadOrganization().then(()=>{if(mounted&&sharedAuthState==="signed-in")setAuth("signed-in");});
     return()=>{mounted=false;};
   },[loadOrganization]);
 
-
-  useEffect(()=>{
-    if(auth!=="signed-in")return;
-    let lastActivityAt=Date.now();
-    const markActivity=()=>{lastActivityAt=Date.now();};
-    const refreshIfActive=()=>{if(document.visibilityState==="visible"&&Date.now()-lastActivityAt<15*60_000)void loadOrganization(true);};
-    window.addEventListener("pointerdown",markActivity,{passive:true});
-    window.addEventListener("keydown",markActivity);
-    window.addEventListener("touchstart",markActivity,{passive:true});
-    document.addEventListener("visibilitychange",refreshIfActive);
-    const timer=window.setInterval(refreshIfActive,WORKSPACE_REFRESH_MS);
-    return()=>{window.clearInterval(timer);window.removeEventListener("pointerdown",markActivity);window.removeEventListener("keydown",markActivity);window.removeEventListener("touchstart",markActivity);document.removeEventListener("visibilitychange",refreshIfActive);};
-  },[auth,loadOrganization]);
-
-  useEffect(()=>{
-    if(auth!=="signed-in"||!aircraft.length)return;
-    let alive=true;
-    if(Object.keys(sharedPositions).length)setPositions(sharedPositions);
-    let lastActivityAt=Date.now();
-    const markActivity=()=>{lastActivityAt=Date.now();};
-    const positionRefreshMs=120_000;
-    const refreshPositions=async()=>{
-      if(document.visibilityState!=="visible"||Date.now()-lastActivityAt>=15*60_000)return;
-      if(Date.now()-positionsRefreshedAt<positionRefreshMs)return;
-      // Free tokens allow 5 requests/minute; Pro tokens allow 20. Reserve room for other app actions.
-      const batchSize=sharedIsPro?6:1;
-      const batch=Array.from({length:Math.min(batchSize,aircraft.length)},(_,offset)=>aircraft[(sharedPositionCursor+offset)%aircraft.length]);
-      if(!batch.length)return;
-      sharedPositionCursor=(sharedPositionCursor+batch.length)%aircraft.length;
-      const entries=await Promise.all(batch.map(async item=>{
-        try{const position=await api("/live/aircraft/"+item.id+"/position");return [item.id,position] as const;}
-        catch{return null;}
-      }));
-      if(!alive)return;
-      const updated:Record<string,Position>={...sharedPositions};
-      for(const entry of entries)if(entry&&entry[1]&&Number.isFinite(entry[1].latitude)&&Number.isFinite(entry[1].longitude))updated[entry[0]]=entry[1] as Position;
-      for(const key of Object.keys(sharedPositions))delete sharedPositions[key];
-      Object.assign(sharedPositions,updated);
-      positionsRefreshedAt=Date.now();
-      setPositions(updated);
-    };
-    void refreshPositions();
-    window.addEventListener("pointerdown",markActivity,{passive:true});
-    window.addEventListener("keydown",markActivity);
-    window.addEventListener("touchstart",markActivity,{passive:true});
-    const timer=window.setInterval(()=>{if(Date.now()-positionsRefreshedAt>=positionRefreshMs)void refreshPositions();},positionRefreshMs);
-    return()=>{alive=false;window.clearInterval(timer);window.removeEventListener("pointerdown",markActivity);window.removeEventListener("keydown",markActivity);window.removeEventListener("touchstart",markActivity);};
-  },[auth,aircraft]);
-
-  useEffect(()=>{
-    if(auth!=="signed-in"||supportingDataLoaded)return;
-    supportingDataLoaded=true;
-    api("/aircraft").then(value=>{const next=Array.isArray(value)?value:[];sharedAircraftTypes=next;setAircraftTypes(next);}).catch(()=>{supportingDataLoaded=false;});
-    fetch("/api/if/gallery",{cache:"no-store"}).then(response=>response.ok?response.json():null).then(data=>{if(data?.aircraft){sharedGallery=data;setGallery(data);}}).catch(()=>{});
-  },[auth]);
 
   useEffect(()=>{
     if(active!=="Home"||!mapContainer.current||!organization)return;
@@ -331,31 +268,20 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     map.addControl(new maplibregl.NavigationControl({showCompass:true}),"top-right");
     mapRef.current=map;
     map.on("style.load",()=>{for(const layer of map.getStyle().layers||[]){if(/country|admin[_-]?0/i.test(layer.id))try{map.setLayoutProperty(layer.id,"visibility","none");}catch{}}});
-    map.on("load",async()=>{
+    map.on("load",()=>{
       const points=Object.values(positions).filter(p=>Number.isFinite(p.latitude)&&Number.isFinite(p.longitude));
       if(points.length>1){
         const bounds=new maplibregl.LngLatBounds();
         points.forEach(p=>bounds.extend([p.longitude,p.latitude]));
         map.fitBounds(bounds,{padding:70,maxZoom:6});
       }else if(points.length===1)map.flyTo({center:[points[0].longitude,points[0].latitude],zoom:5});
-      const counts=new Map<string,number>();
-      schedules.forEach(schedule=>{const code=(schedule.originIcao||"").toUpperCase();if(code)counts.set(code,(counts.get(code)||0)+1);});
-      const hubs=[...counts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3);
-      for(const [icao] of hubs){
-        try{
-          const airport=await api("/airport/"+icao);
-          const latitude=Number(airport?.latitude??airport?.location?.latitude??airport?.coordinates?.latitude);
-          const longitude=Number(airport?.longitude??airport?.location?.longitude??airport?.coordinates?.longitude);
-          if(!Number.isFinite(latitude)||!Number.isFinite(longitude))continue;
-          const element=document.createElement("div");element.className="vb-hub-marker";element.title=icao;
-          element.style.backgroundImage="url("+vbLogo.src+")";
-          const hub=new maplibregl.Marker({element,anchor:"bottom"}).setLngLat([longitude,latitude]).addTo(map);
-          hubMarkerRefs.current.push(hub);
-        }catch{}
+      for(const [icao,point] of Object.entries(snapshotData.airportPoints||{}) as [string,{latitude:number;longitude:number}][]){
+        const element=document.createElement("div");element.className="vb-hub-marker";element.title=icao;element.style.backgroundImage="url("+vbLogo.src+")";
+        const hub=new maplibregl.Marker({element,anchor:"bottom"}).setLngLat([point.longitude,point.latitude]).addTo(map);hubMarkerRefs.current.push(hub);
       }
     });
     return()=>{markerRefs.current.forEach(marker=>marker.remove());markerRefs.current=[];hubMarkerRefs.current.forEach(marker=>marker.remove());hubMarkerRefs.current=[];map.remove();mapRef.current=null;};
-  },[active,theme,organization,schedules]);
+  },[active,theme,organization,schedules,snapshotData.airportPoints]);
 
   useEffect(()=>{
     const map=mapRef.current;
@@ -407,21 +333,15 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     const schedule=selectedActiveSchedule;
     const position=selectedPosition;
     if(!schedule||!position){setRouteProgress(null);return;}
-    const getAirport=async(icao:string)=>{
-      if(airportCoordinateCache.current[icao])return airportCoordinateCache.current[icao];
-      const value=await api("/airport/"+icao);
-      const coordinates={latitude:Number(value?.latitude??value?.location?.latitude??value?.coordinates?.latitude),longitude:Number(value?.longitude??value?.location?.longitude??value?.coordinates?.longitude)};
-      if(Number.isFinite(coordinates.latitude)&&Number.isFinite(coordinates.longitude))airportCoordinateCache.current[icao]=coordinates;
-      return coordinates;
-    };
-    Promise.all([getAirport(schedule.originIcao),getAirport(schedule.destinationIcao)]).then(([originPoint,destinationPoint])=>{
-      if(!alive)return;
+    const originPoint=snapshotData.airportPoints?.[schedule.originIcao];
+    const destinationPoint=snapshotData.airportPoints?.[schedule.destinationIcao];
+    if(originPoint&&destinationPoint){
       const total=haversineKm(originPoint,destinationPoint);
       const travelled=haversineKm(originPoint,{latitude:position.latitude,longitude:position.longitude});
       setRouteProgress(total>0?Math.max(0,Math.min(100,Math.round(travelled/total*100))):null);
-    }).catch(()=>{if(alive)setRouteProgress(null);});
+    }else setRouteProgress(null);
     return()=>{alive=false;};
-  },[selectedActiveSchedule?.id,selectedPosition?.latitude,selectedPosition?.longitude]);
+  },[selectedActiveSchedule?.id,selectedPosition?.latitude,selectedPosition?.longitude,snapshotData.airportPoints]);
 
   useEffect(()=>{
     if(!selectedAircraft||!selectedAircraft.id)return;
@@ -435,23 +355,12 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
 
 
   useEffect(()=>{
-    let alive=true;
     if(!selectedAircraft||selectedPosition?.state!==1){setParkedAirport("Unknown");return;}
     if(selectedPosition.airportIcao){setParkedAirport(selectedPosition.airportIcao+(selectedPosition.airportName?" · "+selectedPosition.airportName:""));return;}
-    api("/airports").then((value)=>{
-      const payload=value as AirportRecord[]|{items?:AirportRecord[];airports?:AirportRecord[]};
-      const airports:AirportRecord[]=Array.isArray(payload)?payload:(payload.items||payload.airports||[]);
-      const candidates=airports.map((airport):Omit<AirportCandidate,"distance">=>({
-        icao:airport.icao||airport.icaoCode||airport.code||"",
-        name:airport.name||airport.icao||airport.icaoCode||"Airport",
-        latitude:Number(airport.latitude??airport.location?.latitude),
-        longitude:Number(airport.longitude??airport.location?.longitude)
-      })).filter((airport):airport is Omit<AirportCandidate,"distance">=>Boolean(airport.icao)&&Number.isFinite(airport.latitude)&&Number.isFinite(airport.longitude));
-      const nearest:AirportCandidate|undefined=candidates.map(airport=>({...airport,distance:haversineKm(airport,{latitude:selectedPosition.latitude,longitude:selectedPosition.longitude})})).sort((a,b)=>a.distance-b.distance)[0];
-      if(alive)setParkedAirport(nearest&&nearest.distance<=15?nearest.icao+" · "+nearest.name:"Airport not identified");
-    }).catch(()=>{if(alive)setParkedAirport("Airport not identified");});
-    return()=>{alive=false;};
-  },[selectedAircraft?.id,selectedPosition?.latitude,selectedPosition?.longitude,selectedPosition?.state,selectedPosition?.airportIcao,selectedPosition?.airportName]);
+    const candidates=(snapshotData.airports||[]).map((airport:AirportRecord)=>({icao:airport.icao||airport.icaoCode||airport.code||"",name:airport.name||airport.icao||airport.icaoCode||"Airport",latitude:Number(airport.latitude??airport.location?.latitude),longitude:Number(airport.longitude??airport.location?.longitude)})).filter((airport:any)=>Boolean(airport.icao)&&Number.isFinite(airport.latitude)&&Number.isFinite(airport.longitude));
+    const nearest=candidates.map((airport:any)=>({...airport,distance:haversineKm(airport,{latitude:selectedPosition.latitude,longitude:selectedPosition.longitude})})).sort((a:any,b:any)=>a.distance-b.distance)[0];
+    setParkedAirport(nearest&&nearest.distance<=15?nearest.icao+" · "+nearest.name:"Airport not identified");
+  },[selectedAircraft?.id,selectedPosition?.latitude,selectedPosition?.longitude,selectedPosition?.state,selectedPosition?.airportIcao,selectedPosition?.airportName,snapshotData.airports]);
 
   useEffect(()=>{
     if(selectedPhotos.length<2)return;
@@ -508,26 +417,13 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     try{
       const response=await fetch("/api/auth/if/logout",{method:"POST",credentials:"same-origin",cache:"no-store"});
       if(!response.ok)throw new Error("Infinite Flight sign out failed. Please try again.");
-      sharedAuthState="signed-out";sharedAuthCheckedAt=Date.now();sharedAuthPromise=null;sharedProfile=null;sharedWorkspaceSnapshot=null;sharedWorkspacePromise=null;for(const key of Object.keys(sharedPositions))delete sharedPositions[key];positionsRefreshedAt=0;setAuth("signed-out");setOrganization(null);setAircraft([]);setMembers([]);setSchedules([]);setPositions({});setSelectedAircraft(null);setFlightHistory([]);
+      sharedAuthState="signed-out";sharedAuthCheckedAt=Date.now();sharedAuthPromise=null;sharedProfile=null;sharedWorkspaceSnapshot=null;sharedWorkspacePromise=null;sharedSnapshotData=null;for(const key of Object.keys(sharedPositions))delete sharedPositions[key];setAuth("signed-out");setOrganization(null);setAircraft([]);setMembers([]);setSchedules([]);setPositions({});setSelectedAircraft(null);setFlightHistory([]);
     }catch(e){setError(e instanceof Error?e.message:"Could not sign out of Infinite Flight.");}
     finally{setBusy(false);}
   }
   async function createSchedule(event:FormEvent){
     event.preventDefault();if(!canManage||!aircraftId)return;
-    let selected=aircraft.find(item=>item.id===aircraftId);
-    try{
-      // The organization aircraft list can change while this page is open.
-      // Re-read it immediately before publishing so the selected organisation aircraft still exists. Hangar visibility is intentionally not used as a blocker.
-      const latestAircraft=await api("/live/organizations/"+ORGANIZATION_ID+"/aircraft",{headers:{"x-if-cache-bypass":"1"}}) as Aircraft[];
-      if(Array.isArray(latestAircraft)){
-        selected=latestAircraft.find(item=>item.id===aircraftId);
-        setAircraft(latestAircraft);
-        if(sharedWorkspaceSnapshot)sharedWorkspaceSnapshot={...sharedWorkspaceSnapshot,aircraft:latestAircraft,refreshedAt:Date.now()};
-      }
-    }catch{
-      setError("Could not refresh the current Infinite Flight fleet. Refresh the workspace and try again.");
-      return;
-    }
+    const selected=aircraft.find(item=>item.id===aircraftId);
     if(!selected){
       setError("This aircraft is no longer listed in the organisation fleet. Refresh the fleet and select an aircraft that is still listed.");
       return;
@@ -565,7 +461,7 @@ export function InfiniteFlightDashboard({initialPage="Home"}:{initialPage?:Tab}=
     finally{setBusy(false);}
   }
   const workspaceValue={
-    active,refreshWorkspace:refresh,organization,aircraft,aircraftTypes,members,schedules,liveSchedules,positions,selectedAircraft,
+    active,refreshWorkspace:refresh,organization,snapshotData,aircraft,aircraftTypes,members,schedules,liveSchedules,positions,selectedAircraft,
     selectedPosition,selectedActiveSchedule,selectedNextSchedule,selectedPhotos,photoIndex,
     routeProgress,parkedAirport,flightHistory,canManage,query,setQuery,visibleAircraft,
     mapContainer,setSelectedAircraft,navigatePage,statusName,dateTime,aircraftCategory,
