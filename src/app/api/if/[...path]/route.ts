@@ -168,8 +168,9 @@ async function proxy(request: NextRequest, context: RouteContext) {
   }
 
   if (["POST", "PUT", "DELETE"].includes(request.method) && path.startsWith("/live/")) {
-    for (const key of cache.keys()) if (key.startsWith(tokenKey + ":")) cache.delete(key);
-    invalidateIFGetCache(session);
+    const scheduleWrite=path.includes("/schedules");
+    for (const key of cache.keys()) if (key.startsWith(tokenKey + ":")&&(!scheduleWrite||key.includes("/schedules"))) cache.delete(key);
+    invalidateIFGetCache(session,scheduleWrite?"/schedules":undefined);
   }
   return response(text, upstream.status, headers);
 }
