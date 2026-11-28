@@ -26,7 +26,7 @@ type GeminiResponse = {
     finishReason?: string;
   }>;
   promptFeedback?: { blockReason?: string };
-  error?: { message?: string; status?: string; code?: number };
+  error?: { message?: string; status?: string; code?: number; details?: unknown[] };
 };
 
 function airportsFrom(value: unknown): Airport[] {
@@ -58,9 +58,8 @@ function parseSuggestions(raw: string): ModelSuggestion[] | null {
   }
 }
 
-// Flash-Lite is sufficient for compact route selection and supports Google Search
-// grounding on the free tier. Override only when a different Gemini model is enabled
-// for the project's API tier.
+// Gemini 3.8 Flash supports structured output and Google Search grounding.
+// GEMINI_MODEL can override this default when the project has quota for another model.
 const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 
 export async function POST(request: Request) {
@@ -161,10 +160,19 @@ export async function POST(request: Request) {
     if (!response.ok) {
       const message = result.error?.message || "Gemini returned HTTP " + response.status + ".";
       if (response.status === 429) {
-        return jsonError(
-          "Gemini's rate or daily quota has been reached. The generator uses one compact Gemini request per generation; check the Gemini API quota for " + model + ". " + message,
-          429
-        );
+        return NextResponse.json({
+          error: "Gemini quota was exceeded for " + model + ". The generator makes one Gemini request per generation. Check the model and Google Search grounding quotas in the same Google AI Studio project.",
+          gemini: {
+            model,
+            code: result.error?.code ?? response.status,
+            status: result.error?.status ?? "RESOURCE_EXHAUSTED",
+            message,
+            details: result.error?.details ?? []
+          }
+        }, {
+          status: 429,
+          headers: { "Cache-Control": "no-store" }
+        });
       }
       if (response.status === 401 || response.status === 403) {
         return jsonError("Gemini rejected the API key or the key does not have access to this model. Check GEMINI_API_KEY and the Gemini API project. " + message, 503);
