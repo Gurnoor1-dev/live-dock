@@ -1,0 +1,42 @@
+.page{width:100%;max-width:100%;min-width:0;display:grid;gap:18px;align-content:start}
+.page :global(.page-intro-inline){display:flex;align-items:flex-end;justify-content:space-between;gap:16px;min-width:0;margin:0 0 2px}
+.page :global(.page-intro-inline)>div{min-width:0}
+.page :global(.page-intro-inline) h2{font:800 clamp(23px,2.4vw,30px)/1.15 Manrope,sans-serif;letter-spacing:-1px;margin:0 0 7px;color:var(--ink)}
+.page :global(.page-intro-inline) .eyebrow{margin-bottom:8px}
+.page :global(.page-intro-inline) .muted{max-width:620px}
+.page :global(.count-pill){flex:none;padding:7px 11px;background:var(--surface);font-size:10px}
+.page :global(.section-card){width:100%;min-width:0;margin:0;padding:clamp(16px,2vw,23px);border-radius:14px}
+.page :global(.section-head){display:flex;align-items:flex-start;justify-content:space-between;gap:16px;min-width:0;margin:0 0 20px}
+.page :global(.section-head)>div{min-width:0;flex:1}
+.page :global(.section-head) h2{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font:750 15px/1.35 Manrope,sans-serif;letter-spacing:-.2px;margin:0 0 6px}
+.page :global(.section-head) h2 svg{color:var(--blue);flex:none}
+.page :global(.section-head) p{max-width:760px;font-size:11px;line-height:1.65;color:var(--muted);margin:0}
+.page :global(.section-head)>svg{flex:none;color:var(--muted);margin-top:2px}
+.page :global(.admin-form){display:grid;gap:16px;margin:0;min-width:0}
+.page :global(.form-two){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;min-width:0}
+.page :global(.admin-form label){display:grid;align-content:start;gap:7px;min-width:0;font-size:10px;font-weight:700;color:var(--ink)}
+.page :global(.admin-form input),.page :global(.admin-form select),.page :global(.admin-form textarea){display:block;width:100%;max-width:100%;min-width:0;height:43px;padding:0 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);color:var(--ink);font:500 11px "DM Sans",sans-serif;outline-color:var(--blue)}
+.page :global(.admin-form textarea){height:auto;min-height:92px;padding:11px 12px;resize:vertical;line-height:1.5}
+.page :global(.admin-form label small){font-size:9px;line-height:1.55;font-weight:500;color:var(--muted)}
+.page :global(.toggle-row){display:flex!important;align-items:center;justify-content:space-between;gap:14px!important;padding:13px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+.page :global(.toggle-row)>span{display:grid;gap:4px;min-width:0}
+.page :global(.toggle-row) b{font-size:11px;color:var(--ink)}
+.page :global(.toggle-row) small{font-size:9px;color:var(--muted);font-weight:500}
+.page :global(.toggle-row) input{width:17px;height:17px;flex:none;accent-color:var(--blue)}
+.page :global(.admin-form)>.primary-button{justify-self:start;min-width:170px;min-height:42px;margin-top:0}
+.page :global(.admin-form)>.primary-button:disabled{opacity:.55;cursor:not-allowed}
+.page :global(.admin-automation-section) .section-head{margin-bottom:17px}
+.page :global(.admin-automation-grid){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;min-width:0}
+.page :global(.admin-automation-card){display:flex;flex-direction:column;align-items:flex-start;gap:11px;min-width:0;padding:16px;border:1px solid var(--line);border-radius:11px;background:var(--surface-2)}
+.page :global(.admin-automation-icon){width:34px;height:34px;display:grid;place-items:center;flex:none;border-radius:9px;background:var(--blue-soft);color:var(--blue)}
+.page :global(.admin-automation-card)>div:nth-child(2){min-width:0}
+.page :global(.admin-automation-card) h3{font:750 12px Manrope,sans-serif;margin:0 0 6px;color:var(--ink)}
+.page :global(.admin-automation-card) p{font-size:10px;line-height:1.6;color:var(--muted);margin:0;overflow-wrap:anywhere}
+.page :global(.admin-automation-card) .primary-button{width:100%;min-height:39px;margin-top:auto;white-space:normal;text-align:center;line-height:1.35}
+.page :global(.admin-automation-card) .form-error,.page :global(.admin-automation-card) .form-success{width:100%;overflow-wrap:anywhere}
+.page :global(.admin-automation-card) .form-success small,.page :global(.admin-automation-card) .form-error small{display:block;margin-top:5px;line-height:1.5}
+.page :global(.admin-automation-note){padding:12px 13px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);font-size:10px;line-height:1.6}
+.page :global(.section-head) .primary-button{flex:none}
+@media(max-width:1050px){.page :global(.admin-automation-grid){grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.page{gap:14px}.page :global(.section-head){flex-wrap:wrap;align-items:flex-start}.page :global(.section-head)>:global(.primary-button){width:100%}.page :global(.admin-automation-grid){grid-template-columns:1fr}.page :global(.admin-automation-card){padding:14px}}
+@media(max-width:560px){.page :global(.page-intro-inline){align-items:flex-start;flex-direction:column;gap:10px}.page :global(.page-intro-inline) h2{font-size:24px}.page :global(.section-card){padding:15px}.page :global(.form-two){grid-template-columns:minmax(0,1fr);gap:13px}.page :global(.section-head){gap:12px;margin-bottom:16px}.page :global(.section-head) h2{font-size:14px}.page :global(.section-head) p{font-size:10px}.page :global(.admin-form)>.primary-button{width:100%}}
