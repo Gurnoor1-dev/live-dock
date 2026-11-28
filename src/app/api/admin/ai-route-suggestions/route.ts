@@ -196,7 +196,7 @@ export async function POST(request: Request) {
     const seenRoutes = new Set<string>();
     const suggestions = modelSuggestions.map(item => {
       const callsign = typeof item.callsign === "string"
-        ? item.callsign.trim().toUpperCase().replace(/\\s+/g, "")
+        ? item.callsign.trim().toUpperCase().replace(/\s+/g, "")
         : "";
       const origin = typeof item.originIcao === "string" ? item.originIcao.trim().toUpperCase() : "";
       const destination = typeof item.destinationIcao === "string" ? item.destinationIcao.trim().toUpperCase() : "";
@@ -204,7 +204,7 @@ export async function POST(request: Request) {
       if (!/^[A-Z0-9]{2,10}$/.test(callsign) || seenCallsigns.has(callsign)) {
         throw Object.assign(new Error("Gemini returned a missing or duplicate flight number. Please regenerate."), { status: 502 });
       }
-      if (airline.toLowerCase() === "jetblue" && !/^B6\\d{1,4}$/.test(callsign)) {
+      if (airline.toLowerCase() === "jetblue" && !/^B6\d{1,4}$/.test(callsign)) {
         throw Object.assign(new Error("JetBlue flight numbers must use the B6 airline designator followed by digits. Please regenerate."), { status: 502 });
       }
       if (!/^[A-Z]{4}$/.test(origin) || !/^[A-Z]{4}$/.test(destination) || origin === destination) {
