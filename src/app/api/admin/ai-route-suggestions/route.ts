@@ -107,8 +107,8 @@ export async function POST(request: Request) {
       "Find a published flight number for each route where possible. The callsign field is the airline flight number, not a radio callsign. For JetBlue, use the B6 IATA designator followed by the published digits.",
       "CRITICAL AIRPORT RULE: originIcao and destinationIcao MUST each be copied exactly from the Infinite Flight airport directory below. Do not infer, convert, repair, or invent ICAO codes. Do not output an airport that is not in this directory. If a real-world airport cannot be matched to a listed airport, choose another real route whose two airports are both listed.",
       "flightType must always be the number 1.",
-      "Return ONLY a JSON object with this schema: {\"suggestions\":[{\"callsign\":\"B6421\",\"flightType\":1,\"originIcao\":\"KJFK\",\"destinationIcao\":\"KLAX\"},{\"callsign\":\"B6123\",\"flightType\":1,\"originIcao\":\"KBOS\",\"destinationIcao\":\"KFLL\"},{\"callsign\":\"B6456\",\"flightType\":1,\"originIcao\":\"KJFK\",\"destinationIcao\":\"TJSJ\"}]}. The airport codes in this illustrative schema are examples only; the directory is the sole authority.",
-      "INFINITE FLIGHT AIRPORT DIRECTORY (ICAO — airport name):",
+      "Return ONLY compact JSON: {\"suggestions\":[{\"callsign\":\"B6421\",\"flightType\":1,\"originIcao\":\"XXXX\",\"destinationIcao\":\"YYYY\"},{\"callsign\":\"B6123\",\"flightType\":1,\"originIcao\":\"XXXX\",\"destinationIcao\":\"YYYY\"},{\"callsign\":\"B6456\",\"flightType\":1,\"originIcao\":\"XXXX\",\"destinationIcao\":\"YYYY\"}]}.",
+      "Allowed Infinite Flight ICAO identifiers (the ONLY permitted codes):",
       airportDirectory
     ].join("\n\n");
 
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
         input: "Research current " + airline + " scheduled passenger services. Return exactly three distinct routes, using only airport identifiers copied from the supplied Infinite Flight airport directory.",
         tools: [{ type: "browser_search" }],
         tool_choice: "required",
-        max_output_tokens: 2200
+        max_output_tokens: 700
       }),
       cache: "no-store",
       signal: AbortSignal.timeout(45000)
@@ -139,7 +139,14 @@ export async function POST(request: Request) {
     };
 
     if (!response.ok) {
-      return jsonError(result.error?.message || "Groq returned HTTP " + response.status + ".", response.status === 429 ? 429 : 502);
+      const message = result.error?.message || "Groq returned HTTP " + response.status + ".";
+      if (response.status === 429) {
+        return jsonError(
+          "Groq's usage limit has been reached. The route request is smaller now, but Groq must reset its quota before generation can continue. " + message,
+          429
+        );
+      }
+      return jsonError(message, 502);
     }
 
     const responseText = result.output_text || result.output
