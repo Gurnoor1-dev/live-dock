@@ -61,7 +61,7 @@ function parseSuggestions(raw: string): ModelSuggestion[] | null {
 // Flash-Lite is sufficient for compact route selection and supports Google Search
 // grounding on the free tier. Override only when a different Gemini model is enabled
 // for the project's API tier.
-const model = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
+const model = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
 
 export async function POST(request: Request) {
   try {
