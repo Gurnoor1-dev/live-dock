@@ -97,8 +97,8 @@ export async function POST(request: Request) {
     // the model's output constrained by the exact dataset used to build flight plans.
     const airportDirectory = [...airportMap.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([code, airport]) => code + " — " + String(airport.name || code).replace(/[\\r\\n,;]/g, " ").slice(0, 90))
-      .join("\\n");
+      .map(([code, airport]) => code + " — " + String(airport.name || code).replace(/[\r\n,;]/g, " ").slice(0, 90))
+      .join("\n");
 
     const instructions = [
       "You are a commercial airline network researcher and route planner.",
@@ -107,10 +107,10 @@ export async function POST(request: Request) {
       "Find a published flight number for each route where possible. The callsign field is the airline flight number, not a radio callsign. For JetBlue, use the B6 IATA designator followed by the published digits.",
       "CRITICAL AIRPORT RULE: originIcao and destinationIcao MUST each be copied exactly from the Infinite Flight airport directory below. Do not infer, convert, repair, or invent ICAO codes. Do not output an airport that is not in this directory. If a real-world airport cannot be matched to a listed airport, choose another real route whose two airports are both listed.",
       "flightType must always be the number 1.",
-      "Return ONLY a JSON object with this schema: {\\"suggestions\\":[{\\"callsign\\":\\"B6421\\",\\"flightType\\":1,\\"originIcao\\":\\"KJFK\\",\\"destinationIcao\\":\\"KLAX\\"},{\\"callsign\\":\\"B6123\\",\\"flightType\\":1,\\"originIcao\\":\\"KBOS\\",\\"destinationIcao\\":\\"KFLL\\"},{\\"callsign\\":\\"B6456\\",\\"flightType\\":1,\\"originIcao\\":\\"KJFK\\",\\"destinationIcao\\":\\"TJSJ\\"}]}. The airport codes in this illustrative schema are examples only; the directory is the sole authority.",
+      "Return ONLY a JSON object with this schema: {\"suggestions\":[{\"callsign\":\"B6421\",\"flightType\":1,\"originIcao\":\"KJFK\",\"destinationIcao\":\"KLAX\"},{\"callsign\":\"B6123\",\"flightType\":1,\"originIcao\":\"KBOS\",\"destinationIcao\":\"KFLL\"},{\"callsign\":\"B6456\",\"flightType\":1,\"originIcao\":\"KJFK\",\"destinationIcao\":\"TJSJ\"}]}. The airport codes in this illustrative schema are examples only; the directory is the sole authority.",
       "INFINITE FLIGHT AIRPORT DIRECTORY (ICAO — airport name):",
       airportDirectory
-    ].join("\\n\\n");
+    ].join("\n\n");
 
     const response = await fetch("https://api.groq.com/openai/v1/responses", {
       method: "POST",
@@ -165,7 +165,7 @@ export async function POST(request: Request) {
     const seenRoutes = new Set<string>();
     const suggestions = modelSuggestions.map(item => {
       const callsign = typeof item.callsign === "string"
-        ? item.callsign.trim().toUpperCase().replace(/\\s+/g, "")
+        ? item.callsign.trim().toUpperCase().replace(/\s+/g, "")
         : "";
       const origin = typeof item.originIcao === "string" ? item.originIcao.trim().toUpperCase() : "";
       const destination = typeof item.destinationIcao === "string" ? item.destinationIcao.trim().toUpperCase() : "";
@@ -173,7 +173,7 @@ export async function POST(request: Request) {
       if (!/^[A-Z0-9]{2,10}$/.test(callsign) || seenCallsigns.has(callsign)) {
         throw Object.assign(new Error("Groq returned a missing or duplicate flight number. Please regenerate."), { status: 502 });
       }
-      if (airline.toLowerCase() === "jetblue" && !/^B6\\d{1,4}$/.test(callsign)) {
+      if (airline.toLowerCase() === "jetblue" && !/^B6\d{1,4}$/.test(callsign)) {
         throw Object.assign(new Error("JetBlue flight numbers must use the B6 airline designator followed by digits. Please regenerate."), { status: 502 });
       }
       if (!/^[A-Z]{4}$/.test(origin) || !/^[A-Z]{4}$/.test(destination) || origin === destination) {
