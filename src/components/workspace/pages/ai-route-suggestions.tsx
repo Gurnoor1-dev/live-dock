@@ -21,7 +21,7 @@ export function AIRouteSuggestions({airline,aircraft,aircraftTypes,airports,onCr
  const [timeless,setTimeless]=useState(false),[departure,setDeparture]=useState(()=>localDateTime(new Date(Date.now()+86400000)));
  const [error,setError]=useState(""),[notice,setNotice]=useState("");
  const airportMap=useMemo(()=>new Map(airports.map(a=>[String(a.icao||a.icaoCode||a.code||"").toUpperCase(),a])),[airports]);
- const activeAircraft=aircraft.filter(a=>a.status===0&&a.visibility!==2);
+ const activeAircraft=aircraft;
  const airportName=(icao:string)=>airportMap.get(icao)?.name||icao;
  const aircraftName=(id:string)=>{const a=aircraft.find(x=>x.id===id);return a?a.registration+" · "+(aircraftTypes.find(t=>t.id===a.aircraftId)?.name||"Aircraft"):"Select aircraft";};
  const metrics=(s:Suggestion)=>{const p=s.flightPlan.flightPlanItems,km=distanceKm(p[0].location,p[p.length-1].location),minutes=Math.max(60,Math.round(km/780*60+45));return{km,minutes};};
