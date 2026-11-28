@@ -5,7 +5,7 @@ export const dynamic="force-dynamic";
 type Airport={icao?:string;icaoCode?:string;code?:string;name?:string;latitude?:number;longitude?:number;location?:{latitude?:number;longitude?:number}};
 type ModelSuggestion={callsign?:unknown;flightType?:unknown;originIcao?:unknown;destinationIcao?:unknown};
 function airportsFrom(value:unknown):Airport[]{if(Array.isArray(value))return value as Airport[];if(value&&typeof value==="object"){const v=value as {items?:unknown[];airports?:unknown[]};if(Array.isArray(v.items))return v.items as Airport[];if(Array.isArray(v.airports))return v.airports as Airport[];}return [];}
-const model=process.env.GROQ_MODEL||"llama-3.3-70b-versatile";
+const model=process.env.GROQ_MODEL||"openai/gpt-oss-120b";
 export async function POST(request:Request){
  try{
   const {session}=await requireIFSession();await requireOrganizationAdmin(session);
@@ -29,6 +29,7 @@ export async function POST(request:Request){
    const callsign=typeof item.callsign==="string"?item.callsign.trim().toUpperCase().replace(/\s+/g,""):"";
    const origin=typeof item.originIcao==="string"?item.originIcao.trim().toUpperCase():"",destination=typeof item.destinationIcao==="string"?item.destinationIcao.trim().toUpperCase():"";
    if(!/^[A-Z0-9]{2,10}$/.test(callsign)||seen.has(callsign))throw new Error("Groq returned a missing or duplicate flight number.");
+   if(airline.toLowerCase()==="jetblue"&&!/^B6\\d{1,4}$/.test(callsign))throw new Error("JetBlue flight numbers must use the B6 airline designator followed by digits. Please regenerate.");
    if(!/^[A-Z]{4}$/.test(origin)||!/^[A-Z]{4}$/.test(destination)||origin===destination)throw new Error("Groq returned an invalid airport pair.");
    const pair=origin+"-"+destination;if(routes.has(pair))throw new Error("Groq returned a duplicate route. Please regenerate.");routes.add(pair);
    const from=airportMap.get(origin),to=airportMap.get(destination);if(!from||!to)throw new Error("Groq suggested "+pair+", but an airport is not present in Infinite Flight's airport reference data.");
