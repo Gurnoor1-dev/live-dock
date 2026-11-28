@@ -138,7 +138,7 @@ export async function POST(request: Request) {
                     type: "OBJECT",
                     properties: {
                       callsign: { type: "STRING" },
-                      flightType: { type: "INTEGER", enum: [1] },
+                      flightType: { type: "INTEGER" },
                       originIcao: { type: "STRING" },
                       destinationIcao: { type: "STRING" }
                     },
