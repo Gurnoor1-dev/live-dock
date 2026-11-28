@@ -17,27 +17,22 @@ export async function POST(request:Request){
   const airportMap=new Map<string,Airport>();
   for(const a of raw){const code=String(a.icao||a.icaoCode||a.code||"").toUpperCase(),lat=Number(a.latitude??a.location?.latitude),lon=Number(a.longitude??a.location?.longitude);if(/^[A-Z]{4}$/.test(code)&&Number.isFinite(lat)&&Math.abs(lat)<=90&&Number.isFinite(lon)&&Math.abs(lon)<=180)airportMap.set(code,{...a,latitude:lat,longitude:lon});}
   if(!airportMap.size)return NextResponse.json({error:"Infinite Flight airport reference data is unavailable. Refresh the workspace and retry."},{status:503});
-  const instructions="You are a commercial airline network planner. Use browser search to verify current scheduled passenger routes operated by "+airline+" using reliable sources, prioritising the airline's official route map, timetable or booking pages. Generate exactly three distinct real-world routes the airline currently operates. Do not suggest historical, announced-only, seasonal-unverified or fictional services. Find an actual published flight number for each route where possible. The callsign property is the airline FLIGHT NUMBER, not a radio callsign. For JetBlue, use the B6 IATA designator followed by the published flight digits. flightType is always 1 (Commercial). Use four-letter ICAO airport identifiers, not IATA codes. Return JSON only, with no sources or commentary.";
+  const instructions="You are a commercial airline network planner. Use browser search to verify current scheduled passenger routes operated by "+airline+" using reliable sources, prioritising the airline's official route map, timetable or booking pages. Generate exactly three distinct real-world routes the airline currently operates. Do not suggest historical, announced-only, seasonal-unverified or fictional services. Find an actual published flight number for each route where possible. The callsign property is the airline FLIGHT NUMBER, not a radio callsign. For JetBlue, use the B6 IATA designator followed by the published flight digits. flightType is always 1 (Commercial). Use four-letter ICAO airport identifiers, not IATA codes. Output ONLY one JSON object with this exact schema: {\"suggestions\":[{\"callsign\":\"B6421\",\"flightType\":1,\"originIcao\":\"KJFK\",\"destinationIcao\":\"KLAX\"},{\"callsign\":\"B6123\",\"flightType\":1,\"originIcao\":\"KBOS\",\"destinationIcao\":\"KFLL\"},{\"callsign\":\"B6456\",\"flightType\":1,\"originIcao\":\"KJFK\",\"destinationIcao\":\"KSJU\"}]}. Exactly three distinct suggestions. No markdown, no code fence, no commentary.";
   const response=await fetch("https://api.groq.com/openai/v1/responses",{method:"POST",headers:{"Authorization":"Bearer "+process.env.GROQ_API_KEY,"Content-Type":"application/json"},body:JSON.stringify({
    model,
    instructions,
-   input:"Search the web to verify current "+airline+" scheduled passenger services and return exactly three distinct routes. Return JSON matching the supplied schema.",
+   input:"Search the web to verify current "+airline+" scheduled passenger services. Return exactly three distinct routes as the JSON object described in the instructions.",
    tools:[{type:"browser_search"}],
    tool_choice:"required",
-   text:{format:{type:"json_schema",name:"airline_route_suggestions",schema:{
-    type:"object",
-    properties:{suggestions:{type:"array",minItems:3,maxItems:3,items:{type:"object",properties:{
-     callsign:{type:"string"},flightType:{type:"integer",enum:[1]},originIcao:{type:"string"},destinationIcao:{type:"string"}
-    },required:["callsign","flightType","originIcao","destinationIcao"],additionalProperties:false}}},
-    required:["suggestions"],additionalProperties:false
-   }}},
-   max_output_tokens:1800
+   max_output_tokens:2200
   }),cache:"no-store",signal:AbortSignal.timeout(60000)});
   const result=await response.json().catch(()=>({})) as {output_text?:string;output?:Array<{type?:string;content?:Array<{type?:string;text?:string}>}>;error?:{message?:string}};
   if(!response.ok)return NextResponse.json({error:result.error?.message||"Groq returned HTTP "+response.status+"."},{status:response.status===429?429:502});
-  const content=result.output_text||result.output?.filter(x=>x.type==="message").flatMap(x=>x.content||[]).find(x=>x.type==="output_text")?.text;
-  if(!content)return NextResponse.json({error:"Groq returned an empty response. Please try again."},{status:502});
-  let parsed:{suggestions?:ModelSuggestion[]};try{parsed=JSON.parse(content) as {suggestions?:ModelSuggestion[]};}catch{return NextResponse.json({error:"Groq returned invalid JSON. Please regenerate."},{status:502});}
+  const rawContent=result.output_text||result.output?.filter(x=>x.type==="message").flatMap(x=>x.content||[]).find(x=>x.type==="output_text")?.text;
+  if(!rawContent)return NextResponse.json({error:"Groq returned an empty response. Please try again."},{status:502});
+  const jsonStart=rawContent.indexOf("{"),jsonEnd=rawContent.lastIndexOf("}");
+  if(jsonStart<0||jsonEnd<=jsonStart)return NextResponse.json({error:"Groq did not return a JSON object. Please regenerate."},{status:502});
+  let parsed:{suggestions?:ModelSuggestion[]};try{parsed=JSON.parse(rawContent.slice(jsonStart,jsonEnd+1)) as {suggestions?:ModelSuggestion[]};}catch{return NextResponse.json({error:"Groq returned invalid JSON. Please regenerate."},{status:502});}
   if(!Array.isArray(parsed.suggestions)||parsed.suggestions.length!==3)return NextResponse.json({error:"Groq must return exactly three suggestions. Please regenerate."},{status:502});
   const seen=new Set<string>(),routes=new Set<string>();
   const suggestions=parsed.suggestions.map(item=>{
