@@ -20,6 +20,14 @@ type ModelSuggestion = {
   originIcao?: unknown;
   destinationIcao?: unknown;
 };
+type GeminiResponse = {
+  candidates?: Array<{
+    content?: { parts?: Array<{ text?: string }> };
+    finishReason?: string;
+  }>;
+  promptFeedback?: { blockReason?: string };
+  error?: { message?: string; status?: string; code?: number };
+};
 
 function airportsFrom(value: unknown): Airport[] {
   if (Array.isArray(value)) return value as Airport[];
@@ -50,15 +58,19 @@ function parseSuggestions(raw: string): ModelSuggestion[] | null {
   }
 }
 
-const model = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
+// Flash-Lite is sufficient for compact route selection and supports Google Search
+// grounding on the free tier. Override only when a different Gemini model is enabled
+// for the project's API tier.
+const model = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
 
 export async function POST(request: Request) {
   try {
     const { session } = await requireIFSession();
     await requireOrganizationAdmin(session);
 
-    if (!process.env.GROQ_API_KEY) {
-      return jsonError("Groq is not configured. Add GROQ_API_KEY to the server environment and redeploy.", 503);
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return jsonError("Gemini is not configured. Add GEMINI_API_KEY to the server environment and redeploy.", 503);
     }
 
     const body = await request.json().catch(() => ({})) as { airline?: unknown };
@@ -67,8 +79,8 @@ export async function POST(request: Request) {
       return jsonError("Enter a valid airline name.", 400);
     }
 
-    // Infinite Flight is the authoritative allow-list. The model must select airport
-    // identifiers from this directory; it is never allowed to invent or convert codes.
+    // Infinite Flight remains the authoritative airport allow-list and source of
+    // coordinates. The compact ICAO-only list keeps each model request inexpensive.
     const rawAirports = airportsFrom(await ifFetch<unknown>("/airports", session));
     const airportMap = new Map<string, Airport>();
     for (const airport of rawAirports) {
@@ -80,12 +92,7 @@ export async function POST(request: Request) {
         Number.isFinite(latitude) && Math.abs(latitude) <= 90 &&
         Number.isFinite(longitude) && Math.abs(longitude) <= 180
       ) {
-        airportMap.set(code, {
-          ...airport,
-          name: typeof airport.name === "string" ? airport.name : code,
-          latitude,
-          longitude
-        });
+        airportMap.set(code, { ...airport, latitude, longitude });
       }
     }
 
@@ -93,103 +100,120 @@ export async function POST(request: Request) {
       return jsonError("Infinite Flight airport reference data is unavailable. Refresh the workspace and retry.", 503);
     }
 
-    // Include every usable airport, not a hand-picked or truncated subset. This makes
-    // the model's output constrained by the exact dataset used to build flight plans.
-    const airportDirectory = [...airportMap.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([code, airport]) => code + " — " + String(airport.name || code).replace(/[\r\n,;]/g, " ").slice(0, 90))
-      .join("\n");
+    const airportDirectory = [...airportMap.keys()].sort().join(",");
+    const prompt = [
+      "Find 3 distinct CURRENT scheduled passenger routes operated by " + airline + ".",
+      "Use Google Search grounding to verify current operation; prefer the airline's official route map, timetable, or booking pages. Exclude announced-only, historical, charter, and unverified seasonal routes.",
+      "Return a published flight number for each route where possible. callsign is the airline flight number. For JetBlue use B6 followed by the published digits.",
+      "Every originIcao and destinationIcao MUST be copied exactly from this allowed Infinite Flight ICAO list. Never invent or convert codes. If a real route cannot be represented by two listed airports, choose a different route.",
+      "flightType must be 1. Return exactly 3 unique routes and compact JSON matching this schema: { \"suggestions\": [{ \"callsign\": \"B6421\", \"flightType\": 1, \"originIcao\": \"XXXX\", \"destinationIcao\": \"YYYY\" }] }.",
+      "Allowed ICAO codes: " + airportDirectory
+    ].join("\n");
 
-    const instructions = [
-      "You are a commercial airline network researcher and route planner.",
-      "Research current scheduled passenger routes operated by " + airline + " using browser search and reliable sources, prioritising the airline's official route map, timetable, or booking pages.",
-      "Return exactly three distinct routes that the airline currently operates. Do not use historical, announced-only, unverified seasonal, charter-only, or fictional services.",
-      "Find a published flight number for each route where possible. The callsign field is the airline flight number, not a radio callsign. For JetBlue, use the B6 IATA designator followed by the published digits.",
-      "CRITICAL AIRPORT RULE: originIcao and destinationIcao MUST each be copied exactly from the Infinite Flight airport directory below. Do not infer, convert, repair, or invent ICAO codes. Do not output an airport that is not in this directory. If a real-world airport cannot be matched to a listed airport, choose another real route whose two airports are both listed.",
-      "flightType must always be the number 1.",
-      "Return ONLY compact JSON: {\"suggestions\":[{\"callsign\":\"B6421\",\"flightType\":1,\"originIcao\":\"XXXX\",\"destinationIcao\":\"YYYY\"},{\"callsign\":\"B6123\",\"flightType\":1,\"originIcao\":\"XXXX\",\"destinationIcao\":\"YYYY\"},{\"callsign\":\"B6456\",\"flightType\":1,\"originIcao\":\"XXXX\",\"destinationIcao\":\"YYYY\"}]}.",
-      "Allowed Infinite Flight ICAO identifiers (the ONLY permitted codes):",
-      airportDirectory
-    ].join("\n\n");
+    // One grounded Gemini request per generation. Keep output short and structured;
+    // no second model call is needed for parsing or validation.
+    const response = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey
+        },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          tools: [{ google_search: {} }],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 500,
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: "OBJECT",
+              properties: {
+                suggestions: {
+                  type: "ARRAY",
+                  minItems: 3,
+                  maxItems: 3,
+                  items: {
+                    type: "OBJECT",
+                    properties: {
+                      callsign: { type: "STRING" },
+                      flightType: { type: "INTEGER", enum: [1] },
+                      originIcao: { type: "STRING" },
+                      destinationIcao: { type: "STRING" }
+                    },
+                    required: ["callsign", "flightType", "originIcao", "destinationIcao"],
+                    propertyOrdering: ["callsign", "flightType", "originIcao", "destinationIcao"]
+                  }
+                }
+              },
+              required: ["suggestions"],
+              propertyOrdering: ["suggestions"]
+            }
+          }
+        }),
+        cache: "no-store",
+        signal: AbortSignal.timeout(45000)
+      }
+    );
 
-    const response = await fetch("https://api.groq.com/openai/v1/responses", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + process.env.GROQ_API_KEY,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model,
-        instructions,
-        input: "Research current " + airline + " scheduled passenger services. Return exactly three distinct routes, using only airport identifiers copied from the supplied Infinite Flight airport directory.",
-        tools: [{ type: "browser_search" }],
-        tool_choice: "required",
-        max_output_tokens: 700
-      }),
-      cache: "no-store",
-      signal: AbortSignal.timeout(45000)
-    });
-
-    const result = await response.json().catch(() => ({})) as {
-      output_text?: string;
-      output?: Array<{ type?: string; content?: Array<{ type?: string; text?: string }> }>;
-      error?: { message?: string };
-      incomplete_details?: { reason?: string };
-      status?: string;
-    };
-
+    const result = await response.json().catch(() => ({})) as GeminiResponse;
     if (!response.ok) {
-      const message = result.error?.message || "Groq returned HTTP " + response.status + ".";
+      const message = result.error?.message || "Gemini returned HTTP " + response.status + ".";
       if (response.status === 429) {
         return jsonError(
-          "Groq's usage limit has been reached. The route request is smaller now, but Groq must reset its quota before generation can continue. " + message,
+          "Gemini's rate or daily quota has been reached. The generator uses one compact Gemini request per generation; check the Gemini API quota for " + model + ". " + message,
           429
         );
+      }
+      if (response.status === 401 || response.status === 403) {
+        return jsonError("Gemini rejected the API key or the key does not have access to this model. Check GEMINI_API_KEY and the Gemini API project. " + message, 503);
       }
       return jsonError(message, 502);
     }
 
-    const responseText = result.output_text || result.output
-      ?.filter(item => item.type === "message")
-      .flatMap(item => item.content || [])
-      .find(item => item.type === "output_text")?.text;
+    const candidate = result.candidates?.[0];
+    const responseText = candidate?.content?.parts
+      ?.map(part => part.text || "")
+      .join("")
+      .trim();
 
     if (!responseText) {
-      const reason = result.incomplete_details?.reason;
+      const reason = candidate?.finishReason || result.promptFeedback?.blockReason;
       return jsonError(
         reason
-          ? "Groq could not complete route research (" + reason + "). Please try again."
-          : "Groq returned an empty response. Please try again."
+          ? "Gemini could not complete route research (" + reason + "). Please try again."
+          : "Gemini returned an empty response. Please try again."
       );
     }
 
     const modelSuggestions = parseSuggestions(responseText);
     if (!modelSuggestions || modelSuggestions.length !== 3) {
-      return jsonError("Groq did not return exactly three valid route suggestions. Please regenerate.");
+      return jsonError("Gemini did not return exactly three valid route suggestions. Please regenerate.");
     }
 
     const seenCallsigns = new Set<string>();
     const seenRoutes = new Set<string>();
     const suggestions = modelSuggestions.map(item => {
       const callsign = typeof item.callsign === "string"
-        ? item.callsign.trim().toUpperCase().replace(/\s+/g, "")
+        ? item.callsign.trim().toUpperCase().replace(/\\s+/g, "")
         : "";
       const origin = typeof item.originIcao === "string" ? item.originIcao.trim().toUpperCase() : "";
       const destination = typeof item.destinationIcao === "string" ? item.destinationIcao.trim().toUpperCase() : "";
 
       if (!/^[A-Z0-9]{2,10}$/.test(callsign) || seenCallsigns.has(callsign)) {
-        throw Object.assign(new Error("Groq returned a missing or duplicate flight number. Please regenerate."), { status: 502 });
+        throw Object.assign(new Error("Gemini returned a missing or duplicate flight number. Please regenerate."), { status: 502 });
       }
-      if (airline.toLowerCase() === "jetblue" && !/^B6\d{1,4}$/.test(callsign)) {
+      if (airline.toLowerCase() === "jetblue" && !/^B6\\d{1,4}$/.test(callsign)) {
         throw Object.assign(new Error("JetBlue flight numbers must use the B6 airline designator followed by digits. Please regenerate."), { status: 502 });
       }
       if (!/^[A-Z]{4}$/.test(origin) || !/^[A-Z]{4}$/.test(destination) || origin === destination) {
-        throw Object.assign(new Error("Groq returned an invalid airport pair. Please regenerate."), { status: 502 });
+        throw Object.assign(new Error("Gemini returned an invalid airport pair. Please regenerate."), { status: 502 });
       }
 
       const route = origin + "-" + destination;
       if (seenRoutes.has(route)) {
-        throw Object.assign(new Error("Groq returned a duplicate route. Please regenerate."), { status: 502 });
+        throw Object.assign(new Error("Gemini returned a duplicate route. Please regenerate."), { status: 502 });
       }
 
       const from = airportMap.get(origin);
@@ -197,7 +221,7 @@ export async function POST(request: Request) {
       if (!from || !to) {
         const invalid = [!from ? origin : "", !to ? destination : ""].filter(Boolean).join(", ");
         throw Object.assign(
-          new Error("The AI selected airport code(s) not supported by Infinite Flight: " + invalid + ". Please regenerate; only airports in the supplied Infinite Flight directory can be used."),
+          new Error("Gemini selected airport code(s) not supported by Infinite Flight: " + invalid + ". Please regenerate; only airports in the supplied Infinite Flight directory can be used."),
           { status: 502 }
         );
       }
